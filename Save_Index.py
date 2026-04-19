@@ -15,9 +15,9 @@ def save_to_github():
         print('Executing: git commit -m "Updated website files on GitHub"')
         subprocess.run(["git", "commit", "-m", "Updated website files on GitHub"], check=True)
         
-        # Push to the remote repository
-        print("Executing: git push")
-        subprocess.run(["git", "push"], check=True)
+        # Push to the remote repository, setting upstream if necessary
+        print("Executing: git push -u origin HEAD")
+        subprocess.run(["git", "push", "-u", "origin", "HEAD"], check=True)
         
         print("-" * 30)
         # Final status check
