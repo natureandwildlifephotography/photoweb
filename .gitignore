@@ -6,3 +6,6 @@
 *.tiff
 *.png
 *.json
+*.html.bak
+secrets.txt
+.env
