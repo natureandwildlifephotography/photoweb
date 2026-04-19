@@ -207,7 +207,7 @@ def generate_html():
     # Update for GitHub publishing (replacing local path with R2 URL)
     import subprocess
     subprocess.run(["sed", "-i", "", "s|Photos/|https://pub-4676f40b75f648d9a6625ba16135e8a6.r2.dev/|g", "index.html"])
-    subprocess.run(["sed", "-i", "", "s|Banners/|https://pub-4676f40b75f648d9a6625ba16135e8a6.r2.dev/photography/Banners/|g", "index.html"])
+    subprocess.run(["sed", "-i", "", "s|Banners/|https://pub-4676f40b75f648d9a6625ba16135e8a6.r2.dev/Banners/|g", "index.html"])
     
     # Save index.html again (reading the updated content and writing it back as requested)
     with open('index.html', 'r', encoding='utf-8') as f:
