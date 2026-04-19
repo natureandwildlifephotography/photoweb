@@ -44,7 +44,8 @@ def generate_html():
         body {{ font-family: sans-serif; background: #f4f4f4; color: #333; margin: 0; padding: 0 20px 20px 20px; }}
         .banner {{ background: url('Banners/Banner_NWPca1.jpg') center/cover no-repeat; width: 100%; height: 313px; display: flex; flex-direction: column; justify-content: flex-end; padding: 20px; margin-bottom: 20px; border-radius: 0; }}
         .nav {{ display: flex; flex-wrap: wrap; gap: 20px; background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #ddd; margin-bottom: 20px; }}
-        .nav a {{ color: #333; text-decoration: none; font-weight: bold; }}
+        .nav a {{ color: #333; text-decoration: none; font-weight: bold; padding: 8px 20px; border: 1px solid #333; border-radius: 5px; background: #f9f9f9; transition: background 0.2s; }}
+        .nav a:hover {{ background: #eee; }}
         .header {{ margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }}
         .filters {{ display: flex; gap: 10px; align-items: center; }}
         .filter-element {{ height: 30px; }}
@@ -60,14 +61,12 @@ def generate_html():
 </head>
 <body>
     <div class="banner">
+        <div style="background: rgba(255, 255, 255, 0.3); backdrop-filter: blur(5px); padding: 10px 40px; border-radius: 15px; border: 2px solid rgba(255, 255, 255, 0.4); align-self: flex-start; margin-bottom: auto; margin-top: auto; margin-left: 20px;">
+            <h1 style="font-size: 5em; color: black; margin: 0; text-shadow: 1px 1px 5px rgba(255,255,255,0.5);">Gallery</h1>
+        </div>
     </div>
     <div class="nav">
-        <a href="https://www.natureandwildlifephotography.ca/home">Home</a>
-        <a href="Articles.html">Articles</a>
-        <a href="https://www.natureandwildlifephotography.ca/field-reports">Field Reports</a>
-        <a href="https://www.natureandwildlifephotography.ca/products">Products</a>
-        <a href="index-BirdCards.html">Collection</a>
-        <a href="https://www.natureandwildlifephotography.ca/Info">Info</a>
+        <a href="https://www.natureandwildlifephotography.ca/home">Return to Nature Photography</a>
     </div>
     <div style="padding: 20px; background: #fff; margin-bottom: 20px; border-radius: 8px; border: 1px solid #ddd;">
         <h2>A Lifelong Journey Through the Avian World: 2,035 Species and Counting</h2>
@@ -200,6 +199,22 @@ def generate_html():
     with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
         f.write(html)
     print(f"Successfully generated {OUTPUT_FILE}")
+
+    # Also save a duplicate named index.html
+    with open('index.html', 'w', encoding='utf-8') as f:
+        f.write(html)
+    
+    # Update for GitHub publishing (replacing local path with R2 URL)
+    import subprocess
+    subprocess.run(["sed", "-i", "", "s|Photos/|https://pub-4676f40b75f648d9a6625ba16135e8a6.r2.dev/|g", "index.html"])
+    
+    # Save index.html again (reading the updated content and writing it back as requested)
+    with open('index.html', 'r', encoding='utf-8') as f:
+        updated_html = f.read()
+    with open('index.html', 'w', encoding='utf-8') as f:
+        f.write(updated_html)
+    
+    print("Successfully generated and updated index.html for GitHub")
 
 if __name__ == "__main__":
     generate_html()
