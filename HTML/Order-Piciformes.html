@@ -1,0 +1,1611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photo Index</title>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; background: #121212; color: white; margin: 0; padding: 20px; padding-top: 80px; }
+        .family-list { display: flex; flex-direction: column; gap: 60px; max-width: 1800px; margin: 0 auto; }
+        
+        .family-card { background: #1e1e1e; border-radius: 24px; padding: 40px; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .family-header { margin-bottom: 30px; border-bottom: 2px solid #555; padding-bottom: 20px; }
+        .family-name { font-size: 36px; font-weight: 800; color: #4a9eff; text-transform: uppercase; letter-spacing: 2px; }
+        .family-order-label { font-size: 18px; opacity: 0.6; color: #fff; margin-top: 5px; font-weight: 500; }
+        
+        .species-list { display: flex; flex-direction: column; gap: 30px; }
+        .species-card { background: #2a2a2a; border-radius: 16px; padding: 20px; border: 1px solid #444; }
+        .species-header { margin-bottom: 15px; border-bottom: 1px solid #444; padding-bottom: 10px; }
+        .label { font-size: 24px; font-weight: 700; color: #fff; }
+        .french-label { font-size: 18px; opacity: 0.8; color: #ddd; }
+        .latin-label { font-size: 16px; opacity: 0.7; font-style: italic; color: #bbb; }
+        
+        .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
+        .photo-card { background: #333; border-radius: 10px; overflow: hidden; padding: 10px; display: flex; flex-direction: column; align-items: center; transition: transform 0.2s, background 0.2s; }
+        .photo-card:hover { transform: scale(1.02); background: #3d3d3d; }
+        
+        img { max-width: 100%; height: auto; border-radius: 6px; object-fit: contain; }
+        .meta-label { font-size: 11px; opacity: 0.7; align-self: flex-start; margin-top: 8px; color: #fff; }
+        .filename { font-size: 9px; opacity: 0.4; margin-top: 2px; word-break: break-all; align-self: flex-start; }
+        .filename a { color: #4a9eff; text-decoration: none; transition: color 0.2s; }
+        .filename a:hover { text-decoration: underline; }
+        
+        /* Intro Section Styles */
+        .intro-section { max-width: 1200px; margin: 0 auto 80px; padding: 60px; background: #1e1e1e; border-radius: 32px; border: 1px solid #333; box-shadow: 0 20px 50px rgba(0,0,0,0.6); line-height: 1.8; }
+        .intro-title { font-size: 48px; font-weight: 900; margin-bottom: 40px; color: #4a9eff; line-height: 1.2; text-align: center; }
+        .intro-text { font-size: 20px; opacity: 0.9; margin-bottom: 30px; }
+        .intro-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 30px; margin-top: 50px; border-top: 1px solid #444; padding-top: 40px; }
+        .stat-item { text-align: center; }
+        .stat-value { font-size: 36px; font-weight: 800; color: #4a9eff; display: block; }
+        .stat-label { font-size: 14px; opacity: 0.6; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* Mode Selector Styles */
+        .mode-selector { position: fixed; top: 0; left: 0; right: 0; background: rgba(30, 30, 30, 0.95); backdrop-filter: blur(10px); padding: 15px 40px; border-bottom: 1px solid #333; z-index: 1000; display: flex; justify-content: flex-end; align-items: center; gap: 20px; }
+        .mode-button { background: #333; border: 1px solid #444; color: white; padding: 8px 20px; border-radius: 20px; cursor: pointer; font-weight: 600; transition: all 0.2s; }
+        .mode-button.active { background: #4a9eff; border-color: #4a9eff; }
+        .mode-label { font-size: 14px; opacity: 0.6; font-weight: 600; text-transform: uppercase; }
+
+        /* Restricted Mode Styles */
+        body.mode-public .filename { display: none; }
+        body.mode-public .photo-card:hover { transform: none; background: #333; }
+
+        /* Modal Styles */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; justify-content: center; align-items: center; }
+        .modal { background: #1e1e1e; padding: 40px; border-radius: 24px; border: 1px solid #333; width: 400px; box-shadow: 0 20px 50px rgba(0,0,0,0.8); }
+        .modal h2 { margin-top: 0; color: #4a9eff; }
+        .modal input { width: 100%; padding: 12px; margin: 20px 0; background: #2a2a2a; border: 1px solid #444; color: white; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        .modal-buttons { display: flex; justify-content: flex-end; gap: 15px; }
+        .modal-buttons button { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; }
+        .btn-cancel { background: #333; color: white; }
+        .btn-submit { background: #4a9eff; color: white; }
+    </style>
+</head>
+<body class="mode-public">
+    <div class="mode-selector">
+        <span class="mode-label">View Mode:</span>
+        <button id="btn-public" class="mode-button active" onclick="setMode('PUBLIC')">PUBLIC</button>
+        <button id="btn-user" class="mode-button" onclick="requestUserMode()">USER</button>
+    </div>
+
+    <div id="password-modal" class="modal-overlay">
+        <div class="modal">
+            <h2>Enter Password</h2>
+            <p>Please enter the password to activate USER mode.</p>
+            <input type="password" id="password-input" placeholder="Password">
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+                <button class="btn-submit" onclick="submitPassword()">Submit</button>
+            </div>
+        </div>
+    </div>
+
+    
+    <div class="family-list">
+        <div class="family-card">
+            <div class="family-header">
+                <div class="family-name">Puffbirds</div>
+                <div class="family-order-label">Bucconidae / Piciformes</div>
+            </div>
+            <div class="species-list">
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">White-necked Puffbird</div>
+                        <div class="french-label">Tamatia à front blanc</div>
+                        <div class="latin-label">(Notharchus hyperrhynchus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/10pCphmAuzY5uIwPLCW4x5HoTWJsbJuB3" loading="lazy" alt="White-necked_Puffbird_0724.jpg">
+                            <div class="meta-label">Panama - 31 Mar 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/10pCphmAuzY5uIwPLCW4x5HoTWJsbJuB3" target="_blank">White-necked_Puffbird_0724.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1sZew6lEmL0WhcV0tAegYLO2MXs9kDmXW" loading="lazy" alt="White-necked_Puffbird_1975.jpg">
+                            <div class="meta-label">Panama - 31 Mar 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1sZew6lEmL0WhcV0tAegYLO2MXs9kDmXW" target="_blank">White-necked_Puffbird_1975.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Black-breasted Puffbird</div>
+                        <div class="french-label">Tamatia à plastron</div>
+                        <div class="latin-label">(Notharchus pectoralis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/154_y9V4Z3SsNbnKFQg5iwOUw2wagVayE" loading="lazy" alt="Black-breasted_Puffbird_3915.jpg">
+                            <div class="meta-label">Panama - 17 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/154_y9V4Z3SsNbnKFQg5iwOUw2wagVayE" target="_blank">Black-breasted_Puffbird_3915.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1HTq4ZOgqJGOpomHK2NW6MVOHsEssRPvP" loading="lazy" alt="Black-breasted_Puffbird_6288.jpg">
+                            <div class="meta-label">Panama - 17 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1HTq4ZOgqJGOpomHK2NW6MVOHsEssRPvP" target="_blank">Black-breasted_Puffbird_6288.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Pied Puffbird</div>
+                        <div class="french-label">Tamatia pie</div>
+                        <div class="latin-label">(Notharchus tectus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1YTAteLES23J9MHjLpB_sqE63LIRzNHk5" loading="lazy" alt="Pied_Puffbird_22865.jpg">
+                            <div class="meta-label">Panama - 05 Apr 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1YTAteLES23J9MHjLpB_sqE63LIRzNHk5" target="_blank">Pied_Puffbird_22865.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1QpdW89BIQ-fEBUPNs2CneMII9V000yP7" loading="lazy" alt="Pied_Puffbird_2604.jpg">
+                            <div class="meta-label">Panama - 05 Apr 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1QpdW89BIQ-fEBUPNs2CneMII9V000yP7" target="_blank">Pied_Puffbird_2604.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1GlGhkw9QOV4ebVa8f3wPEOzQwpmqxBMS" loading="lazy" alt="Pied_Puffbird_5190.jpg">
+                            <div class="meta-label">Panama - 05 Apr 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1GlGhkw9QOV4ebVa8f3wPEOzQwpmqxBMS" target="_blank">Pied_Puffbird_5190.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Barred Puffbird</div>
+                        <div class="french-label">Tamatia barré</div>
+                        <div class="latin-label">(Nystalus radiatus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1bmXf-MWxxmptPF8lX9djhIvEhSs7E21r" loading="lazy" alt="Barred_Puffbird.jpg">
+                            <div class="meta-label">Panama - 05 Apr 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1bmXf-MWxxmptPF8lX9djhIvEhSs7E21r" target="_blank">Barred_Puffbird.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1lD9ZgUGO8LUkoCSpOZnIg7AEEzRynR5R" loading="lazy" alt="Barred_Puffbird_1874.jpg">
+                            <div class="meta-label">Panama - 05 Apr 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1lD9ZgUGO8LUkoCSpOZnIg7AEEzRynR5R" target="_blank">Barred_Puffbird_1874.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1t6sZFWQcAYlzXQM186dbI4jax1IwHkEX" loading="lazy" alt="Barred_Puffbird_3328.jpg">
+                            <div class="meta-label">Panama - 05 Apr 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1t6sZFWQcAYlzXQM186dbI4jax1IwHkEX" target="_blank">Barred_Puffbird_3328.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1cynGmk9mHQ0Ra6uWkrfyJEPCwNcBa5W7" loading="lazy" alt="Barred_Puffbird_5786.jpg">
+                            <div class="meta-label">Panama - 05 Apr 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1cynGmk9mHQ0Ra6uWkrfyJEPCwNcBa5W7" target="_blank">Barred_Puffbird_5786.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Russet-throated Puffbird</div>
+                        <div class="french-label">Tamatia à gorge rousse</div>
+                        <div class="latin-label">(Hypnelus ruficollis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/15fXHTGKYKUYnL_tCg7dBJkMzrVRkiIwf" loading="lazy" alt="Russet-throated_Puffbird_20765.jpg">
+                            <div class="meta-label">Colombia - 01 Apr 2025</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/15fXHTGKYKUYnL_tCg7dBJkMzrVRkiIwf" target="_blank">Russet-throated_Puffbird_20765.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1CfEpcCnAV03snHwKDtB_cRxAzs8BQYGn" loading="lazy" alt="Russet-throated_Puffbird_3995.jpg">
+                            <div class="meta-label">Colombia - 01 Apr 2025</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1CfEpcCnAV03snHwKDtB_cRxAzs8BQYGn" target="_blank">Russet-throated_Puffbird_3995.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/10rwb960mNqeSOaSrNx1nn4BMmfSXbqAs" loading="lazy" alt="Russet-throated_Puffbird_4843.jpg">
+                            <div class="meta-label">Colombia - 01 Apr 2025</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/10rwb960mNqeSOaSrNx1nn4BMmfSXbqAs" target="_blank">Russet-throated_Puffbird_4843.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">White-whiskered Puffbird</div>
+                        <div class="french-label">Tamatia de Lafresnaye</div>
+                        <div class="latin-label">(Malacoptila panamensis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1SdIuVgCn1WafmD44L4J-gHFlbT2_ahJS" loading="lazy" alt="White-whiskered_Puffbird_0040.jpg">
+                            <div class="meta-label">Belize - 02 Dec 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1SdIuVgCn1WafmD44L4J-gHFlbT2_ahJS" target="_blank">White-whiskered_Puffbird_0040.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/17XIh_rAm9xsTEDKctd_oC6R5XL3sRT9E" loading="lazy" alt="White-whiskered_Puffbird_572.jpg">
+                            <div class="meta-label">Belize - 02 Dec 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/17XIh_rAm9xsTEDKctd_oC6R5XL3sRT9E" target="_blank">White-whiskered_Puffbird_572.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1rTX368HoRIM8OEFf8eHsLsCP70xKVPzM" loading="lazy" alt="White-whiskered_Puffbird_572_2.jpg">
+                            <div class="meta-label">Belize - 02 Dec 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1rTX368HoRIM8OEFf8eHsLsCP70xKVPzM" target="_blank">White-whiskered_Puffbird_572_2.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1JG9utbyhfIaYtjUB6jPS4eWrQxPLKUKc" loading="lazy" alt="White-whiskered_Puffbird_8701.jpg">
+                            <div class="meta-label">Belize - 02 Dec 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1JG9utbyhfIaYtjUB6jPS4eWrQxPLKUKc" target="_blank">White-whiskered_Puffbird_8701.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1LtdKx0M4C0dXXzExdzxO_U7GRIFavUv-" loading="lazy" alt="White-whiskered_Puffbird_9604.jpg">
+                            <div class="meta-label">Belize - 02 Dec 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1LtdKx0M4C0dXXzExdzxO_U7GRIFavUv-" target="_blank">White-whiskered_Puffbird_9604.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/150TOVEoiKDLT4MuH_iTss6ytAAeMEnn5" loading="lazy" alt="White-whiskered_Puffbird_MF6072.jpg">
+                            <div class="meta-label">Belize - 02 Dec 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/150TOVEoiKDLT4MuH_iTss6ytAAeMEnn5" target="_blank">White-whiskered_Puffbird_MF6072.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Gray-cheeked Nunlet</div>
+                        <div class="french-label">Barbacou à joues grises</div>
+                        <div class="latin-label">(Nonnula frontalis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1HM0StSvbybn-k-4wtrV0STsD4Z8kG7wz" loading="lazy" alt="Gray-cheeked_Nunlet_0762.jpg">
+                            <div class="meta-label">Panama - 03 Apr 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1HM0StSvbybn-k-4wtrV0STsD4Z8kG7wz" target="_blank">Gray-cheeked_Nunlet_0762.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Black-fronted Nunbird</div>
+                        <div class="french-label">Barbacou unicolore</div>
+                        <div class="latin-label">(Monasa nigrifrons)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1JzggyngIZ8hRpnP7E7n8DU-1hFJLU_yq" loading="lazy" alt="Black-fronted_Nunbird.jpg">
+                            <div class="meta-label">Ecuador - 29 Jun 2004</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1JzggyngIZ8hRpnP7E7n8DU-1hFJLU_yq" target="_blank">Black-fronted_Nunbird.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="family-card">
+            <div class="family-header">
+                <div class="family-name">Jacamars</div>
+                <div class="family-order-label">Galbulidae / Piciformes</div>
+            </div>
+            <div class="species-list">
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Dusky-backed Jacamar</div>
+                        <div class="french-label">Jacamar sombre</div>
+                        <div class="latin-label">(Brachygalba salmoni)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1YbTeXaQjWJCrCnckgJAi0lyTHVbgvyxQ" loading="lazy" alt="Dusky-backed_Jacamar_0865.jpg">
+                            <div class="meta-label">Panama - 03 Apr 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1YbTeXaQjWJCrCnckgJAi0lyTHVbgvyxQ" target="_blank">Dusky-backed_Jacamar_0865.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Rufous-tailed Jacamar</div>
+                        <div class="french-label">Jacamar à queue rousse</div>
+                        <div class="latin-label">(Galbula ruficauda)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/15DAOth-Hsz0HmfxFEqasR3ujoBCuBMYZ" loading="lazy" alt="Rufous-tailed_Jacamar_1964MF.jpg">
+                            <div class="meta-label">Belize - 01 Dec 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/15DAOth-Hsz0HmfxFEqasR3ujoBCuBMYZ" target="_blank">Rufous-tailed_Jacamar_1964MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1TE9TuYbFXMGXBNzIo_ISmI_ex_N9SzKT" loading="lazy" alt="Rufous-tailed_Jacamar_21285.jpg">
+                            <div class="meta-label">Belize - 01 Dec 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1TE9TuYbFXMGXBNzIo_ISmI_ex_N9SzKT" target="_blank">Rufous-tailed_Jacamar_21285.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1PLuZKsMvU57HO50UAgjvbItDyt2tVvCw" loading="lazy" alt="Rufous-tailed_Jacamar_2457.jpg">
+                            <div class="meta-label">Belize - 01 Dec 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1PLuZKsMvU57HO50UAgjvbItDyt2tVvCw" target="_blank">Rufous-tailed_Jacamar_2457.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1DH1MRD9I9NxhrmwvdYl4rJoi7Td2zJvn" loading="lazy" alt="Rufous-tailed_Jacamar_4596.jpg">
+                            <div class="meta-label">Belize - 01 Dec 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1DH1MRD9I9NxhrmwvdYl4rJoi7Td2zJvn" target="_blank">Rufous-tailed_Jacamar_4596.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1rkdgEFtSztSdrSg-hTlMVNsGzxjJwPx8" loading="lazy" alt="Rufous-tailed_Jacamar_4644.jpg">
+                            <div class="meta-label">Belize - 01 Dec 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1rkdgEFtSztSdrSg-hTlMVNsGzxjJwPx8" target="_blank">Rufous-tailed_Jacamar_4644.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1GxvPRyXD8GYn47SPqIytS_O50G7qUkYH" loading="lazy" alt="Rufous-tailed_Jacamar_586.jpg">
+                            <div class="meta-label">Belize - 01 Dec 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1GxvPRyXD8GYn47SPqIytS_O50G7qUkYH" target="_blank">Rufous-tailed_Jacamar_586.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="family-card">
+            <div class="family-header">
+                <div class="family-name">African Barbets</div>
+                <div class="family-order-label">Lybiidae / Piciformes</div>
+            </div>
+            <div class="species-list">
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Crested Barbet</div>
+                        <div class="french-label">Barbican promépic</div>
+                        <div class="latin-label">(Trachyphonus vaillantii)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1A1h6wicfr7L4Os260qz5G_jBUCcQVxOo" loading="lazy" alt="Crested_Barbet_7951.jpg">
+                            <div class="meta-label">South Africa - 26 Sep 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1A1h6wicfr7L4Os260qz5G_jBUCcQVxOo" target="_blank">Crested_Barbet_7951.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Red-and-yellow Barbet</div>
+                        <div class="french-label">Barbican à tête rouge</div>
+                        <div class="latin-label">(Trachyphonus erythrocephalus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1s-IPA--47LmLKPmmLRjRGV9a0ESNfSK0" loading="lazy" alt="Red-and-yellow_Barbet_234.jpg">
+                            <div class="meta-label">Tanzania - 09 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1s-IPA--47LmLKPmmLRjRGV9a0ESNfSK0" target="_blank">Red-and-yellow_Barbet_234.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1epMzyrhH84x30ysV4ToMKXeq8VlARsv9" loading="lazy" alt="Red-and-yellow_Barbet_240.jpg">
+                            <div class="meta-label">Tanzania - 09 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1epMzyrhH84x30ysV4ToMKXeq8VlARsv9" target="_blank">Red-and-yellow_Barbet_240.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Pied Barbet</div>
+                        <div class="french-label">Barbican pie</div>
+                        <div class="latin-label">(Tricholaema leucomelas)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1xXyFUL1ljlAORDwVSHZXlP7CjG3DBIah" loading="lazy" alt="Pied_Barbet.jpg">
+                            <div class="meta-label">NA - 01 Jun 2007</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1xXyFUL1ljlAORDwVSHZXlP7CjG3DBIah" target="_blank">Pied_Barbet.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1YaaB7Qta3ytan2E1HnxnZaalT2gZNq98" loading="lazy" alt="Pied_Barbet_383.jpg">
+                            <div class="meta-label">NA - 01 Jun 2007</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1YaaB7Qta3ytan2E1HnxnZaalT2gZNq98" target="_blank">Pied_Barbet_383.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Black-collared Barbet</div>
+                        <div class="french-label">Barbican à collier</div>
+                        <div class="latin-label">(Lybius torquatus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1FaQe2-WWX-wrBcDUO7I9nx4bo7dLlpjv" loading="lazy" alt="Black-collared_Barbet_6212.jpg">
+                            <div class="meta-label">SZ - 30 Sep 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1FaQe2-WWX-wrBcDUO7I9nx4bo7dLlpjv" target="_blank">Black-collared_Barbet_6212.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="family-card">
+            <div class="family-header">
+                <div class="family-name">New World Barbets</div>
+                <div class="family-order-label">Capitonidae / Piciformes</div>
+            </div>
+            <div class="species-list">
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Spot-crowned Barbet</div>
+                        <div class="french-label">Cabézon à calotte tachetée</div>
+                        <div class="latin-label">(Capito maculicoronatus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1iQsczao0ikMW6QSXE9mjCw8SQAiD36ZQ" loading="lazy" alt="Spot-crowned_Barbet.jpg">
+                            <div class="meta-label">Panama - 13 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1iQsczao0ikMW6QSXE9mjCw8SQAiD36ZQ" target="_blank">Spot-crowned_Barbet.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1OUYT3Rym-ldzG2ch9klTYMainMOK4sZE" loading="lazy" alt="Spot-crowned_Barbet_3703.jpg">
+                            <div class="meta-label">Panama - 13 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1OUYT3Rym-ldzG2ch9klTYMainMOK4sZE" target="_blank">Spot-crowned_Barbet_3703.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Red-headed Barbet</div>
+                        <div class="french-label">Cabézon à tête rouge</div>
+                        <div class="latin-label">(Eubucco bourcierii)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="Photos/Red-headed_Barbet_%28female%29_MF4435.jpg" loading="lazy" alt="Red-headed_Barbet_(female)_MF4435.jpg">
+                            <div class="meta-label">Colombia - 25 Dec 2014</div>
+                            <div class="filename"><a href="Photos/Red-headed_Barbet_%28female%29_MF4435.jpg" target="_blank">Red-headed_Barbet_(female)_MF4435.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1tOkKBxZJIByrjP2wT7yg_EatXkROcfsK" loading="lazy" alt="Red-headed_Barbet_3751.jpg">
+                            <div class="meta-label">Colombia - 25 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1tOkKBxZJIByrjP2wT7yg_EatXkROcfsK" target="_blank">Red-headed_Barbet_3751.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="family-card">
+            <div class="family-header">
+                <div class="family-name">Toucan-Barbets</div>
+                <div class="family-order-label">Semnornithidae / Piciformes</div>
+            </div>
+            <div class="species-list">
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Prong-billed Barbet</div>
+                        <div class="french-label">Cabézon de Frantzius</div>
+                        <div class="latin-label">(Semnornis frantzii)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1eSDSSTTZtnLsxXQ7u0_bQebo9UbwTa0c" loading="lazy" alt="Prong-billed_Barbet_6340.jpg">
+                            <div class="meta-label">CR - 09 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1eSDSSTTZtnLsxXQ7u0_bQebo9UbwTa0c" target="_blank">Prong-billed_Barbet_6340.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Toucan Barbet</div>
+                        <div class="french-label">Cabézon toucan</div>
+                        <div class="latin-label">(Semnornis ramphastinus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/19FYyGS2mQjWYqm4A_4hRkgKiAEXF0U75" loading="lazy" alt="Toucan_Barbet.jpg">
+                            <div class="meta-label">Ecuador - 06 Apr 2019</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/19FYyGS2mQjWYqm4A_4hRkgKiAEXF0U75" target="_blank">Toucan_Barbet.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="family-card">
+            <div class="family-header">
+                <div class="family-name">Toucans</div>
+                <div class="family-order-label">Ramphastidae / Piciformes</div>
+            </div>
+            <div class="species-list">
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Northern Emerald-Toucanet</div>
+                        <div class="french-label">Toucanet émeraude</div>
+                        <div class="latin-label">(Aulacorhynchus prasinus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="Photos/Northern_Emerald-Toucanet_2471%2A%2A%2A.jpg" loading="lazy" alt="Northern_Emerald-Toucanet_2471***.jpg">
+                            <div class="meta-label">Panama - 12 Nov 2016</div>
+                            <div class="filename"><a href="Photos/Northern_Emerald-Toucanet_2471%2A%2A%2A.jpg" target="_blank">Northern_Emerald-Toucanet_2471***.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/10W-jey6quqvp__kuJUubDLumuc9YlIB5" loading="lazy" alt="Northern_Emerald-Toucanet_2486.jpg">
+                            <div class="meta-label">Panama - 12 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/10W-jey6quqvp__kuJUubDLumuc9YlIB5" target="_blank">Northern_Emerald-Toucanet_2486.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1ZoDj8k1F2r5-W3ETEDq36pKO8-SQNcSg" loading="lazy" alt="Northern_Emerald-Toucanet_2486_2.jpg">
+                            <div class="meta-label">Panama - 12 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1ZoDj8k1F2r5-W3ETEDq36pKO8-SQNcSg" target="_blank">Northern_Emerald-Toucanet_2486_2.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1MnHb1UPnOacMGCGoRIkE7ivemy7P1vnR" loading="lazy" alt="Northern_Emerald-Toucanet_5850.jpg">
+                            <div class="meta-label">Panama - 12 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1MnHb1UPnOacMGCGoRIkE7ivemy7P1vnR" target="_blank">Northern_Emerald-Toucanet_5850.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Southern Emerald-Toucanet</div>
+                        <div class="french-label">Toucanet à gorge blanche</div>
+                        <div class="latin-label">(Aulacorhynchus albivitta)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1ZPi8X6QQLQEssiO1TqkQDkS0P-KCMnGK" loading="lazy" alt="Southern_Emerald-Toucanet_4266.jpg">
+                            <div class="meta-label">Colombia - 06 Apr 2025</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1ZPi8X6QQLQEssiO1TqkQDkS0P-KCMnGK" target="_blank">Southern_Emerald-Toucanet_4266.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/145wbvYjMaIIlJRR2eGMf3CAzf5x_wUMI" loading="lazy" alt="Southern_Emerald-Toucanet_4268.jpg">
+                            <div class="meta-label">Colombia - 06 Apr 2025</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/145wbvYjMaIIlJRR2eGMf3CAzf5x_wUMI" target="_blank">Southern_Emerald-Toucanet_4268.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Groove-billed Toucanet</div>
+                        <div class="french-label">Toucanet à bec sillonné</div>
+                        <div class="latin-label">(Aulacorhynchus sulcatus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1CrdpasSCG6El-iH3gmJLFXIHi4AvaWnB" loading="lazy" alt="Groove-billed_Toucanet_4228.jpg">
+                            <div class="meta-label">Colombia - 07 Apr 2025</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1CrdpasSCG6El-iH3gmJLFXIHi4AvaWnB" target="_blank">Groove-billed_Toucanet_4228.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Crimson-rumped Toucanet</div>
+                        <div class="french-label">Toucanet à croupion rouge</div>
+                        <div class="latin-label">(Aulacorhynchus haematopygus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/159InK3I7HRCR9Sph5BjLgchOu9SOfCiR" loading="lazy" alt="Crimson-rumped_Toucanet_3434.jpg">
+                            <div class="meta-label">Ecuador - 05 Apr 2019</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/159InK3I7HRCR9Sph5BjLgchOu9SOfCiR" target="_blank">Crimson-rumped_Toucanet_3434.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Black-billed Mountain-Toucan</div>
+                        <div class="french-label">Toucan à bec noir</div>
+                        <div class="latin-label">(Andigena nigrirostris)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1zqRvSO6V3v8xzMk2HChxhCTyS9g59oz8" loading="lazy" alt="Black-billed_Mountain-toucan.jpg">
+                            <div class="meta-label">Colombia - 19 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1zqRvSO6V3v8xzMk2HChxhCTyS9g59oz8" target="_blank">Black-billed_Mountain-toucan.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1ZtPs1JI3lrlxIuQBUAc2ccd2q4rEXH90" loading="lazy" alt="Black-billed_Mountain-toucan_5100.jpg">
+                            <div class="meta-label">Colombia - 19 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1ZtPs1JI3lrlxIuQBUAc2ccd2q4rEXH90" target="_blank">Black-billed_Mountain-toucan_5100.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Collared Aracari</div>
+                        <div class="french-label">Araçari à collier</div>
+                        <div class="latin-label">(Pteroglossus torquatus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/16t7Iq88FUXcJB0efeXhA7Rxmj76cs19V" loading="lazy" alt="Collared_Aracari_2364.jpg">
+                            <div class="meta-label">Colombia - 28 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/16t7Iq88FUXcJB0efeXhA7Rxmj76cs19V" target="_blank">Collared_Aracari_2364.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1UlfeJechXD9akIjNuEfxsmxoJTKPrO_8" loading="lazy" alt="Collared_Aracari_5835.jpg">
+                            <div class="meta-label">Colombia - 28 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1UlfeJechXD9akIjNuEfxsmxoJTKPrO_8" target="_blank">Collared_Aracari_5835.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="Photos/Collared_aracari_%28pale-mandibled%29_3869.jpg" loading="lazy" alt="Collared_aracari_(pale-mandibled)_3869.jpg">
+                            <div class="meta-label">Colombia - 28 Dec 2009</div>
+                            <div class="filename"><a href="Photos/Collared_aracari_%28pale-mandibled%29_3869.jpg" target="_blank">Collared_aracari_(pale-mandibled)_3869.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1jNSo4wAW1WTX6xMIDMHW0eX45n6YEGWZ" loading="lazy" alt="Collared_aracari_3859.jpg">
+                            <div class="meta-label">Colombia - 28 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1jNSo4wAW1WTX6xMIDMHW0eX45n6YEGWZ" target="_blank">Collared_aracari_3859.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Yellow-throated Toucan</div>
+                        <div class="french-label">Toucan tocard</div>
+                        <div class="latin-label">(Ramphastos ambiguus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1tS9MluW9_uZvRCVdLZ3oEL_LdA69Mlrf" loading="lazy" alt="Yellow-throated_Toucan_5488.jpg">
+                            <div class="meta-label">Panama - 01 Apr 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1tS9MluW9_uZvRCVdLZ3oEL_LdA69Mlrf" target="_blank">Yellow-throated_Toucan_5488.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1q0ozvVTPvzLzCcS4J4jsQRExooxhe819" loading="lazy" alt="Yellow-throated_Toucan_5493.jpg">
+                            <div class="meta-label">Panama - 01 Apr 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1q0ozvVTPvzLzCcS4J4jsQRExooxhe819" target="_blank">Yellow-throated_Toucan_5493.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1HuKlFTc_1Bt_ZBfrOoBE9ZAqerzmU07s" loading="lazy" alt="Yellow-throated_Toucan_MF3824.jpg">
+                            <div class="meta-label">Panama - 01 Apr 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1HuKlFTc_1Bt_ZBfrOoBE9ZAqerzmU07s" target="_blank">Yellow-throated_Toucan_MF3824.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Keel-billed Toucan</div>
+                        <div class="french-label">Toucan à carène</div>
+                        <div class="latin-label">(Ramphastos sulfuratus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Vx0U6Lra7MSw0QOlcQ9BLmYEMB8B5nN2" loading="lazy" alt="Keel-billed_Toucan_1895.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Vx0U6Lra7MSw0QOlcQ9BLmYEMB8B5nN2" target="_blank">Keel-billed_Toucan_1895.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/19ijuDgUjO-N5btoK16HiAIsIBaGItNqT" loading="lazy" alt="Keel-billed_Toucan_20903.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/19ijuDgUjO-N5btoK16HiAIsIBaGItNqT" target="_blank">Keel-billed_Toucan_20903.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1WhTzUXKWr8C10zo2AJmLflf3D2b-FSW1" loading="lazy" alt="Keel-billed_Toucan_2920MF.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1WhTzUXKWr8C10zo2AJmLflf3D2b-FSW1" target="_blank">Keel-billed_Toucan_2920MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1q3pr6aCzeCf0WodGkRsiZ3BT6L-H5Eky" loading="lazy" alt="Keel-billed_Toucan_4041.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1q3pr6aCzeCf0WodGkRsiZ3BT6L-H5Eky" target="_blank">Keel-billed_Toucan_4041.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1xnYMWn_Lc_0IUFzhTYCNDdLosJkU1XQF" loading="lazy" alt="Keel-billed_Toucan_4315.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1xnYMWn_Lc_0IUFzhTYCNDdLosJkU1XQF" target="_blank">Keel-billed_Toucan_4315.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1et5hhisp3EgHiZ4nE1EaD6iffAxc_2je" loading="lazy" alt="Keel-billed_Toucan_5484.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1et5hhisp3EgHiZ4nE1EaD6iffAxc_2je" target="_blank">Keel-billed_Toucan_5484.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1lSWKSoZs75GfIx1Wn9lsg0JcMYk6qXUQ" loading="lazy" alt="Keel-billed_Toucan_6953.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1lSWKSoZs75GfIx1Wn9lsg0JcMYk6qXUQ" target="_blank">Keel-billed_Toucan_6953.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1aUOBcGiOsAmjYLwbR-K8xSYD2to5DOH7" loading="lazy" alt="Keel-billed_Toucan_9164.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1aUOBcGiOsAmjYLwbR-K8xSYD2to5DOH7" target="_blank">Keel-billed_Toucan_9164.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1-Hmr3iPf3qrpppl6CT5_7-XGwHCk4rBR" loading="lazy" alt="Keel-billed_Toucan_MF3818.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1-Hmr3iPf3qrpppl6CT5_7-XGwHCk4rBR" target="_blank">Keel-billed_Toucan_MF3818.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Choco Toucan</div>
+                        <div class="french-label">Toucan du Choco</div>
+                        <div class="latin-label">(Ramphastos brevis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Htfm7WaP-2bYgZK833Y-qSpdkiAwo-qE" loading="lazy" alt="Choco_Toucan_5625.jpg">
+                            <div class="meta-label">Ecuador - 08 Apr 2019</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Htfm7WaP-2bYgZK833Y-qSpdkiAwo-qE" target="_blank">Choco_Toucan_5625.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="family-card">
+            <div class="family-header">
+                <div class="family-name">Woodpeckers</div>
+                <div class="family-order-label">Picidae / Piciformes</div>
+            </div>
+            <div class="species-list">
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Red-throated Wryneck</div>
+                        <div class="french-label">Torcol à gorge rousse</div>
+                        <div class="latin-label">(Jynx ruficollis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1VFeCRoD3qiZdI0ovVz3rMy5zbghyK0HB" loading="lazy" alt="Red-throated_Wryneck_3566.jpg">
+                            <div class="meta-label">South Africa - 02 Oct 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1VFeCRoD3qiZdI0ovVz3rMy5zbghyK0HB" target="_blank">Red-throated_Wryneck_3566.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Olivaceous Piculet</div>
+                        <div class="french-label">Picumne olivâtre</div>
+                        <div class="latin-label">(Picumnus olivaceus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/11CC2pCWTfdx1xLlfMjomO7WCh9fq40VO" loading="lazy" alt="Olivaceous_Piculet_0685.jpg">
+                            <div class="meta-label">Panama - 02 Apr 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/11CC2pCWTfdx1xLlfMjomO7WCh9fq40VO" target="_blank">Olivaceous_Piculet_0685.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/12OJwMp29ao1XkOkHiRPvjjcns4A6Ms7b" loading="lazy" alt="Olivaceous_Piculet_6439.jpg">
+                            <div class="meta-label">Panama - 02 Apr 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/12OJwMp29ao1XkOkHiRPvjjcns4A6Ms7b" target="_blank">Olivaceous_Piculet_6439.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1r5_MOOv4fnur06947Mi-IntameSKN95I" loading="lazy" alt="Olivaceous_Piculet_7157.jpg">
+                            <div class="meta-label">Panama - 02 Apr 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1r5_MOOv4fnur06947Mi-IntameSKN95I" target="_blank">Olivaceous_Piculet_7157.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Grayish Piculet</div>
+                        <div class="french-label">Picumne gris</div>
+                        <div class="latin-label">(Picumnus granadensis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1wYuyXDnPdcpeXzrmjc-ZEJ4yiE8V9UKH" loading="lazy" alt="Grayish_Piculet_1258.jpg">
+                            <div class="meta-label">Colombia - 16 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1wYuyXDnPdcpeXzrmjc-ZEJ4yiE8V9UKH" target="_blank">Grayish_Piculet_1258.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Chestnut Piculet</div>
+                        <div class="french-label">Picumne cannelle</div>
+                        <div class="latin-label">(Picumnus cinnamomeus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1anb0woNxkIOTc66seVfzZffk-tsryYf6" loading="lazy" alt="Chestnut_Piculet_22941.jpg">
+                            <div class="meta-label">Colombia - 04 Apr 2025</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1anb0woNxkIOTc66seVfzZffk-tsryYf6" target="_blank">Chestnut_Piculet_22941.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1TBLkjo3c6lsNA-Icv9Zi33qKojhch7XC" loading="lazy" alt="Chestnut_Piculet_22942.jpg">
+                            <div class="meta-label">Colombia - 04 Apr 2025</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1TBLkjo3c6lsNA-Icv9Zi33qKojhch7XC" target="_blank">Chestnut_Piculet_22942.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1_rTFv5OBfFhVsP_J5UjZFOSH-E6oNytP" loading="lazy" alt="Chestnut_Piculet_22949.jpg">
+                            <div class="meta-label">Colombia - 04 Apr 2025</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1_rTFv5OBfFhVsP_J5UjZFOSH-E6oNytP" target="_blank">Chestnut_Piculet_22949.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Yellow-bellied Sapsucker</div>
+                        <div class="french-label">Pic maculé</div>
+                        <div class="latin-label">(Sphyrapicus varius)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="Photos/Yellow-bellied_Sapsucker_%28juv%29_4619.jpg" loading="lazy" alt="Yellow-bellied_Sapsucker_(juv)_4619.jpg">
+                            <div class="meta-label">Canada - 14 May 2012</div>
+                            <div class="filename"><a href="Photos/Yellow-bellied_Sapsucker_%28juv%29_4619.jpg" target="_blank">Yellow-bellied_Sapsucker_(juv)_4619.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1uxRXQZsybSLquUdv8MqUCMPv1dF6gyhG" loading="lazy" alt="Yellow-bellied_Sapsucker_-_Timmins.jpg">
+                            <div class="meta-label">Canada - 14 May 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1uxRXQZsybSLquUdv8MqUCMPv1dF6gyhG" target="_blank">Yellow-bellied_Sapsucker_-_Timmins.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1t4f0ckptZZAcLuCIS2mtWPMG8xF4gGuF" loading="lazy" alt="Yellow-bellied_Sapsucker_0432.jpg">
+                            <div class="meta-label">Canada - 14 May 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1t4f0ckptZZAcLuCIS2mtWPMG8xF4gGuF" target="_blank">Yellow-bellied_Sapsucker_0432.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/18sUMG6muADesGWYLIsf0-ZtBdbvuRMI6" loading="lazy" alt="Yellow-bellied_Sapsucker_0483.jpg">
+                            <div class="meta-label">Canada - 14 May 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/18sUMG6muADesGWYLIsf0-ZtBdbvuRMI6" target="_blank">Yellow-bellied_Sapsucker_0483.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1dxaS-AXpPyQMwoNQ-Sv_R4nFFgn9iMQD" loading="lazy" alt="Yellow-bellied_Sapsucker_0534.jpg">
+                            <div class="meta-label">Canada - 14 May 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1dxaS-AXpPyQMwoNQ-Sv_R4nFFgn9iMQD" target="_blank">Yellow-bellied_Sapsucker_0534.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Ox41D6hGxxVtBETydJKdaX5T07pff6_P" loading="lazy" alt="Yellow-bellied_Sapsucker_1694.jpg">
+                            <div class="meta-label">Canada - 14 May 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Ox41D6hGxxVtBETydJKdaX5T07pff6_P" target="_blank">Yellow-bellied_Sapsucker_1694.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1aM2jyas73e7NNu-H05qSCnw_Q3opSdI0" loading="lazy" alt="Yellow-bellied_Sapsucker_1699.jpg">
+                            <div class="meta-label">Canada - 14 May 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1aM2jyas73e7NNu-H05qSCnw_Q3opSdI0" target="_blank">Yellow-bellied_Sapsucker_1699.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1pFmhAX5CyGmF-KBbFnZgdE3hDF9ZoGcu" loading="lazy" alt="Yellow-bellied_Sapsucker_1768.jpg">
+                            <div class="meta-label">Canada - 14 May 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1pFmhAX5CyGmF-KBbFnZgdE3hDF9ZoGcu" target="_blank">Yellow-bellied_Sapsucker_1768.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Fgh4rcKRgknv7T8mn0P-z7-hCZxxY3ii" loading="lazy" alt="Yellow-bellied_Sapsucker_9199.jpg">
+                            <div class="meta-label">Canada - 14 May 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Fgh4rcKRgknv7T8mn0P-z7-hCZxxY3ii" target="_blank">Yellow-bellied_Sapsucker_9199.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1QDP7O-DLEuFWbUpbtD-FuOcu-qcx-3jj" loading="lazy" alt="Yellow-bellied_Sapsucker_9201.jpg">
+                            <div class="meta-label">Canada - 14 May 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1QDP7O-DLEuFWbUpbtD-FuOcu-qcx-3jj" target="_blank">Yellow-bellied_Sapsucker_9201.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Red-headed Woodpecker</div>
+                        <div class="french-label">Pic à tête rouge</div>
+                        <div class="latin-label">(Melanerpes erythrocephalus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1ncz3Api0jtGR2n6x-P3OuHFmCTbGdE3I" loading="lazy" alt="Red-headed_Woodpecker_0018.jpg">
+                            <div class="meta-label">Canada - 02 May 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1ncz3Api0jtGR2n6x-P3OuHFmCTbGdE3I" target="_blank">Red-headed_Woodpecker_0018.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1tD6GPqggZ5oeCsvYjKQ6bVZZruDyWriP" loading="lazy" alt="Red-headed_Woodpecker_0557.jpg">
+                            <div class="meta-label">Canada - 02 May 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1tD6GPqggZ5oeCsvYjKQ6bVZZruDyWriP" target="_blank">Red-headed_Woodpecker_0557.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/14VPHv9hUusKlprSw7ByQOBwUysc60YN0" loading="lazy" alt="Red-headed_Woodpecker_0583.jpg">
+                            <div class="meta-label">Canada - 02 May 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/14VPHv9hUusKlprSw7ByQOBwUysc60YN0" target="_blank">Red-headed_Woodpecker_0583.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1fXROraXQ_flbkQAg0gIQMtVkifc6fyuk" loading="lazy" alt="Red-headed_Woodpecker_4355MF.jpg">
+                            <div class="meta-label">Canada - 02 May 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1fXROraXQ_flbkQAg0gIQMtVkifc6fyuk" target="_blank">Red-headed_Woodpecker_4355MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1wx6KkgOYJybH1FfQ59PbVoBsFvN_Y1Uq" loading="lazy" alt="Red-headed_Woodpecker_7214.jpg">
+                            <div class="meta-label">Canada - 02 May 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1wx6KkgOYJybH1FfQ59PbVoBsFvN_Y1Uq" target="_blank">Red-headed_Woodpecker_7214.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1MTUNsH1pnGTF2qGTFXVCq_vacpQMjCdF" loading="lazy" alt="Red-headed_Woodpecker_7215.jpg">
+                            <div class="meta-label">Canada - 02 May 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1MTUNsH1pnGTF2qGTFXVCq_vacpQMjCdF" target="_blank">Red-headed_Woodpecker_7215.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1E8bEDlrfQu7FUCqi-ZDSQxLOi2uksHKD" loading="lazy" alt="Red-headed_Woodpecker_7236.jpeg">
+                            <div class="meta-label">Canada - 02 May 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1E8bEDlrfQu7FUCqi-ZDSQxLOi2uksHKD" target="_blank">Red-headed_Woodpecker_7236.jpeg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1voGkC00vKKvCf5NAcQVeFjQvrkhZJLa-" loading="lazy" alt="Red-headed_Woodpecker_7236B.jpg">
+                            <div class="meta-label">Canada - 02 May 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1voGkC00vKKvCf5NAcQVeFjQvrkhZJLa-" target="_blank">Red-headed_Woodpecker_7236B.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1WnVpU-ZrH3tRy8BIkb79C9E9BC5bHrtT" loading="lazy" alt="Red-headed_Woodpecker_7361.jpg">
+                            <div class="meta-label">Canada - 02 May 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1WnVpU-ZrH3tRy8BIkb79C9E9BC5bHrtT" target="_blank">Red-headed_Woodpecker_7361.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1xH2dzN41N-UilPnSFvnH0cwHLWTdIb_E" loading="lazy" alt="Red-headed_Woodpecker_7722.jpg">
+                            <div class="meta-label">Canada - 02 May 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1xH2dzN41N-UilPnSFvnH0cwHLWTdIb_E" target="_blank">Red-headed_Woodpecker_7722.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1OEMYJ6roS_0SWGPTA-geTPa7GWsKxThG" loading="lazy" alt="Red-headed_Woodpecker_8085.jpg">
+                            <div class="meta-label">Canada - 02 May 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1OEMYJ6roS_0SWGPTA-geTPa7GWsKxThG" target="_blank">Red-headed_Woodpecker_8085.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/177L-q2x824hVH1IFrEsuGiPER9eDNK5-" loading="lazy" alt="Red-headed_Woodpecker_9880.jpg">
+                            <div class="meta-label">Canada - 02 May 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/177L-q2x824hVH1IFrEsuGiPER9eDNK5-" target="_blank">Red-headed_Woodpecker_9880.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1d_N2zSboCV25Abjm5H6cKLE5XMIEDsT9" loading="lazy" alt="Red-headed_Woodpecker_9915.jpg">
+                            <div class="meta-label">Canada - 02 May 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1d_N2zSboCV25Abjm5H6cKLE5XMIEDsT9" target="_blank">Red-headed_Woodpecker_9915.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1362fjzCCr4o4v9SO6jdMI-Bv5SbCdRzG" loading="lazy" alt="Red-headed_Woodpecker_9919MF.jpg">
+                            <div class="meta-label">Canada - 02 May 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1362fjzCCr4o4v9SO6jdMI-Bv5SbCdRzG" target="_blank">Red-headed_Woodpecker_9919MF.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Acorn Woodpecker</div>
+                        <div class="french-label">Pic glandivore</div>
+                        <div class="latin-label">(Melanerpes formicivorus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Bqnn_mp92ZQrnrsaeGPjS_6IM5IGVfGw" loading="lazy" alt="Acorn_Woodpecker_2305.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Bqnn_mp92ZQrnrsaeGPjS_6IM5IGVfGw" target="_blank">Acorn_Woodpecker_2305.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1L7_dUejdC46A3ixAXVfNuI5yI9Z5nm4A" loading="lazy" alt="Acorn_Woodpecker_5803.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1L7_dUejdC46A3ixAXVfNuI5yI9Z5nm4A" target="_blank">Acorn_Woodpecker_5803.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1PFdVKuT4foKVJMcU35dxPKIgKbE4xN6p" loading="lazy" alt="Acorn_woodpecker_2152.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1PFdVKuT4foKVJMcU35dxPKIgKbE4xN6p" target="_blank">Acorn_woodpecker_2152.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Black-cheeked Woodpecker</div>
+                        <div class="french-label">Pic de Pucheran</div>
+                        <div class="latin-label">(Melanerpes pucherani)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1LXFa5P4EdBbLzucO7CCUKbahOua-Zjco" loading="lazy" alt="Black-cheeked_Woodpecker_1048.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1LXFa5P4EdBbLzucO7CCUKbahOua-Zjco" target="_blank">Black-cheeked_Woodpecker_1048.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1P5S1qfWbS0Sh-x02GA4b_MfiZI_F5nWf" loading="lazy" alt="Black-cheeked_Woodpecker_2579.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1P5S1qfWbS0Sh-x02GA4b_MfiZI_F5nWf" target="_blank">Black-cheeked_Woodpecker_2579.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Onlt9QeFDQ-Y7NFl1tJbu5z3XA843aAU" loading="lazy" alt="Black-cheeked_Woodpecker_3519.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Onlt9QeFDQ-Y7NFl1tJbu5z3XA843aAU" target="_blank">Black-cheeked_Woodpecker_3519.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1j65dXIj6-FAnbQQkB2A-cjMdkP3Bxw_s" loading="lazy" alt="Black-cheeked_Woodpecker_MF4122.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1j65dXIj6-FAnbQQkB2A-cjMdkP3Bxw_s" target="_blank">Black-cheeked_Woodpecker_MF4122.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Red-crowned Woodpecker</div>
+                        <div class="french-label">Pic à couronne rouge</div>
+                        <div class="latin-label">(Melanerpes rubricapillus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1syMmUQj-8JoCHpUAFMA68CJieOqKFSBF" loading="lazy" alt="Red-crowned_Woodpecker.jpg">
+                            <div class="meta-label">Colombia - 16 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1syMmUQj-8JoCHpUAFMA68CJieOqKFSBF" target="_blank">Red-crowned_Woodpecker.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1iWmyGnFRBEZXCxK275-pANetBYOYRVUI" loading="lazy" alt="Red-crowned_Woodpecker_20261.jpg">
+                            <div class="meta-label">Colombia - 16 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1iWmyGnFRBEZXCxK275-pANetBYOYRVUI" target="_blank">Red-crowned_Woodpecker_20261.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/19UlxCs3rfqsozBwuZR9gKQ7uAURK5FSE" loading="lazy" alt="Red-crowned_Woodpecker_2180.jpg">
+                            <div class="meta-label">Colombia - 16 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/19UlxCs3rfqsozBwuZR9gKQ7uAURK5FSE" target="_blank">Red-crowned_Woodpecker_2180.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1jn4Hqu1MHTtwgE3iiK5bNPd6E6vFm7iJ" loading="lazy" alt="Red-crowned_Woodpecker_5440.jpg">
+                            <div class="meta-label">Colombia - 16 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1jn4Hqu1MHTtwgE3iiK5bNPd6E6vFm7iJ" target="_blank">Red-crowned_Woodpecker_5440.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1uUZMNiX2JUQHALV7W4IkJgQd8qpT-i3P" loading="lazy" alt="Red-crowned_Woodpecker_6100.jpg">
+                            <div class="meta-label">Colombia - 16 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1uUZMNiX2JUQHALV7W4IkJgQd8qpT-i3P" target="_blank">Red-crowned_Woodpecker_6100.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1JzL7dslUJHdYyPPHOgyRm1KP5xFnLCVY" loading="lazy" alt="Red-crowned_Woodpecker_6558.jpg">
+                            <div class="meta-label">Colombia - 16 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1JzL7dslUJHdYyPPHOgyRm1KP5xFnLCVY" target="_blank">Red-crowned_Woodpecker_6558.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Hoffmann's Woodpecker</div>
+                        <div class="french-label">Pic de Hoffmann</div>
+                        <div class="latin-label">(Melanerpes hoffmannii)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="Photos/Hoffmann%27s_Woodpecker_2528MF.jpg" loading="lazy" alt="Hoffmann's_Woodpecker_2528MF.jpg">
+                            <div class="meta-label">CR - 03 Jun 2022</div>
+                            <div class="filename"><a href="Photos/Hoffmann%27s_Woodpecker_2528MF.jpg" target="_blank">Hoffmann's_Woodpecker_2528MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="Photos/Hoffmann%27s_Woodpecker_5591.jpg" loading="lazy" alt="Hoffmann's_Woodpecker_5591.jpg">
+                            <div class="meta-label">CR - 03 Jun 2022</div>
+                            <div class="filename"><a href="Photos/Hoffmann%27s_Woodpecker_5591.jpg" target="_blank">Hoffmann's_Woodpecker_5591.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="Photos/Hoffmann%27s_Woodpecker_8935.jpg" loading="lazy" alt="Hoffmann's_Woodpecker_8935.jpg">
+                            <div class="meta-label">CR - 03 Jun 2022</div>
+                            <div class="filename"><a href="Photos/Hoffmann%27s_Woodpecker_8935.jpg" target="_blank">Hoffmann's_Woodpecker_8935.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="Photos/Hoffmann%27s_Woodpecker_MF3527.jpg" loading="lazy" alt="Hoffmann's_Woodpecker_MF3527.jpg">
+                            <div class="meta-label">CR - 03 Jun 2022</div>
+                            <div class="filename"><a href="Photos/Hoffmann%27s_Woodpecker_MF3527.jpg" target="_blank">Hoffmann's_Woodpecker_MF3527.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="Photos/Hoffmann%27s_Woodpecker_MF6267.jpg" loading="lazy" alt="Hoffmann's_Woodpecker_MF6267.jpg">
+                            <div class="meta-label">CR - 03 Jun 2022</div>
+                            <div class="filename"><a href="Photos/Hoffmann%27s_Woodpecker_MF6267.jpg" target="_blank">Hoffmann's_Woodpecker_MF6267.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="Photos/Hoffmann%27s_Woodpecker_MF6279.jpg" loading="lazy" alt="Hoffmann's_Woodpecker_MF6279.jpg">
+                            <div class="meta-label">CR - 03 Jun 2022</div>
+                            <div class="filename"><a href="Photos/Hoffmann%27s_Woodpecker_MF6279.jpg" target="_blank">Hoffmann's_Woodpecker_MF6279.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Red-bellied Woodpecker</div>
+                        <div class="french-label">Pic à ventre roux</div>
+                        <div class="latin-label">(Melanerpes carolinus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1YxWSUwSJr5pjOj_qlVt1Ga3y7SNDeS5b" loading="lazy" alt="Red-bellied_Woodpecker_0012MF.jpg">
+                            <div class="meta-label">USA - 17 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1YxWSUwSJr5pjOj_qlVt1Ga3y7SNDeS5b" target="_blank">Red-bellied_Woodpecker_0012MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1HGmk5D5XfWSUAb5D_ikfnBWuG68B52Gn" loading="lazy" alt="Red-bellied_Woodpecker_0256.jpg">
+                            <div class="meta-label">USA - 17 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1HGmk5D5XfWSUAb5D_ikfnBWuG68B52Gn" target="_blank">Red-bellied_Woodpecker_0256.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1ggOOHlNUewSd6VMxMefeOsJvbrrbQy0Z" loading="lazy" alt="Red-bellied_Woodpecker_0540.jpg">
+                            <div class="meta-label">USA - 17 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1ggOOHlNUewSd6VMxMefeOsJvbrrbQy0Z" target="_blank">Red-bellied_Woodpecker_0540.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1VfRfbO2_wRHOmSE5l1W7_LGPYOJ1z47G" loading="lazy" alt="Red-bellied_Woodpecker_1178.jpg">
+                            <div class="meta-label">USA - 17 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1VfRfbO2_wRHOmSE5l1W7_LGPYOJ1z47G" target="_blank">Red-bellied_Woodpecker_1178.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1eL6Iv4-4E8XpLKscT5SG66JumAYiVgGo" loading="lazy" alt="Red-bellied_Woodpecker_20469.jpg">
+                            <div class="meta-label">USA - 17 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1eL6Iv4-4E8XpLKscT5SG66JumAYiVgGo" target="_blank">Red-bellied_Woodpecker_20469.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1vUanUrul83J0Q9PCU4CIBEXPe31YwfBI" loading="lazy" alt="Red-bellied_Woodpecker_4768.jpg">
+                            <div class="meta-label">USA - 17 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1vUanUrul83J0Q9PCU4CIBEXPe31YwfBI" target="_blank">Red-bellied_Woodpecker_4768.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1meBHJ69dwhNGXrdifHhdzOtPvUqZUUVa" loading="lazy" alt="Red-bellied_Woodpecker_5740MF.jpg">
+                            <div class="meta-label">USA - 17 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1meBHJ69dwhNGXrdifHhdzOtPvUqZUUVa" target="_blank">Red-bellied_Woodpecker_5740MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1OgxCeCHuv8E8NiKe20xDXgRxfb7c_UHS" loading="lazy" alt="Red-bellied_Woodpecker_9688.jpg">
+                            <div class="meta-label">USA - 17 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1OgxCeCHuv8E8NiKe20xDXgRxfb7c_UHS" target="_blank">Red-bellied_Woodpecker_9688.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">American Three-toed Woodpecker</div>
+                        <div class="french-label">Pic à dos rayé</div>
+                        <div class="latin-label">(Picoides dorsalis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1nQkf3MrnD5jcQAl6Jf9DqMvhSK7R2cQn" loading="lazy" alt="American_Three-toed_Woodpecker_6939.jpg">
+                            <div class="meta-label">Canada - 05 Mar 2026</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1nQkf3MrnD5jcQAl6Jf9DqMvhSK7R2cQn" target="_blank">American_Three-toed_Woodpecker_6939.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Black-backed Woodpecker</div>
+                        <div class="french-label">Pic à dos noir</div>
+                        <div class="latin-label">(Picoides arcticus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1ixSTcQvg2gQAF4adIhlb8sUa5sOHaHjB" loading="lazy" alt="Black-backed_Woodpecker_7099.jpg">
+                            <div class="meta-label">Canada - 06 Mar 2026</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1ixSTcQvg2gQAF4adIhlb8sUa5sOHaHjB" target="_blank">Black-backed_Woodpecker_7099.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Cardinal Woodpecker</div>
+                        <div class="french-label">Pic cardinal</div>
+                        <div class="latin-label">(Dendropicos fuscescens)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1-heTucV47T3_v7pByNu1iLFPS2sFXr_0" loading="lazy" alt="Cardinal_Woodpecker_2694.jpg">
+                            <div class="meta-label">South Africa - 26 Sep 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1-heTucV47T3_v7pByNu1iLFPS2sFXr_0" target="_blank">Cardinal_Woodpecker_2694.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Downy Woodpecker</div>
+                        <div class="french-label">Pic mineur</div>
+                        <div class="latin-label">(Dryobates pubescens)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1zxyM3tNuDiLxwChMKmQ9ox5Q1JvWzWQI" loading="lazy" alt="Downy_Woodpecker_1487.jpg">
+                            <div class="meta-label">Canada - 16 Feb 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1zxyM3tNuDiLxwChMKmQ9ox5Q1JvWzWQI" target="_blank">Downy_Woodpecker_1487.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1ECCNl26e26k_IhYxCU_kfqzrQt3DFKvX" loading="lazy" alt="Downy_Woodpecker_4115.jpg">
+                            <div class="meta-label">Canada - 16 Feb 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1ECCNl26e26k_IhYxCU_kfqzrQt3DFKvX" target="_blank">Downy_Woodpecker_4115.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1-IPdHKax7kdZOCs1MxZCxnCGtWJsM4Z7" loading="lazy" alt="Downy_Woodpecker_8466MF.jpg">
+                            <div class="meta-label">Canada - 16 Feb 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1-IPdHKax7kdZOCs1MxZCxnCGtWJsM4Z7" target="_blank">Downy_Woodpecker_8466MF.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Nuttall's Woodpecker</div>
+                        <div class="french-label">Pic de Nuttall</div>
+                        <div class="latin-label">(Dryobates nuttallii)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="Photos/Nuttall%27s_Woodpecker.jpg" loading="lazy" alt="Nuttall's_Woodpecker.jpg">
+                            <div class="meta-label">USA - 15 Nov 2018</div>
+                            <div class="filename"><a href="Photos/Nuttall%27s_Woodpecker.jpg" target="_blank">Nuttall's_Woodpecker.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Hairy Woodpecker</div>
+                        <div class="french-label">Pic chevelu</div>
+                        <div class="latin-label">(Leuconotopicus villosus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1vuu0SiLSQ4PpwgTacYpz-Gu8Tvpt9YeY" loading="lazy" alt="Hairy_Woodpecker_1899.jpg">
+                            <div class="meta-label">Canada - 25 Sep 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1vuu0SiLSQ4PpwgTacYpz-Gu8Tvpt9YeY" target="_blank">Hairy_Woodpecker_1899.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1s_Ezx-G3wFXlP0vqOYPUU58dh-ynQ2hy" loading="lazy" alt="Hairy_Woodpecker_Costa_Rica_1533MF.jpg">
+                            <div class="meta-label">Canada - 25 Sep 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1s_Ezx-G3wFXlP0vqOYPUU58dh-ynQ2hy" target="_blank">Hairy_Woodpecker_Costa_Rica_1533MF.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Smoky-brown Woodpecker</div>
+                        <div class="french-label">Pic enfumé</div>
+                        <div class="latin-label">(Leuconotopicus fumigatus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1PBuL6ktlbrnWCL5Uvx1l8YNwJ9QH7TgX" loading="lazy" alt="Smoky-brown_Woodpecker_4797.jpg">
+                            <div class="meta-label">Belize - 01 Dec 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1PBuL6ktlbrnWCL5Uvx1l8YNwJ9QH7TgX" target="_blank">Smoky-brown_Woodpecker_4797.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Red-rumped Woodpecker</div>
+                        <div class="french-label">Pic à croupion rouge</div>
+                        <div class="latin-label">(Veniliornis kirkii)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1SivV0HBJ8uD08WAVAu4QZkPzqKbEZmK4" loading="lazy" alt="Red-rumped_Woodpecker.jpg">
+                            <div class="meta-label">Colombia - 24 Nov 2019</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1SivV0HBJ8uD08WAVAu4QZkPzqKbEZmK4" target="_blank">Red-rumped_Woodpecker.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1hNp-kOXhRbtiE06yx1QOJ0bAxpWPY7Cr" loading="lazy" alt="Red-rumped_Woodpecker_23145.jpg">
+                            <div class="meta-label">Colombia - 24 Nov 2019</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1hNp-kOXhRbtiE06yx1QOJ0bAxpWPY7Cr" target="_blank">Red-rumped_Woodpecker_23145.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1IHSDFf3dSto9MlHLNJWIO9vbBp_RDsMH" loading="lazy" alt="Red-rumped_Woodpecker_2763MF.jpg">
+                            <div class="meta-label">Colombia - 24 Nov 2019</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1IHSDFf3dSto9MlHLNJWIO9vbBp_RDsMH" target="_blank">Red-rumped_Woodpecker_2763MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1PoWAIpA530Mw3snfTQurH4pSLlX2xFAX" loading="lazy" alt="Red-rumped_Woodpecker_7132.jpg">
+                            <div class="meta-label">Colombia - 24 Nov 2019</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1PoWAIpA530Mw3snfTQurH4pSLlX2xFAX" target="_blank">Red-rumped_Woodpecker_7132.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Powerful Woodpecker</div>
+                        <div class="french-label">Pic puissant</div>
+                        <div class="latin-label">(Campephilus pollens)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1WbBVMCzZgJYbyD2abaAhgq6SFs58kfDs" loading="lazy" alt="Powerful_Woodpecker_5115.jpg">
+                            <div class="meta-label">Colombia - 18 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1WbBVMCzZgJYbyD2abaAhgq6SFs58kfDs" target="_blank">Powerful_Woodpecker_5115.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Crimson-crested Woodpecker</div>
+                        <div class="french-label">Pic de Malherbe</div>
+                        <div class="latin-label">(Campephilus melanoleucos)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1bYo2-RuAEYjhEGXt9J6rOXM42xTIiMfg" loading="lazy" alt="Crimson-crested_Woodpecker.jpg">
+                            <div class="meta-label">Panama - 12 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1bYo2-RuAEYjhEGXt9J6rOXM42xTIiMfg" target="_blank">Crimson-crested_Woodpecker.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1VgDQcgyk_q1pnaaLP07lfT8py6KDfnzG" loading="lazy" alt="Crimson-crested_Woodpecker_1653MF.jpg">
+                            <div class="meta-label">Panama - 12 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1VgDQcgyk_q1pnaaLP07lfT8py6KDfnzG" target="_blank">Crimson-crested_Woodpecker_1653MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1WMmGxSIJJPYkTQ6OcystVacu_y_47_gE" loading="lazy" alt="Crimson-crested_Woodpecker_1677.jpg">
+                            <div class="meta-label">Panama - 12 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1WMmGxSIJJPYkTQ6OcystVacu_y_47_gE" target="_blank">Crimson-crested_Woodpecker_1677.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1aZYdZ35b-heTQ8bVPpdN17JJbT-sc45m" loading="lazy" alt="Crimson-crested_Woodpecker_20841.jpg">
+                            <div class="meta-label">Panama - 12 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1aZYdZ35b-heTQ8bVPpdN17JJbT-sc45m" target="_blank">Crimson-crested_Woodpecker_20841.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1E3Kdf47FEZToHq6jEnHOpxCRcoFO2brm" loading="lazy" alt="Crimson-crested_Woodpecker_4715.jpg">
+                            <div class="meta-label">Panama - 12 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1E3Kdf47FEZToHq6jEnHOpxCRcoFO2brm" target="_blank">Crimson-crested_Woodpecker_4715.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/19iyjBzGQKIgC6eaxCUUZDR0qpR1mJvTJ" loading="lazy" alt="Crimson-crested_Woodpecker_7577.jpg">
+                            <div class="meta-label">Panama - 12 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/19iyjBzGQKIgC6eaxCUUZDR0qpR1mJvTJ" target="_blank">Crimson-crested_Woodpecker_7577.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1KfTCRTtnCw7JWTnqZ_wELybGvGFsdMzd" loading="lazy" alt="Crimson-crested_Woodpecker_8973.jpg">
+                            <div class="meta-label">Panama - 12 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1KfTCRTtnCw7JWTnqZ_wELybGvGFsdMzd" target="_blank">Crimson-crested_Woodpecker_8973.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Pale-billed Woodpecker</div>
+                        <div class="french-label">Pic à bec clair</div>
+                        <div class="latin-label">(Campephilus guatemalensis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1fCaHdow0NrDLBdJLyDaaq09zV37ECxr1" loading="lazy" alt="Pale-billed_Woodpecker_6658.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1fCaHdow0NrDLBdJLyDaaq09zV37ECxr1" target="_blank">Pale-billed_Woodpecker_6658.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1VswjVULmJVrO9W4KRbH2s5V_vpMxV6ob" loading="lazy" alt="Pale-billed_Woodpecker_6742.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1VswjVULmJVrO9W4KRbH2s5V_vpMxV6ob" target="_blank">Pale-billed_Woodpecker_6742.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Lineated Woodpecker</div>
+                        <div class="french-label">Pic ouentou</div>
+                        <div class="latin-label">(Dryocopus lineatus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1YEtFPVmoCzl7WmfRCdCgESSpE4tuLFe5" loading="lazy" alt="Lineated_Woodpecker_2187.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1YEtFPVmoCzl7WmfRCdCgESSpE4tuLFe5" target="_blank">Lineated_Woodpecker_2187.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1MuFNL9NbsxOj8v9vNz3a5P9U8cjufd0D" loading="lazy" alt="Lineated_Woodpecker_460.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1MuFNL9NbsxOj8v9vNz3a5P9U8cjufd0D" target="_blank">Lineated_Woodpecker_460.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1JdDDWPrp8mcqsut_MBiuM0fbgi9BWcSe" loading="lazy" alt="Lineated_Woodpecker_5803.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1JdDDWPrp8mcqsut_MBiuM0fbgi9BWcSe" target="_blank">Lineated_Woodpecker_5803.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1aGWpmixREXDzZdET5TGW3TGaNWTdavXV" loading="lazy" alt="Lineated_Woodpecker_MF6125.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1aGWpmixREXDzZdET5TGW3TGaNWTdavXV" target="_blank">Lineated_Woodpecker_MF6125.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Pileated Woodpecker</div>
+                        <div class="french-label">Grand Pic</div>
+                        <div class="latin-label">(Dryocopus pileatus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1VC_W6yYF8JFXBKcmPvImEr0IYvkyFjPe" loading="lazy" alt="Pileated_Woodpecker_2084.jpg">
+                            <div class="meta-label">Canada - 09 Oct 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1VC_W6yYF8JFXBKcmPvImEr0IYvkyFjPe" target="_blank">Pileated_Woodpecker_2084.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1YwtSYJpSu95cGIKRZhk1SdKq5sfboZi3" loading="lazy" alt="Pileated_Woodpecker_2504.jpg">
+                            <div class="meta-label">Canada - 09 Oct 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1YwtSYJpSu95cGIKRZhk1SdKq5sfboZi3" target="_blank">Pileated_Woodpecker_2504.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/16vIlIK3yDEBXRdNa8RgbQ7LZH2-oD8He" loading="lazy" alt="Pileated_Woodpecker_6963.jpg">
+                            <div class="meta-label">Canada - 09 Oct 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/16vIlIK3yDEBXRdNa8RgbQ7LZH2-oD8He" target="_blank">Pileated_Woodpecker_6963.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1IWvsn4KEj0Ra9G90JCR35R-PuFJMegLw" loading="lazy" alt="Pileated_Woodpecker_8635.jpg">
+                            <div class="meta-label">Canada - 09 Oct 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1IWvsn4KEj0Ra9G90JCR35R-PuFJMegLw" target="_blank">Pileated_Woodpecker_8635.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1NBkTsEToSb4OiVbKMoxaXT_oNnYn_dP3" loading="lazy" alt="Pileated_Woodpecker_9708MF.jpg">
+                            <div class="meta-label">Canada - 09 Oct 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1NBkTsEToSb4OiVbKMoxaXT_oNnYn_dP3" target="_blank">Pileated_Woodpecker_9708MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/15M6U2pWbRGNbXIFJwbh7jRfrhsJo7Ant" loading="lazy" alt="Pileated_Woodpecker_9714MF.jpg">
+                            <div class="meta-label">Canada - 09 Oct 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/15M6U2pWbRGNbXIFJwbh7jRfrhsJo7Ant" target="_blank">Pileated_Woodpecker_9714MF.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Cinnamon Woodpecker</div>
+                        <div class="french-label">Pic cannelle</div>
+                        <div class="latin-label">(Celeus loricatus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1-uEiuthIAkZpGWUvLsKSiSMnP87c3Ko6" loading="lazy" alt="Cinnamon_Woodpecker_7634.jpg">
+                            <div class="meta-label">Panama - 18 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1-uEiuthIAkZpGWUvLsKSiSMnP87c3Ko6" target="_blank">Cinnamon_Woodpecker_7634.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1zGKoxyDAsYGFws2m-dmeAhOk8A7YTJv5" loading="lazy" alt="Cinnamon_Woodpecker_9338.jpg">
+                            <div class="meta-label">Panama - 18 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1zGKoxyDAsYGFws2m-dmeAhOk8A7YTJv5" target="_blank">Cinnamon_Woodpecker_9338.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Chestnut-colored Woodpecker</div>
+                        <div class="french-label">Pic roux</div>
+                        <div class="latin-label">(Celeus castaneus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1znCU_tvK1PfBnMPUnOKmFGksEzwwWuaN" loading="lazy" alt="Chestnut-colored_Woodpecker.jpg">
+                            <div class="meta-label">CR - 08 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1znCU_tvK1PfBnMPUnOKmFGksEzwwWuaN" target="_blank">Chestnut-colored_Woodpecker.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1B2APNXDCwqFDufMmNJRHE4IQetVwpRGR" loading="lazy" alt="Chestnut-colored_Woodpecker_5643.jpg">
+                            <div class="meta-label">CR - 08 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1B2APNXDCwqFDufMmNJRHE4IQetVwpRGR" target="_blank">Chestnut-colored_Woodpecker_5643.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Rufous-winged Woodpecker</div>
+                        <div class="french-label">Pic à ailes rousses</div>
+                        <div class="latin-label">(Piculus simplex)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1HfYxusKu9PDWYIug6zwFQtLHyjxFztZ1" loading="lazy" alt="Rufous-winged_Woodpecker_5328.jpg">
+                            <div class="meta-label">CR - 07 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1HfYxusKu9PDWYIug6zwFQtLHyjxFztZ1" target="_blank">Rufous-winged_Woodpecker_5328.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Golden-green Woodpecker</div>
+                        <div class="french-label">Pic vert-doré</div>
+                        <div class="latin-label">(Piculus chrysochloros)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1csoZgnvLi1fKx9ITqCMYMkaryBhzi30E" loading="lazy" alt="Golden-green_Woodpecker_0601.jpg">
+                            <div class="meta-label">Panama - 03 Apr 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1csoZgnvLi1fKx9ITqCMYMkaryBhzi30E" target="_blank">Golden-green_Woodpecker_0601.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/11RLrOhZtuGaGvDhArADT9SJubxajtMyn" loading="lazy" alt="Golden-green_Woodpecker_23093.jpg">
+                            <div class="meta-label">Panama - 03 Apr 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/11RLrOhZtuGaGvDhArADT9SJubxajtMyn" target="_blank">Golden-green_Woodpecker_23093.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Golden-olive Woodpecker</div>
+                        <div class="french-label">Pic or-olive</div>
+                        <div class="latin-label">(Colaptes rubiginosus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1NN018qdQEW9aiXg3LaSCITIw-UHjSRYP" loading="lazy" alt="Golden-olive_Woodpecker_24091.jpg">
+                            <div class="meta-label">Colombia - 18 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1NN018qdQEW9aiXg3LaSCITIw-UHjSRYP" target="_blank">Golden-olive_Woodpecker_24091.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1WXHTadrqAv2rtKqFpUZMZTVDJqNTuwOS" loading="lazy" alt="Golden-olive_Woodpecker_5963.jpg">
+                            <div class="meta-label">Colombia - 18 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1WXHTadrqAv2rtKqFpUZMZTVDJqNTuwOS" target="_blank">Golden-olive_Woodpecker_5963.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1ZYJkwhO2xVhs4kw84wbEQGMXUVnrku1X" loading="lazy" alt="Golden-olive_Woodpecker_6640.jpg">
+                            <div class="meta-label">Colombia - 18 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1ZYJkwhO2xVhs4kw84wbEQGMXUVnrku1X" target="_blank">Golden-olive_Woodpecker_6640.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1YQM70Qe3utn93oXBKlEU9Y8irtu3bw4u" loading="lazy" alt="Golden-olive_Woodpecker_7039.jpg">
+                            <div class="meta-label">Colombia - 18 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1YQM70Qe3utn93oXBKlEU9Y8irtu3bw4u" target="_blank">Golden-olive_Woodpecker_7039.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Crimson-mantled Woodpecker</div>
+                        <div class="french-label">Pic de Rivoli</div>
+                        <div class="latin-label">(Colaptes rivolii)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/11nCS8N6Z5t7SlUzMBvEsb85Hg_MOEAQd" loading="lazy" alt="Crimson-mantled_Woodpecker.jpg">
+                            <div class="meta-label">Colombia - 18 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/11nCS8N6Z5t7SlUzMBvEsb85Hg_MOEAQd" target="_blank">Crimson-mantled_Woodpecker.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1-CpBERFC1Heqq25ugJxhLuiBEwWho_0x" loading="lazy" alt="Crimson-mantled_Woodpecker_3091.jpg">
+                            <div class="meta-label">Colombia - 18 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1-CpBERFC1Heqq25ugJxhLuiBEwWho_0x" target="_blank">Crimson-mantled_Woodpecker_3091.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1YmligT5qLSgQbQLQvYJZ_M0ovCzS4zhh" loading="lazy" alt="Crimson-mantled_Woodpecker_3949.jpg">
+                            <div class="meta-label">Colombia - 18 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1YmligT5qLSgQbQLQvYJZ_M0ovCzS4zhh" target="_blank">Crimson-mantled_Woodpecker_3949.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1kGxSAsaBy03hPnWCBDBdq9ND-WylIx3C" loading="lazy" alt="Crimson-mantled_Woodpecker_5332.jpg">
+                            <div class="meta-label">Colombia - 18 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1kGxSAsaBy03hPnWCBDBdq9ND-WylIx3C" target="_blank">Crimson-mantled_Woodpecker_5332.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Spot-breasted Woodpecker</div>
+                        <div class="french-label">Pic de Cayenne</div>
+                        <div class="latin-label">(Colaptes punctigula)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1K6-zy-GdfkxzHOKBKH8Yye-00sueWmYT" loading="lazy" alt="Spot-breasted_Woodpecker_0485.jpg">
+                            <div class="meta-label">Panama - 02 Apr 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1K6-zy-GdfkxzHOKBKH8Yye-00sueWmYT" target="_blank">Spot-breasted_Woodpecker_0485.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1RXoImjVAth7OtHIg8HIYYxYRjP4l2SKt" loading="lazy" alt="Spot-breasted_Woodpecker_1970MF.jpg">
+                            <div class="meta-label">Panama - 02 Apr 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1RXoImjVAth7OtHIg8HIYYxYRjP4l2SKt" target="_blank">Spot-breasted_Woodpecker_1970MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1xA5nlPXEjlaUOoYjilLQDB8chNJ-cGEJ" loading="lazy" alt="Spot-breasted_Woodpecker_2125MF.jpg">
+                            <div class="meta-label">Panama - 02 Apr 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1xA5nlPXEjlaUOoYjilLQDB8chNJ-cGEJ" target="_blank">Spot-breasted_Woodpecker_2125MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1CSCoXzm9J0VAYjFvrfQB8lD7tmPksS0c" loading="lazy" alt="Spot-breasted_Woodpecker_21313.jpg">
+                            <div class="meta-label">Panama - 02 Apr 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1CSCoXzm9J0VAYjFvrfQB8lD7tmPksS0c" target="_blank">Spot-breasted_Woodpecker_21313.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Northern Flicker</div>
+                        <div class="french-label">Pic flamboyant</div>
+                        <div class="latin-label">(Colaptes auratus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="Photos/Northern_Flicker_%28red_shafted%29_7691.jpg" loading="lazy" alt="Northern_Flicker_(red_shafted)_7691.jpg">
+                            <div class="meta-label">Canada - 23 Apr 2013</div>
+                            <div class="filename"><a href="Photos/Northern_Flicker_%28red_shafted%29_7691.jpg" target="_blank">Northern_Flicker_(red_shafted)_7691.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1_imrDxqkRZwgMYdIHtma7W07wEa1FCPy" loading="lazy" alt="Northern_Flicker_0482.jpg">
+                            <div class="meta-label">Canada - 23 Apr 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1_imrDxqkRZwgMYdIHtma7W07wEa1FCPy" target="_blank">Northern_Flicker_0482.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1rHt-pH1RHGf-dPiDJyioa9QdW1HTDOuq" loading="lazy" alt="Northern_Flicker_2402MF.jpg">
+                            <div class="meta-label">Canada - 23 Apr 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1rHt-pH1RHGf-dPiDJyioa9QdW1HTDOuq" target="_blank">Northern_Flicker_2402MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1sGAJ6PoZv-TwVLl1cpaYBlWeKOAuvf87" loading="lazy" alt="Northern_Flicker_2897.jpg">
+                            <div class="meta-label">Canada - 23 Apr 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1sGAJ6PoZv-TwVLl1cpaYBlWeKOAuvf87" target="_blank">Northern_Flicker_2897.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1zlLhMU5SwHmkcoJ3GM5uUtp2y5kGj4y4" loading="lazy" alt="Northern_Flicker_4618MF.jpg">
+                            <div class="meta-label">Canada - 23 Apr 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1zlLhMU5SwHmkcoJ3GM5uUtp2y5kGj4y4" target="_blank">Northern_Flicker_4618MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1OdIOH6-gB5EEmp_mOTZN4soUtCPhcZt2" loading="lazy" alt="Northern_Flicker_5917MF.jpg">
+                            <div class="meta-label">Canada - 23 Apr 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1OdIOH6-gB5EEmp_mOTZN4soUtCPhcZt2" target="_blank">Northern_Flicker_5917MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Mu8WyXnU4QvhQpCDiMpV8fhIAO6iDVCs" loading="lazy" alt="Northern_Flicker_7832.jpg">
+                            <div class="meta-label">Canada - 23 Apr 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Mu8WyXnU4QvhQpCDiMpV8fhIAO6iDVCs" target="_blank">Northern_Flicker_7832.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/10m6b69xtWKz4r5lIvWMHU8R_gnJ3JhEB" loading="lazy" alt="Northern_Flicker_8033.jpg">
+                            <div class="meta-label">Canada - 23 Apr 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/10m6b69xtWKz4r5lIvWMHU8R_gnJ3JhEB" target="_blank">Northern_Flicker_8033.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div></div></body></html>

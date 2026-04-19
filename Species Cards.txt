@@ -1,0 +1,18 @@
+I have updated the Index structure to include a "Family Card" level of hierarchy.
+
+### Changes Summary:
+- **Taxonomic Layering:** The structure is now **Family > Species > Photo**.
+- **Family Card:**
+  - Acts as the top-level container for related species.
+  - Displays the **Family Name** (e.g., "ACCIPITRIDAE") and **Order Name** (e.g., "Accipitriformes").
+  - Provides strong visual grouping with a unique background and border.
+- **Species Card (Updated):**
+  - Now nested within Family Cards.
+  - Maintains English, French, and Scientific names.
+  - Taxonomic Order/Family info was moved to the Family Header to reduce redundancy.
+- **Enhanced Styling:**
+  - Updated color palette with a deeper background for better contrast.
+  - Improved spacing between taxonomic groups.
+  - Added subtle shadows and borders to distinguish hierarchical levels.
+
+The index.html file now contains 4,125 images organized by Family, then by Species.

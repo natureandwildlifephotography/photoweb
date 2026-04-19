@@ -1,0 +1,1770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photo Index</title>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; background: #121212; color: white; margin: 0; padding: 20px; padding-top: 80px; }
+        .family-list { display: flex; flex-direction: column; gap: 60px; max-width: 1800px; margin: 0 auto; }
+        
+        .family-card { background: #1e1e1e; border-radius: 24px; padding: 40px; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .family-header { margin-bottom: 30px; border-bottom: 2px solid #555; padding-bottom: 20px; }
+        .family-name { font-size: 36px; font-weight: 800; color: #4a9eff; text-transform: uppercase; letter-spacing: 2px; }
+        .family-order-label { font-size: 18px; opacity: 0.6; color: #fff; margin-top: 5px; font-weight: 500; }
+        
+        .species-list { display: flex; flex-direction: column; gap: 30px; }
+        .species-card { background: #2a2a2a; border-radius: 16px; padding: 20px; border: 1px solid #444; }
+        .species-header { margin-bottom: 15px; border-bottom: 1px solid #444; padding-bottom: 10px; }
+        .label { font-size: 24px; font-weight: 700; color: #fff; }
+        .french-label { font-size: 18px; opacity: 0.8; color: #ddd; }
+        .latin-label { font-size: 16px; opacity: 0.7; font-style: italic; color: #bbb; }
+        
+        .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
+        .photo-card { background: #333; border-radius: 10px; overflow: hidden; padding: 10px; display: flex; flex-direction: column; align-items: center; transition: transform 0.2s, background 0.2s; }
+        .photo-card:hover { transform: scale(1.02); background: #3d3d3d; }
+        
+        img { max-width: 100%; height: auto; border-radius: 6px; object-fit: contain; }
+        .meta-label { font-size: 11px; opacity: 0.7; align-self: flex-start; margin-top: 8px; color: #fff; }
+        .filename { font-size: 9px; opacity: 0.4; margin-top: 2px; word-break: break-all; align-self: flex-start; }
+        .filename a { color: #4a9eff; text-decoration: none; transition: color 0.2s; }
+        .filename a:hover { text-decoration: underline; }
+        
+        /* Intro Section Styles */
+        .intro-section { max-width: 1200px; margin: 0 auto 80px; padding: 60px; background: #1e1e1e; border-radius: 32px; border: 1px solid #333; box-shadow: 0 20px 50px rgba(0,0,0,0.6); line-height: 1.8; }
+        .intro-title { font-size: 48px; font-weight: 900; margin-bottom: 40px; color: #4a9eff; line-height: 1.2; text-align: center; }
+        .intro-text { font-size: 20px; opacity: 0.9; margin-bottom: 30px; }
+        .intro-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 30px; margin-top: 50px; border-top: 1px solid #444; padding-top: 40px; }
+        .stat-item { text-align: center; }
+        .stat-value { font-size: 36px; font-weight: 800; color: #4a9eff; display: block; }
+        .stat-label { font-size: 14px; opacity: 0.6; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* Mode Selector Styles */
+        .mode-selector { position: fixed; top: 0; left: 0; right: 0; background: rgba(30, 30, 30, 0.95); backdrop-filter: blur(10px); padding: 15px 40px; border-bottom: 1px solid #333; z-index: 1000; display: flex; justify-content: flex-end; align-items: center; gap: 20px; }
+        .mode-button { background: #333; border: 1px solid #444; color: white; padding: 8px 20px; border-radius: 20px; cursor: pointer; font-weight: 600; transition: all 0.2s; }
+        .mode-button.active { background: #4a9eff; border-color: #4a9eff; }
+        .mode-label { font-size: 14px; opacity: 0.6; font-weight: 600; text-transform: uppercase; }
+
+        /* Restricted Mode Styles */
+        body.mode-public .filename { display: none; }
+        body.mode-public .photo-card:hover { transform: none; background: #333; }
+
+        /* Modal Styles */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; justify-content: center; align-items: center; }
+        .modal { background: #1e1e1e; padding: 40px; border-radius: 24px; border: 1px solid #333; width: 400px; box-shadow: 0 20px 50px rgba(0,0,0,0.8); }
+        .modal h2 { margin-top: 0; color: #4a9eff; }
+        .modal input { width: 100%; padding: 12px; margin: 20px 0; background: #2a2a2a; border: 1px solid #444; color: white; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        .modal-buttons { display: flex; justify-content: flex-end; gap: 15px; }
+        .modal-buttons button { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; }
+        .btn-cancel { background: #333; color: white; }
+        .btn-submit { background: #4a9eff; color: white; }
+    </style>
+</head>
+<body class="mode-public">
+    <div class="mode-selector">
+        <span class="mode-label">View Mode:</span>
+        <button id="btn-public" class="mode-button active" onclick="setMode('PUBLIC')">PUBLIC</button>
+        <button id="btn-user" class="mode-button" onclick="requestUserMode()">USER</button>
+    </div>
+
+    <div id="password-modal" class="modal-overlay">
+        <div class="modal">
+            <h2>Enter Password</h2>
+            <p>Please enter the password to activate USER mode.</p>
+            <input type="password" id="password-input" placeholder="Password">
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+                <button class="btn-submit" onclick="submitPassword()">Submit</button>
+            </div>
+        </div>
+    </div>
+
+    
+    <div class="family-list">
+        <div class="family-card">
+            <div class="family-header">
+                <div class="family-name">Swifts</div>
+                <div class="family-order-label">Apodidae / Apodiformes</div>
+            </div>
+            <div class="species-list">
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">White-collared Swift</div>
+                        <div class="french-label">Martinet à collier blanc</div>
+                        <div class="latin-label">(Streptoprocne zonaris)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1HerPeQyGPQDuilpxJ9jFE79lDPjX6pl-" loading="lazy" alt="White-collared_Swift_4553.jpg">
+                            <div class="meta-label">Colombia - 19 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1HerPeQyGPQDuilpxJ9jFE79lDPjX6pl-" target="_blank">White-collared_Swift_4553.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Ad1ryHAZpYw3qkG85z4AgZSbqll80cmt" loading="lazy" alt="White-collared_Swift_4572.jpg">
+                            <div class="meta-label">Colombia - 19 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Ad1ryHAZpYw3qkG85z4AgZSbqll80cmt" target="_blank">White-collared_Swift_4572.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Madagascar Spinetail</div>
+                        <div class="french-label">Martinet de Grandidier</div>
+                        <div class="latin-label">(Zoonavena grandidieri)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1pCqdGmbamjWyVALjj2Jcgrx2p-NdhGWr" loading="lazy" alt="Madagascar_Spinetail_5885.jpg">
+                            <div class="meta-label">MG - 06 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1pCqdGmbamjWyVALjj2Jcgrx2p-NdhGWr" target="_blank">Madagascar_Spinetail_5885.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Chimney Swift</div>
+                        <div class="french-label">Martinet ramoneur</div>
+                        <div class="latin-label">(Chaetura pelagica)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1UmdBmFxoBotjvwPNdD5389e4pjH1FYzH" loading="lazy" alt="Chimney_Swift_4474.jpg">
+                            <div class="meta-label">USA - 14 May 2015</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1UmdBmFxoBotjvwPNdD5389e4pjH1FYzH" target="_blank">Chimney_Swift_4474.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1vWQokwAPswwMT24X7mb7iaJ92El8YSZ7" loading="lazy" alt="Chimney_Swift_4508.jpg">
+                            <div class="meta-label">USA - 14 May 2015</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1vWQokwAPswwMT24X7mb7iaJ92El8YSZ7" target="_blank">Chimney_Swift_4508.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="family-card">
+            <div class="family-header">
+                <div class="family-name">Hummingbirds</div>
+                <div class="family-order-label">Trochilidae / Apodiformes</div>
+            </div>
+            <div class="species-list">
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">White-necked Jacobin</div>
+                        <div class="french-label">Colibri jacobin</div>
+                        <div class="latin-label">(Florisuga mellivora)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1TR-RzvfuM5OeMazb1f3-oVfaRGqZrzji" loading="lazy" alt="White-necked_Jacobin_4095.jpg">
+                            <div class="meta-label">Belize - 02 Dec 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1TR-RzvfuM5OeMazb1f3-oVfaRGqZrzji" target="_blank">White-necked_Jacobin_4095.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1vIWs1VolIEzqbQjJbudUI0-I-ZFKlOap" loading="lazy" alt="White-necked_Jacobin_4636.jpg">
+                            <div class="meta-label">Belize - 02 Dec 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1vIWs1VolIEzqbQjJbudUI0-I-ZFKlOap" target="_blank">White-necked_Jacobin_4636.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1pE9iJ9g69YPkFC1Q36GlIxbpIuECyIfW" loading="lazy" alt="White-necked_Jacobin_4730.jpg">
+                            <div class="meta-label">Belize - 02 Dec 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1pE9iJ9g69YPkFC1Q36GlIxbpIuECyIfW" target="_blank">White-necked_Jacobin_4730.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1oq07x6GxR0JDdoMyWRNjfDMwOouo6362" loading="lazy" alt="White-necked_Jacobin_6180.jpg">
+                            <div class="meta-label">Belize - 02 Dec 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1oq07x6GxR0JDdoMyWRNjfDMwOouo6362" target="_blank">White-necked_Jacobin_6180.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/13rKYp4AJDpb4CZTzq6m-0ljzVM2UiqzK" loading="lazy" alt="White-necked_Jacobin_6292.jpg">
+                            <div class="meta-label">Belize - 02 Dec 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/13rKYp4AJDpb4CZTzq6m-0ljzVM2UiqzK" target="_blank">White-necked_Jacobin_6292.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">White-whiskered Hermit</div>
+                        <div class="french-label">Ermite yaruqui</div>
+                        <div class="latin-label">(Phaethornis yaruqui)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1ALS-keSiwhmoLlrmpMck0VIHVgh1DDIz" loading="lazy" alt="White-whiskered_Hermit_5198.jpg">
+                            <div class="meta-label">Ecuador - 07 Apr 2019</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1ALS-keSiwhmoLlrmpMck0VIHVgh1DDIz" target="_blank">White-whiskered_Hermit_5198.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Long-billed Hermit</div>
+                        <div class="french-label">Ermite à longue queue</div>
+                        <div class="latin-label">(Phaethornis longirostris)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1m-0lFZjjvcwxZ0PHDpfzAn_hMOMjNwno" loading="lazy" alt="Long-billed_Hermit.jpg">
+                            <div class="meta-label">Panama - 17 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1m-0lFZjjvcwxZ0PHDpfzAn_hMOMjNwno" target="_blank">Long-billed_Hermit.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1L-b7Aigc5SBxT8XxtiWDBWV7Ov5A8QjJ" loading="lazy" alt="Long-billed_Hermit_2.jpg">
+                            <div class="meta-label">Panama - 17 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1L-b7Aigc5SBxT8XxtiWDBWV7Ov5A8QjJ" target="_blank">Long-billed_Hermit_2.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/14sWXCy5ubpnkL7B-pJaZPgfjrSHYG6s3" loading="lazy" alt="Long-billed_Hermit_3974.jpg">
+                            <div class="meta-label">Panama - 17 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/14sWXCy5ubpnkL7B-pJaZPgfjrSHYG6s3" target="_blank">Long-billed_Hermit_3974.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/19rxeogF0wb8cF7C9K0y6Tuo1JDzZZoPF" loading="lazy" alt="Long-billed_Hermit_4945.jpg">
+                            <div class="meta-label">Panama - 17 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/19rxeogF0wb8cF7C9K0y6Tuo1JDzZZoPF" target="_blank">Long-billed_Hermit_4945.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Stripe-throated Hermit</div>
+                        <div class="french-label">Ermite à gorge rayée</div>
+                        <div class="latin-label">(Phaethornis striigularis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1C1TRzdNuxiGP3NWHnm-U5bf7ZEGPk1fy" loading="lazy" alt="Stripe-throated_Hermit_6245.jpg">
+                            <div class="meta-label">Belize - 02 Dec 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1C1TRzdNuxiGP3NWHnm-U5bf7ZEGPk1fy" target="_blank">Stripe-throated_Hermit_6245.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1v5rjQnB6ZTOeC4nKOV5hSmuA2Bi2dZxo" loading="lazy" alt="Stripe-throated_Hermit_7685.jpg">
+                            <div class="meta-label">Belize - 02 Dec 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1v5rjQnB6ZTOeC4nKOV5hSmuA2Bi2dZxo" target="_blank">Stripe-throated_Hermit_7685.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Green-fronted Lancebill</div>
+                        <div class="french-label">Porte-lance de Louise</div>
+                        <div class="latin-label">(Doryfera ludovicae)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/10id32u84Xs1N4wvD0D4XPbUJ4s4ggccX" loading="lazy" alt="Green-fronted_Lancebill_3272.jpg">
+                            <div class="meta-label">Colombia - 18 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/10id32u84Xs1N4wvD0D4XPbUJ4s4ggccX" target="_blank">Green-fronted_Lancebill_3272.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Sparkling Violetear</div>
+                        <div class="french-label">Colibri d'Anaïs</div>
+                        <div class="latin-label">(Colibri coruscans)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1FsKqkqfIf4kfdKjBFdDUMSrA6fBYBov5" loading="lazy" alt="Sparkling_Violetear_23469.jpg">
+                            <div class="meta-label">Ecuador - 02 Jul 2004</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1FsKqkqfIf4kfdKjBFdDUMSrA6fBYBov5" target="_blank">Sparkling_Violetear_23469.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/11E0sTfhGtKtQ_rKipqWaDGCwZBMeZRk7" loading="lazy" alt="Sparkling_Violetear_4945.jpg">
+                            <div class="meta-label">Ecuador - 02 Jul 2004</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/11E0sTfhGtKtQ_rKipqWaDGCwZBMeZRk7" target="_blank">Sparkling_Violetear_4945.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1m7guGsTwYeDMDRYkDEuQhuZg-VHLY7Gb" loading="lazy" alt="Sparkling_Violetear_6471.jpg">
+                            <div class="meta-label">Ecuador - 02 Jul 2004</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1m7guGsTwYeDMDRYkDEuQhuZg-VHLY7Gb" target="_blank">Sparkling_Violetear_6471.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1u_MzU-rr2eFlQO4NOVFk1YqAjoqeJzja" loading="lazy" alt="Sparkling_Violetear_6620.jpg">
+                            <div class="meta-label">Ecuador - 02 Jul 2004</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1u_MzU-rr2eFlQO4NOVFk1YqAjoqeJzja" target="_blank">Sparkling_Violetear_6620.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1ENWIuxGh0GCefrqROerCwvlr3P17oxPe" loading="lazy" alt="Sparkling_Violetear_6754.jpg">
+                            <div class="meta-label">Ecuador - 02 Jul 2004</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1ENWIuxGh0GCefrqROerCwvlr3P17oxPe" target="_blank">Sparkling_Violetear_6754.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Brown Violetear</div>
+                        <div class="french-label">Colibri de Delphine</div>
+                        <div class="latin-label">(Colibri delphinae)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1KF1kUJaCt4fN775DB1qNocNFeFeLqqiA" loading="lazy" alt="Brown_Violetear_23459.jpg">
+                            <div class="meta-label">Belize - 02 Dec 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1KF1kUJaCt4fN775DB1qNocNFeFeLqqiA" target="_blank">Brown_Violetear_23459.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Z9LqJgSas-f75s4WibSZB2DnnmlmHM4s" loading="lazy" alt="Brown_Violetear_3783.jpg">
+                            <div class="meta-label">Belize - 02 Dec 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Z9LqJgSas-f75s4WibSZB2DnnmlmHM4s" target="_blank">Brown_Violetear_3783.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1mXn61fEKyAwH6QxRA_Q-Mk9JFjBfzrXS" loading="lazy" alt="Brown_Violetear_4295.jpg">
+                            <div class="meta-label">Belize - 02 Dec 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1mXn61fEKyAwH6QxRA_Q-Mk9JFjBfzrXS" target="_blank">Brown_Violetear_4295.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Q1OO-pMtYrCxHP53aUSB-gO0itQ5rzUK" loading="lazy" alt="Brown_Violetear_5484.jpg">
+                            <div class="meta-label">Belize - 02 Dec 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Q1OO-pMtYrCxHP53aUSB-gO0itQ5rzUK" target="_blank">Brown_Violetear_5484.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1OYZj6svaVrxMTPGRHYD2lseWVohnpbyp" loading="lazy" alt="Brown_Violetear_MF3357.jpg">
+                            <div class="meta-label">Belize - 02 Dec 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1OYZj6svaVrxMTPGRHYD2lseWVohnpbyp" target="_blank">Brown_Violetear_MF3357.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Lesser Violetear</div>
+                        <div class="french-label">Colibri cyanote</div>
+                        <div class="latin-label">(Colibri cyanotus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/148Ud3FeG9r3i83ZjukbsRTkwn1iWiu3f" loading="lazy" alt="Lesser_Violetear_3364.jpg">
+                            <div class="meta-label">Colombia - 18 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/148Ud3FeG9r3i83ZjukbsRTkwn1iWiu3f" target="_blank">Lesser_Violetear_3364.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1EPNN1EaXhVvLMGNo86250s2-s4Tg-yLO" loading="lazy" alt="Lesser_Violetear_4278.jpg">
+                            <div class="meta-label">Colombia - 18 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1EPNN1EaXhVvLMGNo86250s2-s4Tg-yLO" target="_blank">Lesser_Violetear_4278.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1cbYwbpWs4wQ53mTW3HUUeLw9lwMlu-Wf" loading="lazy" alt="Lesser_Violetear_5809.jpg">
+                            <div class="meta-label">Colombia - 18 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1cbYwbpWs4wQ53mTW3HUUeLw9lwMlu-Wf" target="_blank">Lesser_Violetear_5809.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1J_soHPj8KNPRsqnWLr9wT9ewSLMst5D0" loading="lazy" alt="Lesser_Violetear_7904.jpg">
+                            <div class="meta-label">Colombia - 18 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1J_soHPj8KNPRsqnWLr9wT9ewSLMst5D0" target="_blank">Lesser_Violetear_7904.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Purple-crowned Fairy</div>
+                        <div class="french-label">Colibri féérique</div>
+                        <div class="latin-label">(Heliothryx barroti)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1BQkl0CiNenA14Fcvvu5WEaNeIJSq2t4U" loading="lazy" alt="Purple-crowned_Fairy_4188.jpg">
+                            <div class="meta-label">Belize - 29 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1BQkl0CiNenA14Fcvvu5WEaNeIJSq2t4U" target="_blank">Purple-crowned_Fairy_4188.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1zcx-02eHBv7I9he0Hu2BLrMdYUJDxAxF" loading="lazy" alt="Purple-crowned_Fairy_421.jpg">
+                            <div class="meta-label">Belize - 29 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1zcx-02eHBv7I9he0Hu2BLrMdYUJDxAxF" target="_blank">Purple-crowned_Fairy_421.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1coQux63TVW7e8q2B-pHWsu_rgstRPDn2" loading="lazy" alt="Purple-crowned_Fairy_4225.jpg">
+                            <div class="meta-label">Belize - 29 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1coQux63TVW7e8q2B-pHWsu_rgstRPDn2" target="_blank">Purple-crowned_Fairy_4225.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1fLpXCzp9vJxnuvSZEvfv5QvqAc8IAMOC" loading="lazy" alt="Purple-crowned_Fairy_5318.jpg">
+                            <div class="meta-label">Belize - 29 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1fLpXCzp9vJxnuvSZEvfv5QvqAc8IAMOC" target="_blank">Purple-crowned_Fairy_5318.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Ruby-topaz Hummingbird</div>
+                        <div class="french-label">Colibri rubis-topaze</div>
+                        <div class="latin-label">(Chrysolampis mosquitus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/17rW-uR_V1o-GQeACtLStiUaIZ0JIR1X0" loading="lazy" alt="Ruby-topaz_Hummingbird_6132.jpg">
+                            <div class="meta-label">TT - 11 Apr 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/17rW-uR_V1o-GQeACtLStiUaIZ0JIR1X0" target="_blank">Ruby-topaz_Hummingbird_6132.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1aA65AZOKUejD1GUpJWXnRUYbkIrd6qPC" loading="lazy" alt="Ruby-topaz_Hummingbird_6177.jpg">
+                            <div class="meta-label">TT - 11 Apr 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1aA65AZOKUejD1GUpJWXnRUYbkIrd6qPC" target="_blank">Ruby-topaz_Hummingbird_6177.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Black-throated Mango</div>
+                        <div class="french-label">Mango à cravate noire</div>
+                        <div class="latin-label">(Anthracothorax nigricollis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1RxBwhUqrBWl_rirbVYE8gPWxiEeN_cR7" loading="lazy" alt="Black-throated_Mango_0217.jpg">
+                            <div class="meta-label">Panama - 02 Apr 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1RxBwhUqrBWl_rirbVYE8gPWxiEeN_cR7" target="_blank">Black-throated_Mango_0217.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1ZDJY15U5L-NzZYpzLDHkpvPc7GMGeJ7f" loading="lazy" alt="Black-throated_Mango_0322.jpg">
+                            <div class="meta-label">Panama - 02 Apr 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1ZDJY15U5L-NzZYpzLDHkpvPc7GMGeJ7f" target="_blank">Black-throated_Mango_0322.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1CkXzoIteFhkNoMS1qKoow9Hl8fX_PGI4" loading="lazy" alt="Black-throated_Mango_6222.jpg">
+                            <div class="meta-label">Panama - 02 Apr 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1CkXzoIteFhkNoMS1qKoow9Hl8fX_PGI4" target="_blank">Black-throated_Mango_6222.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1MCIPW35dyNkIXeDG1WD30pFXbHSX-Bm1" loading="lazy" alt="Black-throated_Mango_7428.jpg">
+                            <div class="meta-label">Panama - 02 Apr 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1MCIPW35dyNkIXeDG1WD30pFXbHSX-Bm1" target="_blank">Black-throated_Mango_7428.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Green-breasted Mango</div>
+                        <div class="french-label">Mango de Prévost</div>
+                        <div class="latin-label">(Anthracothorax prevostii)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/11ZDOF9REvJqsCEBl-pz1Fjn8TXeITykM" loading="lazy" alt="Green-breasted_Mango_4643.jpg">
+                            <div class="meta-label">Belize - 02 Dec 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/11ZDOF9REvJqsCEBl-pz1Fjn8TXeITykM" target="_blank">Green-breasted_Mango_4643.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Tourmaline Sunangel</div>
+                        <div class="french-label">Héliange tourmaline</div>
+                        <div class="latin-label">(Heliangelus exortis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1MOHYuiymNSfBLbCWr3p8AiJ71xjRirEq" loading="lazy" alt="Tourmaline_Sunangel_3206.jpg">
+                            <div class="meta-label">Colombia - 17 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1MOHYuiymNSfBLbCWr3p8AiJ71xjRirEq" target="_blank">Tourmaline_Sunangel_3206.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1ucxYI2QqIzkLt2GPjmU9EUZqkNryjYM7" loading="lazy" alt="Tourmaline_Sunangel_5878.jpg">
+                            <div class="meta-label">Colombia - 17 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1ucxYI2QqIzkLt2GPjmU9EUZqkNryjYM7" target="_blank">Tourmaline_Sunangel_5878.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Green Thorntail</div>
+                        <div class="french-label">Coquette à queue fine</div>
+                        <div class="latin-label">(Discosura conversii)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="Photos/Green_Thorntail_%28female%29_7577.jpg" loading="lazy" alt="Green_Thorntail_(female)_7577.jpg">
+                            <div class="meta-label">Ecuador - 07 Apr 2019</div>
+                            <div class="filename"><a href="Photos/Green_Thorntail_%28female%29_7577.jpg" target="_blank">Green_Thorntail_(female)_7577.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1H_QVm19wPUu-Mb3CLQhcR2Aq9aOm9ixU" loading="lazy" alt="Green_Thorntail_4659.jpg">
+                            <div class="meta-label">Ecuador - 07 Apr 2019</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1H_QVm19wPUu-Mb3CLQhcR2Aq9aOm9ixU" target="_blank">Green_Thorntail_4659.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1-QnOrTOWGgTfeC2HQQIMG8UkOsKPndWD" loading="lazy" alt="Green_Thorntail_6664.jpg">
+                            <div class="meta-label">Ecuador - 07 Apr 2019</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1-QnOrTOWGgTfeC2HQQIMG8UkOsKPndWD" target="_blank">Green_Thorntail_6664.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1EjVZaN108HqZHfmgLk8rXKGg1gEkJHP3" loading="lazy" alt="Green_Thorntail_7568.jpg">
+                            <div class="meta-label">Ecuador - 07 Apr 2019</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1EjVZaN108HqZHfmgLk8rXKGg1gEkJHP3" target="_blank">Green_Thorntail_7568.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1bqboGm79bpwakvlUram7DN6WlVXsQK0S" loading="lazy" alt="Green_Thorntail_MF4466.jpg">
+                            <div class="meta-label">Ecuador - 07 Apr 2019</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1bqboGm79bpwakvlUram7DN6WlVXsQK0S" target="_blank">Green_Thorntail_MF4466.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Tufted Coquette</div>
+                        <div class="french-label">Coquette huppe-col</div>
+                        <div class="latin-label">(Lophornis ornatus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1zz8NkM_cWp-3ibP6-pRFJpirc-zXh3t5" loading="lazy" alt="Tufted_Coquette_4473.jpg">
+                            <div class="meta-label">TT - 06 Apr 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1zz8NkM_cWp-3ibP6-pRFJpirc-zXh3t5" target="_blank">Tufted_Coquette_4473.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/18a5JtIGJ0QLAKcc1zCbEWSNbE0dZajWa" loading="lazy" alt="Tufted_Coquette_5178.jpg">
+                            <div class="meta-label">TT - 06 Apr 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/18a5JtIGJ0QLAKcc1zCbEWSNbE0dZajWa" target="_blank">Tufted_Coquette_5178.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Black-crested Coquette</div>
+                        <div class="french-label">Coquette d'Hélène</div>
+                        <div class="latin-label">(Lophornis helenae)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="Photos/Black-crested_Coquette_%28female%29_6686.jpg" loading="lazy" alt="Black-crested_Coquette_(female)_6686.jpg">
+                            <div class="meta-label">CR - 10 Jun 2022</div>
+                            <div class="filename"><a href="Photos/Black-crested_Coquette_%28female%29_6686.jpg" target="_blank">Black-crested_Coquette_(female)_6686.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1FIgurlvoeeMrWCZAH0aDhqVih3bq2lS1" loading="lazy" alt="Black-crested_Coquette_6719.jpg">
+                            <div class="meta-label">CR - 10 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1FIgurlvoeeMrWCZAH0aDhqVih3bq2lS1" target="_blank">Black-crested_Coquette_6719.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1rzCTySm0zIRMMV8PcJ1-nkGfgOHT7lT-" loading="lazy" alt="Black-crested_Coquette_6751.jpg">
+                            <div class="meta-label">CR - 10 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1rzCTySm0zIRMMV8PcJ1-nkGfgOHT7lT-" target="_blank">Black-crested_Coquette_6751.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1jH1tkFjeTm7zmv2koLzV8paGlVYoG-bl" loading="lazy" alt="Black-crested_Coquette_MF4729.jpg">
+                            <div class="meta-label">CR - 10 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1jH1tkFjeTm7zmv2koLzV8paGlVYoG-bl" target="_blank">Black-crested_Coquette_MF4729.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Long-tailed Sylph</div>
+                        <div class="french-label">Sylphe à queue d'azur</div>
+                        <div class="latin-label">(Aglaiocercus kingii)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="Photos/Long-tailed_Sylph_31%2B65.jpg" loading="lazy" alt="Long-tailed_Sylph_31+65.jpg">
+                            <div class="meta-label">Colombia - 18 Dec 2014</div>
+                            <div class="filename"><a href="Photos/Long-tailed_Sylph_31%2B65.jpg" target="_blank">Long-tailed_Sylph_31+65.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1HhuDZHmfhVID6ZAV3jq0WWt5QQ4K42Ch" loading="lazy" alt="Long-tailed_Sylph_4275.jpg">
+                            <div class="meta-label">Colombia - 18 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1HhuDZHmfhVID6ZAV3jq0WWt5QQ4K42Ch" target="_blank">Long-tailed_Sylph_4275.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Violet-tailed Sylph</div>
+                        <div class="french-label">Sylphe à queue violette</div>
+                        <div class="latin-label">(Aglaiocercus coelestis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1RFnDpSLWcKju-6cj1c-7nclAKnpEAQAI" loading="lazy" alt="Violet-tailed_Sylph_3797.jpg">
+                            <div class="meta-label">Ecuador - 02 Jul 2004</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1RFnDpSLWcKju-6cj1c-7nclAKnpEAQAI" target="_blank">Violet-tailed_Sylph_3797.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/14LkhYtGn0LGE-oUHTJK5_VM_khVctSH8" loading="lazy" alt="Violet-tailed_Sylph_5474.jpg">
+                            <div class="meta-label">Ecuador - 02 Jul 2004</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/14LkhYtGn0LGE-oUHTJK5_VM_khVctSH8" target="_blank">Violet-tailed_Sylph_5474.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Ecuadorian Hillstar</div>
+                        <div class="french-label">Colibri du Chimborazo</div>
+                        <div class="latin-label">(Oreotrochilus chimborazo)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1_x2TCEXWF4-CoKi4ZcKC6FoYfKA37o55" loading="lazy" alt="Ecuadorian_Hillstar_6841.jpg">
+                            <div class="meta-label">Ecuador - 12 Apr 2019</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1_x2TCEXWF4-CoKi4ZcKC6FoYfKA37o55" target="_blank">Ecuadorian_Hillstar_6841.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Jik7K8kjW3Tv3BLWVSSplreXwmiFv5G_" loading="lazy" alt="Ecuadorian_Hillstar_7082.jpg">
+                            <div class="meta-label">Ecuador - 12 Apr 2019</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Jik7K8kjW3Tv3BLWVSSplreXwmiFv5G_" target="_blank">Ecuadorian_Hillstar_7082.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Black-tailed Trainbearer</div>
+                        <div class="french-label">Porte-traîne lesbie</div>
+                        <div class="latin-label">(Lesbia victoriae)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/12CH8XC_XHw6GmTNIRLLWMwvUoPx1vLAh" loading="lazy" alt="Black-tailed_Trainbearer.jpg">
+                            <div class="meta-label">Ecuador - 03 Apr 2019</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/12CH8XC_XHw6GmTNIRLLWMwvUoPx1vLAh" target="_blank">Black-tailed_Trainbearer.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Purple-backed Thornbill</div>
+                        <div class="french-label">Colibri à petit bec</div>
+                        <div class="latin-label">(Ramphomicron microrhynchum)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1e1kk2cksFSBHa818lll7vmJ7J9pCY7NM" loading="lazy" alt="Purple-backed_Thornbill.jpg">
+                            <div class="meta-label">Colombia - 19 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1e1kk2cksFSBHa818lll7vmJ7J9pCY7NM" target="_blank">Purple-backed_Thornbill.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Bronze-tailed Thornbill</div>
+                        <div class="french-label">Métallure à queue bronzée</div>
+                        <div class="latin-label">(Chalcostigma heteropogon)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1q4hyJw4SYlxU2bn0M7pc1UT8JNfjWTBF" loading="lazy" alt="Bronze-tailed_Thornbill_4766.jpg">
+                            <div class="meta-label">Colombia - 16 Nov 2019</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1q4hyJw4SYlxU2bn0M7pc1UT8JNfjWTBF" target="_blank">Bronze-tailed_Thornbill_4766.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1FjrF65JHXggfVFd_UAXJ2NFExVp62_FX" loading="lazy" alt="Bronze-tailed_Thornbill_4778.jpg">
+                            <div class="meta-label">Colombia - 16 Nov 2019</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1FjrF65JHXggfVFd_UAXJ2NFExVp62_FX" target="_blank">Bronze-tailed_Thornbill_4778.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Buffy Helmetcrest</div>
+                        <div class="french-label">Colibri de Stübel</div>
+                        <div class="latin-label">(Oxypogon stuebelii)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1z49lxudzPFE171h2WwHoduGkvzNHR2iG" loading="lazy" alt="Buffy_Helmetcrest_2563.jpg">
+                            <div class="meta-label">Colombia - 17 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1z49lxudzPFE171h2WwHoduGkvzNHR2iG" target="_blank">Buffy_Helmetcrest_2563.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Viridian Metaltail</div>
+                        <div class="french-label">Métallure verte</div>
+                        <div class="latin-label">(Metallura williami)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1ci_tzb71Bu3Zr15jOZRF9P0GrDiH8jiR" loading="lazy" alt="Viridian_Metaltail_2864.jpg">
+                            <div class="meta-label">Colombia - 17 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1ci_tzb71Bu3Zr15jOZRF9P0GrDiH8jiR" target="_blank">Viridian_Metaltail_2864.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Glowing Puffleg</div>
+                        <div class="french-label">Érione pattue</div>
+                        <div class="latin-label">(Eriocnemis vestita)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1eeUlYJDulYgczQiNd-5ZSNLc45MacS99" loading="lazy" alt="Glowing_Puffleg_4729.jpg">
+                            <div class="meta-label">Colombia - 16 Nov 2019</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1eeUlYJDulYgczQiNd-5ZSNLc45MacS99" target="_blank">Glowing_Puffleg_4729.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Shining Sunbeam</div>
+                        <div class="french-label">Colibri étincelant</div>
+                        <div class="latin-label">(Aglaeactis cupripennis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1uw3vmPbHY_CEPLT56k3vjI2KnSBSgcWG" loading="lazy" alt="Shining_Sunbeam_2781.jpg">
+                            <div class="meta-label">Colombia - 17 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1uw3vmPbHY_CEPLT56k3vjI2KnSBSgcWG" target="_blank">Shining_Sunbeam_2781.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1wg11SZEUcHhD22IWQhPqqQxfCCp1HM_k" loading="lazy" alt="Shining_Sunbeam_2998.jpg">
+                            <div class="meta-label">Colombia - 17 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1wg11SZEUcHhD22IWQhPqqQxfCCp1HM_k" target="_blank">Shining_Sunbeam_2998.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Collared Inca</div>
+                        <div class="french-label">Inca à collier</div>
+                        <div class="latin-label">(Coeligena torquata)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1A9u10ujLcJGi5gPaatMA2iw3qPf6hgZD" loading="lazy" alt="Collared_Inca_403.jpg">
+                            <div class="meta-label">Ecuador - 02 Jul 2004</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1A9u10ujLcJGi5gPaatMA2iw3qPf6hgZD" target="_blank">Collared_Inca_403.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">White-tailed Starfrontlet</div>
+                        <div class="french-label">Inca à queue blanche</div>
+                        <div class="latin-label">(Coeligena phalerata)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1JZB9uOTMktytciABTZ2w4KnSw4oxkjMz" loading="lazy" alt="White-tailed_Starfrontlet_23937.jpg">
+                            <div class="meta-label">Colombia - 06 Apr 2025</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1JZB9uOTMktytciABTZ2w4KnSw4oxkjMz" target="_blank">White-tailed_Starfrontlet_23937.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/13FCekgpApXqPc-WhnicwqAWOtokq3Wvn" loading="lazy" alt="White-tailed_Starfrontlet_23945.jpg">
+                            <div class="meta-label">Colombia - 06 Apr 2025</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/13FCekgpApXqPc-WhnicwqAWOtokq3Wvn" target="_blank">White-tailed_Starfrontlet_23945.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1qi_vwgBkzF_aUD3FE6xyk75t7vCSdTiM" loading="lazy" alt="White-tailed_Starfrontlet_23958.jpg">
+                            <div class="meta-label">Colombia - 06 Apr 2025</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1qi_vwgBkzF_aUD3FE6xyk75t7vCSdTiM" target="_blank">White-tailed_Starfrontlet_23958.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1pNlRFUnXupVMiE2QKp1lKfZ-xI3wGAoL" loading="lazy" alt="White-tailed_Starfrontlet_3334MF.jpg">
+                            <div class="meta-label">Colombia - 06 Apr 2025</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1pNlRFUnXupVMiE2QKp1lKfZ-xI3wGAoL" target="_blank">White-tailed_Starfrontlet_3334MF.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Buff-winged Starfrontlet</div>
+                        <div class="french-label">Inca à gemme bleue</div>
+                        <div class="latin-label">(Coeligena lutetiae)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1TfC2SiI61zepUwgS3skcrfotAqieoD3s" loading="lazy" alt="Buff-winged_Starfrontlet_2742.jpg">
+                            <div class="meta-label">Colombia - 17 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1TfC2SiI61zepUwgS3skcrfotAqieoD3s" target="_blank">Buff-winged_Starfrontlet_2742.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Sword-billed Hummingbird</div>
+                        <div class="french-label">Colibri porte-épée</div>
+                        <div class="latin-label">(Ensifera ensifera)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/117_cNOcShk52WBC4AI1EXOnzNK9UJEj4" loading="lazy" alt="Sword-billed_Hummingbird_2820.jpg">
+                            <div class="meta-label">Ecuador - 03 Apr 2019</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/117_cNOcShk52WBC4AI1EXOnzNK9UJEj4" target="_blank">Sword-billed_Hummingbird_2820.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Great Sapphirewing</div>
+                        <div class="french-label">Colibri à ailes saphir</div>
+                        <div class="latin-label">(Pterophanes cyanopterus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1eqzaAVWFadWY88GAP_RWfs8TxRnN4zI2" loading="lazy" alt="Great_Sapphirewing_2471.jpg">
+                            <div class="meta-label">Colombia - 17 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1eqzaAVWFadWY88GAP_RWfs8TxRnN4zI2" target="_blank">Great_Sapphirewing_2471.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/16hVbZ25y7VHGl9GIWpNDfL1jgjcSxdcw" loading="lazy" alt="Great_Sapphirewing_2891.jpg">
+                            <div class="meta-label">Colombia - 17 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/16hVbZ25y7VHGl9GIWpNDfL1jgjcSxdcw" target="_blank">Great_Sapphirewing_2891.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1WBqlK7sPMwTrF0Y_7_3UUnvnjaW2Ed8i" loading="lazy" alt="Great_Sapphirewing_3041.jpg">
+                            <div class="meta-label">Colombia - 17 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1WBqlK7sPMwTrF0Y_7_3UUnvnjaW2Ed8i" target="_blank">Great_Sapphirewing_3041.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Buff-tailed Coronet</div>
+                        <div class="french-label">Colibri flavescent</div>
+                        <div class="latin-label">(Boissonneaua flavescens)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1FSlSLCy7sSz3QZaLqEcNNCs-6Ahr1vJ6" loading="lazy" alt="Buff-tailed_Coronet_3405.jpg">
+                            <div class="meta-label">Ecuador - 02 Jul 2004</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1FSlSLCy7sSz3QZaLqEcNNCs-6Ahr1vJ6" target="_blank">Buff-tailed_Coronet_3405.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Velvet-purple Coronet</div>
+                        <div class="french-label">Colibri de Jardine</div>
+                        <div class="latin-label">(Boissonneaua jardini)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1saQwqiNUFCx25UyQFjkhKAqhGsxd0zSD" loading="lazy" alt="Velvet-purple_Coronet_5453.jpg">
+                            <div class="meta-label">Ecuador - 07 Apr 2019</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1saQwqiNUFCx25UyQFjkhKAqhGsxd0zSD" target="_blank">Velvet-purple_Coronet_5453.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">White-booted Racket-tail</div>
+                        <div class="french-label">Haut-de-chausses à palettes</div>
+                        <div class="latin-label">(Ocreatus underwoodii)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Iq2m_X2dG5R5NpczkTP5xRbuJpdkkoZ8" loading="lazy" alt="White-booted_Racket-tail_3443.jpg">
+                            <div class="meta-label">Ecuador - 02 Jul 2004</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Iq2m_X2dG5R5NpczkTP5xRbuJpdkkoZ8" target="_blank">White-booted_Racket-tail_3443.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Purple-bibbed Whitetip</div>
+                        <div class="french-label">Colibri de Benjamin</div>
+                        <div class="latin-label">(Urosticte benjamini)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1iJGfO5ID98FynttcyKiIacfuZS8wqYr3" loading="lazy" alt="Purple-bibbed_Whitetip_3474.jpg">
+                            <div class="meta-label">Ecuador - 05 Apr 2019</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1iJGfO5ID98FynttcyKiIacfuZS8wqYr3" target="_blank">Purple-bibbed_Whitetip_3474.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Fawn-breasted Brilliant</div>
+                        <div class="french-label">Brillant rubinoïde</div>
+                        <div class="latin-label">(Heliodoxa rubinoides)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1w5awoi6Agqb3oc4ZQZo_hQHeyq59lZky" loading="lazy" alt="Fawn-breasted_Brilliant_6477.jpg">
+                            <div class="meta-label">Colombia - 18 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1w5awoi6Agqb3oc4ZQZo_hQHeyq59lZky" target="_blank">Fawn-breasted_Brilliant_6477.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Green-crowned Brilliant</div>
+                        <div class="french-label">Brillant fer-de-lance</div>
+                        <div class="latin-label">(Heliodoxa jacula)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1QC7z2IYl2DZxGA6um4hbnd81cEIhNDHo" loading="lazy" alt="Green-crowned_Brilliant_3958MF.jpg">
+                            <div class="meta-label">Ecuador - 05 Apr 2019</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1QC7z2IYl2DZxGA6um4hbnd81cEIhNDHo" target="_blank">Green-crowned_Brilliant_3958MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1nfvUnY4SA5rUjM6MnF12CRFwumN8q8Jr" loading="lazy" alt="Green-crowned_Brilliant_3979MF.jpg">
+                            <div class="meta-label">Ecuador - 05 Apr 2019</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1nfvUnY4SA5rUjM6MnF12CRFwumN8q8Jr" target="_blank">Green-crowned_Brilliant_3979MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1n72CN72GguDlqfDYetR-72I3jpYW2D_t" loading="lazy" alt="Green-crowned_Brilliant_5181.jpg">
+                            <div class="meta-label">Ecuador - 05 Apr 2019</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1n72CN72GguDlqfDYetR-72I3jpYW2D_t" target="_blank">Green-crowned_Brilliant_5181.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1LskIgClnBEF0MWM4q5Z3r-f7FvbPf3bh" loading="lazy" alt="Green-crowned_Brilliant_5220.jpg">
+                            <div class="meta-label">Ecuador - 05 Apr 2019</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1LskIgClnBEF0MWM4q5Z3r-f7FvbPf3bh" target="_blank">Green-crowned_Brilliant_5220.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1bjRvJx_dkh4AMDt0WyDg619Eo9KrtFg_" loading="lazy" alt="Green-crowned_Brilliant_6183.jpg">
+                            <div class="meta-label">Ecuador - 05 Apr 2019</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1bjRvJx_dkh4AMDt0WyDg619Eo9KrtFg_" target="_blank">Green-crowned_Brilliant_6183.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1EuQJVYuBOFAMfKhM_N4DRHxF8DWYgaw3" loading="lazy" alt="Green-crowned_Brilliant_6650.jpg">
+                            <div class="meta-label">Ecuador - 05 Apr 2019</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1EuQJVYuBOFAMfKhM_N4DRHxF8DWYgaw3" target="_blank">Green-crowned_Brilliant_6650.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1g6oaWyLbwjDhEPp-iNZauKNjS70YJWMu" loading="lazy" alt="Green-crowned_Brilliant_7891.jpg">
+                            <div class="meta-label">Ecuador - 05 Apr 2019</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1g6oaWyLbwjDhEPp-iNZauKNjS70YJWMu" target="_blank">Green-crowned_Brilliant_7891.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1FJ5Kl_JKoLvMANChaYCul2Z-1-fAlLiA" loading="lazy" alt="Green-crowned_Brilliant_7915.jpg">
+                            <div class="meta-label">Ecuador - 05 Apr 2019</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1FJ5Kl_JKoLvMANChaYCul2Z-1-fAlLiA" target="_blank">Green-crowned_Brilliant_7915.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1FpNEMwGLtA_UQFuFDxPwyTfY8-pMb5je" loading="lazy" alt="Green-crowned_Brilliant_MF4382.jpg">
+                            <div class="meta-label">Ecuador - 05 Apr 2019</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1FpNEMwGLtA_UQFuFDxPwyTfY8-pMb5je" target="_blank">Green-crowned_Brilliant_MF4382.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1IZlcMrW_Oy5bai7EUtHporRgDgS-fG7a" loading="lazy" alt="Green-crowned_Brilliant_MF4403.jpg">
+                            <div class="meta-label">Ecuador - 05 Apr 2019</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1IZlcMrW_Oy5bai7EUtHporRgDgS-fG7a" target="_blank">Green-crowned_Brilliant_MF4403.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Giant Hummingbird</div>
+                        <div class="french-label">Colibri géant</div>
+                        <div class="latin-label">(Patagona gigas)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1VsfK1B1stesG8OFmvCjA7dPAcnhCvvRe" loading="lazy" alt="Giant_hummingbird_7138.jpg">
+                            <div class="meta-label">Ecuador - 12 Apr 2019</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1VsfK1B1stesG8OFmvCjA7dPAcnhCvvRe" target="_blank">Giant_hummingbird_7138.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Talamanca Hummingbird</div>
+                        <div class="french-label">Colibri de la Talamanca</div>
+                        <div class="latin-label">(Eugenes spectabilis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1TbY3rXgvigJUgy2OqWs8DS9MbwjJepri" loading="lazy" alt="Talamanca_Hummingbird.png">
+                            <div class="meta-label">CR - 03 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1TbY3rXgvigJUgy2OqWs8DS9MbwjJepri" target="_blank">Talamanca_Hummingbird.png</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="Photos/Talamanca_Hummingbird_%28female%29_3368.jpg" loading="lazy" alt="Talamanca_Hummingbird_(female)_3368.jpg">
+                            <div class="meta-label">CR - 03 Jun 2022</div>
+                            <div class="filename"><a href="Photos/Talamanca_Hummingbird_%28female%29_3368.jpg" target="_blank">Talamanca_Hummingbird_(female)_3368.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1MKA9WTxET59L3FIIeFHkjWvXtgkOCcxg" loading="lazy" alt="Talamanca_Hummingbird_1848.jpg">
+                            <div class="meta-label">CR - 03 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1MKA9WTxET59L3FIIeFHkjWvXtgkOCcxg" target="_blank">Talamanca_Hummingbird_1848.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1BJ3pAv-jaHrTVIWf25UedPP675qCKbUo" loading="lazy" alt="Talamanca_Hummingbird_1880.jpg">
+                            <div class="meta-label">CR - 03 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1BJ3pAv-jaHrTVIWf25UedPP675qCKbUo" target="_blank">Talamanca_Hummingbird_1880.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/11TWoEi_uhVfgdkBKGo_caKuTocmhigaM" loading="lazy" alt="Talamanca_Hummingbird_MF2037.jpg">
+                            <div class="meta-label">CR - 03 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/11TWoEi_uhVfgdkBKGo_caKuTocmhigaM" target="_blank">Talamanca_Hummingbird_MF2037.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Long-billed Starthroat</div>
+                        <div class="french-label">Colibri corinne</div>
+                        <div class="latin-label">(Heliomaster longirostris)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1vkYVsC7JKog8lslyxSwMlPDeK0ijRA73" loading="lazy" alt="Long-billed_Starthroat_0434.jpg">
+                            <div class="meta-label">Panama - 11 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1vkYVsC7JKog8lslyxSwMlPDeK0ijRA73" target="_blank">Long-billed_Starthroat_0434.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1HP0qDfQXKnX0_Vb53twj8qwtgUuPrn22" loading="lazy" alt="Long-billed_Starthroat_0924.jpg">
+                            <div class="meta-label">Panama - 11 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1HP0qDfQXKnX0_Vb53twj8qwtgUuPrn22" target="_blank">Long-billed_Starthroat_0924.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1WsV_-4dKZAjHrJZ_AENX3I9taDzojxY8" loading="lazy" alt="Long-billed_Starthroat_23224.jpg">
+                            <div class="meta-label">Panama - 11 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1WsV_-4dKZAjHrJZ_AENX3I9taDzojxY8" target="_blank">Long-billed_Starthroat_23224.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/17HZxd0EjwHsCFN_SlY97GvxGtMYPbiYZ" loading="lazy" alt="Long-billed_Starthroat_6033.jpg">
+                            <div class="meta-label">Panama - 11 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/17HZxd0EjwHsCFN_SlY97GvxGtMYPbiYZ" target="_blank">Long-billed_Starthroat_6033.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Fiery-throated Hummingbird</div>
+                        <div class="french-label">Colibri insigne</div>
+                        <div class="latin-label">(Panterpe insignis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/158QXvx0fD3wLQA8BndHlWMYBiscQ-1Je" loading="lazy" alt="Fiery-throated_Hummingbird_1867.jpg">
+                            <div class="meta-label">CR - 03 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/158QXvx0fD3wLQA8BndHlWMYBiscQ-1Je" target="_blank">Fiery-throated_Hummingbird_1867.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1LEfSTJBD5EeIzQDBb2AQzpCedeYkDejU" loading="lazy" alt="Fiery-throated_Hummingbird_MF2206.jpg">
+                            <div class="meta-label">CR - 03 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1LEfSTJBD5EeIzQDBb2AQzpCedeYkDejU" target="_blank">Fiery-throated_Hummingbird_MF2206.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Purple-throated Mountain-gem</div>
+                        <div class="french-label">Colibri à gorge pourprée</div>
+                        <div class="latin-label">(Lampornis calolaemus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1LmHRiYA0q-WO2G2rzBUy0TXSFB34cBWz" loading="lazy" alt="Purple-throated_Mountain-gem_2962MF.jpg">
+                            <div class="meta-label">CR - 13 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1LmHRiYA0q-WO2G2rzBUy0TXSFB34cBWz" target="_blank">Purple-throated_Mountain-gem_2962MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1h6KOEPQnm1fkdfKgGTGZ5D9qIQspRkVx" loading="lazy" alt="Purple-throated_Mountain-gem_2966MF.jpg">
+                            <div class="meta-label">CR - 13 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1h6KOEPQnm1fkdfKgGTGZ5D9qIQspRkVx" target="_blank">Purple-throated_Mountain-gem_2966MF.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">White-throated Mountain-gem</div>
+                        <div class="french-label">Colibri à ventre châtain</div>
+                        <div class="latin-label">(Lampornis castaneoventris)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/141KwPz4yfLMiXm8dBwZ5faFoSJaJibG3" loading="lazy" alt="White-throated_Mountain-gem.jpg">
+                            <div class="meta-label">CR - 03 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/141KwPz4yfLMiXm8dBwZ5faFoSJaJibG3" target="_blank">White-throated_Mountain-gem.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1jkjDqXN_TFI7Yujr0fmmAvoySLVtmTf8" loading="lazy" alt="White-throated_Mountain-gem_1527MF.jpg">
+                            <div class="meta-label">CR - 03 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1jkjDqXN_TFI7Yujr0fmmAvoySLVtmTf8" target="_blank">White-throated_Mountain-gem_1527MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1CydKRCKZqBCtS84asfi1o4kV8EWaxNGB" loading="lazy" alt="White-throated_Mountain-gem_2461.jpg">
+                            <div class="meta-label">CR - 03 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1CydKRCKZqBCtS84asfi1o4kV8EWaxNGB" target="_blank">White-throated_Mountain-gem_2461.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1iIgL8jm3X2qRBYJY6tgTW8iLNO7VGyKy" loading="lazy" alt="White-throated_Mountain-gem_5896.jpg">
+                            <div class="meta-label">CR - 03 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1iIgL8jm3X2qRBYJY6tgTW8iLNO7VGyKy" target="_blank">White-throated_Mountain-gem_5896.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">White-bellied Woodstar</div>
+                        <div class="french-label">Colibri de Mulsant</div>
+                        <div class="latin-label">(Chaetocercus mulsant)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1r11Rla5hlb7L1ugtCpC6hMYF2dzKBSXC" loading="lazy" alt="White-bellied_Woodstar.jpg">
+                            <div class="meta-label">Colombia - 18 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1r11Rla5hlb7L1ugtCpC6hMYF2dzKBSXC" target="_blank">White-bellied_Woodstar.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1aca347sBnG6UptwIYdaJX2EdFxWWg-aP" loading="lazy" alt="White-bellied_Woodstar_2.jpg">
+                            <div class="meta-label">Colombia - 18 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1aca347sBnG6UptwIYdaJX2EdFxWWg-aP" target="_blank">White-bellied_Woodstar_2.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/10P-TCteyTptYPvvhB09GaQ9M3d_oBo6N" loading="lazy" alt="White-bellied_Woodstar_4932.jpg">
+                            <div class="meta-label">Colombia - 18 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/10P-TCteyTptYPvvhB09GaQ9M3d_oBo6N" target="_blank">White-bellied_Woodstar_4932.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Gorgeted Woodstar</div>
+                        <div class="french-label">Colibri d'Héliodore</div>
+                        <div class="latin-label">(Chaetocercus heliodor)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1jI_bFAG60TSNItBKn0iQNBYibveyDdxd" loading="lazy" alt="Gorgeted_Woodstar_5954.jpg">
+                            <div class="meta-label">Colombia - 15 Nov 2019</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1jI_bFAG60TSNItBKn0iQNBYibveyDdxd" target="_blank">Gorgeted_Woodstar_5954.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Magenta-throated Woodstar</div>
+                        <div class="french-label">Colibri magenta</div>
+                        <div class="latin-label">(Philodice bryantae)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1XlGKznNIHptyaM4olWQDvUU7iwfL3bQL" loading="lazy" alt="Magenta-throated_Woodstar_2882MF.jpg">
+                            <div class="meta-label">CR - 10 Dec 2023</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1XlGKznNIHptyaM4olWQDvUU7iwfL3bQL" target="_blank">Magenta-throated_Woodstar_2882MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1KXW5qzzl7Pv7XEpf4FrlbHUdB6GJ0h2N" loading="lazy" alt="Magenta-throated_Woodstar_6941.jpg">
+                            <div class="meta-label">CR - 10 Dec 2023</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1KXW5qzzl7Pv7XEpf4FrlbHUdB6GJ0h2N" target="_blank">Magenta-throated_Woodstar_6941.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Purple-throated Woodstar</div>
+                        <div class="french-label">Colibri de Mitchell</div>
+                        <div class="latin-label">(Philodice mitchellii)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1078fMl2i2fa0VZT2hAVgqgpVtBhofYeo" loading="lazy" alt="Purple-throated_Woodstar_3437.jpg">
+                            <div class="meta-label">Ecuador - 02 Jul 2004</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1078fMl2i2fa0VZT2hAVgqgpVtBhofYeo" target="_blank">Purple-throated_Woodstar_3437.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Ruby-throated Hummingbird</div>
+                        <div class="french-label">Colibri à gorge rubis</div>
+                        <div class="latin-label">(Archilochus colubris)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1X-oOj6kNXKE1FdqmBSxuEAuLlZLOkLdg" loading="lazy" alt="Ruby-throated_Hummingbird_0523MF.jpg">
+                            <div class="meta-label">Canada - 21 Aug 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1X-oOj6kNXKE1FdqmBSxuEAuLlZLOkLdg" target="_blank">Ruby-throated_Hummingbird_0523MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1mPE9r4yIrq5bL3Kw4U2w0HcM_hnrDVuq" loading="lazy" alt="Ruby-throated_Hummingbird_1974.jpg">
+                            <div class="meta-label">Canada - 21 Aug 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1mPE9r4yIrq5bL3Kw4U2w0HcM_hnrDVuq" target="_blank">Ruby-throated_Hummingbird_1974.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1v40hAZqZalOrqN2nYWrcyPr04x7Em2pW" loading="lazy" alt="Ruby-throated_Hummingbird_8614.jpg">
+                            <div class="meta-label">Canada - 21 Aug 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1v40hAZqZalOrqN2nYWrcyPr04x7Em2pW" target="_blank">Ruby-throated_Hummingbird_8614.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1xrY8g6TpBhyhdlmhGHizgnTKo3KeEgNr" loading="lazy" alt="Ruby-throated_Hummingbird_9828.jpg">
+                            <div class="meta-label">Canada - 21 Aug 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1xrY8g6TpBhyhdlmhGHizgnTKo3KeEgNr" target="_blank">Ruby-throated_Hummingbird_9828.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Anna's Hummingbird</div>
+                        <div class="french-label">Colibri d'Anna</div>
+                        <div class="latin-label">(Calypte anna)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="Photos/Anna%27s_Hummingbird_2428.jpg" loading="lazy" alt="Anna's_Hummingbird_2428.jpg">
+                            <div class="meta-label">USA - 13 Oct 2013</div>
+                            <div class="filename"><a href="Photos/Anna%27s_Hummingbird_2428.jpg" target="_blank">Anna's_Hummingbird_2428.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="Photos/Anna%27s_Hummingbird_3628.jpg" loading="lazy" alt="Anna's_Hummingbird_3628.jpg">
+                            <div class="meta-label">USA - 13 Oct 2013</div>
+                            <div class="filename"><a href="Photos/Anna%27s_Hummingbird_3628.jpg" target="_blank">Anna's_Hummingbird_3628.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Volcano Hummingbird</div>
+                        <div class="french-label">Colibri flammule</div>
+                        <div class="latin-label">(Selasphorus flammula)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="Photos/Volcano_Hummingbird_%28female%29_1925.jpg" loading="lazy" alt="Volcano_Hummingbird_(female)_1925.jpg">
+                            <div class="meta-label">CR - 03 Jun 2022</div>
+                            <div class="filename"><a href="Photos/Volcano_Hummingbird_%28female%29_1925.jpg" target="_blank">Volcano_Hummingbird_(female)_1925.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/15y_Z90r_YtGuxUmqnVaJRn7B7HcaItHI" loading="lazy" alt="Volcano_Hummingbird_2124.jpg">
+                            <div class="meta-label">CR - 03 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/15y_Z90r_YtGuxUmqnVaJRn7B7HcaItHI" target="_blank">Volcano_Hummingbird_2124.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1T7gdPJzOtm3rlLXoULl6270q0Cwq7Cs-" loading="lazy" alt="Volcano_Hummingbird_5835.jpg">
+                            <div class="meta-label">CR - 03 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1T7gdPJzOtm3rlLXoULl6270q0Cwq7Cs-" target="_blank">Volcano_Hummingbird_5835.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Canivet's Emerald</div>
+                        <div class="french-label">Émeraude de Canivet</div>
+                        <div class="latin-label">(Cynanthus canivetii)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="Photos/Canivet%27s_Emerald_8734.jpg" loading="lazy" alt="Canivet's_Emerald_8734.jpg">
+                            <div class="meta-label">CR - 12 Jun 2022</div>
+                            <div class="filename"><a href="Photos/Canivet%27s_Emerald_8734.jpg" target="_blank">Canivet's_Emerald_8734.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Red-billed Emerald</div>
+                        <div class="french-label">Émeraude de Gibson</div>
+                        <div class="latin-label">(Chlorostilbon gibsoni)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1SYseVBjcPoGdeiG1snulR8pMuxApRR6k" loading="lazy" alt="Red-billed_Emerald_5706.jpg">
+                            <div class="meta-label">Colombia - 21 Nov 2019</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1SYseVBjcPoGdeiG1snulR8pMuxApRR6k" target="_blank">Red-billed_Emerald_5706.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Western Emerald</div>
+                        <div class="french-label">Émeraude à bec noir</div>
+                        <div class="latin-label">(Chlorostilbon melanorhynchus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1syprE4qQwPW-SNq2Ro9eRG72tmfkwxGq" loading="lazy" alt="Western_Emerald_6540.jpg">
+                            <div class="meta-label">Colombia - 20 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1syprE4qQwPW-SNq2Ro9eRG72tmfkwxGq" target="_blank">Western_Emerald_6540.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Violet Sabrewing</div>
+                        <div class="french-label">Campyloptère violet</div>
+                        <div class="latin-label">(Campylopterus hemileucurus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1jLyG1KhnkAH09rRf89P1OrVzV_9ZCtAG" loading="lazy" alt="Violet_Sabrewing_3159MF.jpg">
+                            <div class="meta-label">CR - 20 Jul 2003</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1jLyG1KhnkAH09rRf89P1OrVzV_9ZCtAG" target="_blank">Violet_Sabrewing_3159MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/19E7hh5iTxRmcEla9gcNGcDAPPVjwr1kn" loading="lazy" alt="Violet_Sabrewing_3220MF.jpg">
+                            <div class="meta-label">CR - 20 Jul 2003</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/19E7hh5iTxRmcEla9gcNGcDAPPVjwr1kn" target="_blank">Violet_Sabrewing_3220MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Z3qAM3jvvn9dhp_b3nsaI8HkPpcvNS2o" loading="lazy" alt="Violet_Sabrewing_7899.jpg">
+                            <div class="meta-label">CR - 20 Jul 2003</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Z3qAM3jvvn9dhp_b3nsaI8HkPpcvNS2o" target="_blank">Violet_Sabrewing_7899.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/19guQGcsL0F5fWyKWT2fnjfUvAm-BwhZ0" loading="lazy" alt="Violet_Sabrewing_7952.jpg">
+                            <div class="meta-label">CR - 20 Jul 2003</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/19guQGcsL0F5fWyKWT2fnjfUvAm-BwhZ0" target="_blank">Violet_Sabrewing_7952.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Lazuline Sabrewing</div>
+                        <div class="french-label">Campyloptère lazulite</div>
+                        <div class="latin-label">(Campylopterus falcatus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1ZyBDp_muLkeBpcf-LwonsiJNJLUu49Es" loading="lazy" alt="Lazuline_Sabrewing_5715.jpg">
+                            <div class="meta-label">Colombia - 19 Nov 2019</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1ZyBDp_muLkeBpcf-LwonsiJNJLUu49Es" target="_blank">Lazuline_Sabrewing_5715.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">White-tailed Sabrewing</div>
+                        <div class="french-label">Campyloptère à queue blanche</div>
+                        <div class="latin-label">(Campylopterus ensipennis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1N5oPx3_fHf4fZn0WaFG7q1W-fwEQtbm3" loading="lazy" alt="White-tailed_Sabrewing_6687.jpg">
+                            <div class="meta-label">TT - 14 Apr 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1N5oPx3_fHf4fZn0WaFG7q1W-fwEQtbm3" target="_blank">White-tailed_Sabrewing_6687.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Bronze-tailed Plumeleteer</div>
+                        <div class="french-label">Colibri à queue bronzée</div>
+                        <div class="latin-label">(Chalybura urochrysia)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/15nSaekyEcQ0Q5E7S6vEpC-pcfNsvagXb" loading="lazy" alt="Bronze-tailed_Plumeleteer_2635.jpg">
+                            <div class="meta-label">Panama - 13 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/15nSaekyEcQ0Q5E7S6vEpC-pcfNsvagXb" target="_blank">Bronze-tailed_Plumeleteer_2635.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1X5Rmv6Um5XdVltU5Ktqh-5u-4ztKm2Y7" loading="lazy" alt="Bronze-tailed_Plumeleteer_5051.jpg">
+                            <div class="meta-label">Panama - 13 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1X5Rmv6Um5XdVltU5Ktqh-5u-4ztKm2Y7" target="_blank">Bronze-tailed_Plumeleteer_5051.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Utb4_bZUcX2PQw1wF036Gs2yCGPOBX5-" loading="lazy" alt="Bronze-tailed_Plumeleteer_5051A.jpg">
+                            <div class="meta-label">Panama - 13 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Utb4_bZUcX2PQw1wF036Gs2yCGPOBX5-" target="_blank">Bronze-tailed_Plumeleteer_5051A.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">White-vented Plumeleteer</div>
+                        <div class="french-label">Colibri de Buffon</div>
+                        <div class="latin-label">(Chalybura buffonii)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/197BMEGKGlHat8dvjmxPbZzYk9KGx3m1B" loading="lazy" alt="White-vented_Plumeleteer_3970.jpg">
+                            <div class="meta-label">Panama - 15 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/197BMEGKGlHat8dvjmxPbZzYk9KGx3m1B" target="_blank">White-vented_Plumeleteer_3970.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1BjrKQO6Y9uaDYXwxROiO6S-PE226BWSS" loading="lazy" alt="White-vented_Plumeleteer_6339.jpg">
+                            <div class="meta-label">Panama - 15 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1BjrKQO6Y9uaDYXwxROiO6S-PE226BWSS" target="_blank">White-vented_Plumeleteer_6339.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Crowned Woodnymph</div>
+                        <div class="french-label">Dryade couronnée</div>
+                        <div class="latin-label">(Thalurania colombica)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1SgyGYFmvZ7iCzwB3ruaWVSa7C6GooiPv" loading="lazy" alt="Crowned_Woodnymph_24019.jpg">
+                            <div class="meta-label">Panama - 13 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1SgyGYFmvZ7iCzwB3ruaWVSa7C6GooiPv" target="_blank">Crowned_Woodnymph_24019.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/14yZD9-6nqaTvRXY7Ap46561vhO7Xaajy" loading="lazy" alt="Crowned_Woodnymph_3420MF.jpg">
+                            <div class="meta-label">Panama - 13 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/14yZD9-6nqaTvRXY7Ap46561vhO7Xaajy" target="_blank">Crowned_Woodnymph_3420MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1PH4mQnVuG5V8VdFtPkR0p2RIb0nOeUWO" loading="lazy" alt="Crowned_Woodnymph_4073.jpg">
+                            <div class="meta-label">Panama - 13 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1PH4mQnVuG5V8VdFtPkR0p2RIb0nOeUWO" target="_blank">Crowned_Woodnymph_4073.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1ypKbg7ohfOBKermD42Y0R8F1ecrAy4gc" loading="lazy" alt="Crowned_Woodnymph_4275.jpg">
+                            <div class="meta-label">Panama - 13 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1ypKbg7ohfOBKermD42Y0R8F1ecrAy4gc" target="_blank">Crowned_Woodnymph_4275.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1k8T7v99XtRpvOfG7y3apa4Fgxv8Piwcf" loading="lazy" alt="Crowned_Woodnymph_4462MF.jpg">
+                            <div class="meta-label">Panama - 13 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1k8T7v99XtRpvOfG7y3apa4Fgxv8Piwcf" target="_blank">Crowned_Woodnymph_4462MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1E6MQvceU6u2ER-Rc020n60iwBDnCyxr9" loading="lazy" alt="Crowned_Woodnymph_6057.jpg">
+                            <div class="meta-label">Panama - 13 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1E6MQvceU6u2ER-Rc020n60iwBDnCyxr9" target="_blank">Crowned_Woodnymph_6057.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1SdfVFMDb6Px6zWH-JLpNz3gEqYVIMZCE" loading="lazy" alt="Crowned_Woodnymph_6220.jpg">
+                            <div class="meta-label">Panama - 13 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1SdfVFMDb6Px6zWH-JLpNz3gEqYVIMZCE" target="_blank">Crowned_Woodnymph_6220.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Snowcap</div>
+                        <div class="french-label">Colibri à coiffe blanche</div>
+                        <div class="latin-label">(Microchera albocoronata)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Xfp9hsnSjD4yjEEjL2j1EOsXNONPbqBo" loading="lazy" alt="Snowcap.jpg">
+                            <div class="meta-label">CR - 05 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Xfp9hsnSjD4yjEEjL2j1EOsXNONPbqBo" target="_blank">Snowcap.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="Photos/Snowcap_%28female%29_3915.jpg" loading="lazy" alt="Snowcap_(female)_3915.jpg">
+                            <div class="meta-label">CR - 05 Jun 2022</div>
+                            <div class="filename"><a href="Photos/Snowcap_%28female%29_3915.jpg" target="_blank">Snowcap_(female)_3915.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="Photos/Snowcap_%28male%29_3979.jpg" loading="lazy" alt="Snowcap_(male)_3979.jpg">
+                            <div class="meta-label">CR - 05 Jun 2022</div>
+                            <div class="filename"><a href="Photos/Snowcap_%28male%29_3979.jpg" target="_blank">Snowcap_(male)_3979.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="Photos/Snowcap_%28male%29_3994.jpg" loading="lazy" alt="Snowcap_(male)_3994.jpg">
+                            <div class="meta-label">CR - 05 Jun 2022</div>
+                            <div class="filename"><a href="Photos/Snowcap_%28male%29_3994.jpg" target="_blank">Snowcap_(male)_3994.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="Photos/Snowcap_%28male%29_4610.jpg" loading="lazy" alt="Snowcap_(male)_4610.jpg">
+                            <div class="meta-label">CR - 05 Jun 2022</div>
+                            <div class="filename"><a href="Photos/Snowcap_%28male%29_4610.jpg" target="_blank">Snowcap_(male)_4610.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Coppery-headed Emerald</div>
+                        <div class="french-label">Colibri à tête cuivrée</div>
+                        <div class="latin-label">(Microchera cupreiceps)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1z1LNroNLvnzl26azebVCoBG0O9Tf_m5h" loading="lazy" alt="Coppery-headed_Emerald_3003MF.jpg">
+                            <div class="meta-label">CR - 09 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1z1LNroNLvnzl26azebVCoBG0O9Tf_m5h" target="_blank">Coppery-headed_Emerald_3003MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/11HqKcyPf4Q5rRaFidm5nVXM9RRhTwxsQ" loading="lazy" alt="Coppery-headed_Emerald_3026MF.jpg">
+                            <div class="meta-label">CR - 09 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/11HqKcyPf4Q5rRaFidm5nVXM9RRhTwxsQ" target="_blank">Coppery-headed_Emerald_3026MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/17eJldv6M91ZFOLp-4YLyMw6aP9J7XtJU" loading="lazy" alt="Coppery-headed_Emerald_6245.jpg">
+                            <div class="meta-label">CR - 09 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/17eJldv6M91ZFOLp-4YLyMw6aP9J7XtJU" target="_blank">Coppery-headed_Emerald_6245.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/12RcTb3JxqAcZa1INC_aReynTCaW9-0oZ" loading="lazy" alt="Coppery-headed_Emerald_7146.jpg">
+                            <div class="meta-label">CR - 09 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/12RcTb3JxqAcZa1INC_aReynTCaW9-0oZ" target="_blank">Coppery-headed_Emerald_7146.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Stripe-tailed Hummingbird</div>
+                        <div class="french-label">Colibri à épaulettes</div>
+                        <div class="latin-label">(Eupherusa eximia)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Rgp28khMIMmXkmrQSUbUhBQp6rXSW21l" loading="lazy" alt="Stripe-tailed_Hummingbird_7304.jpg">
+                            <div class="meta-label">CR - 03 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Rgp28khMIMmXkmrQSUbUhBQp6rXSW21l" target="_blank">Stripe-tailed_Hummingbird_7304.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Black-bellied Hummingbird</div>
+                        <div class="french-label">Colibri à ventre noir</div>
+                        <div class="latin-label">(Eupherusa nigriventris)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1zLPWpct5TEG02WEZnWZG7aiNjLgPFaVG" loading="lazy" alt="Black-bellied_Hummingbird_6284.jpg">
+                            <div class="meta-label">CR - 09 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1zLPWpct5TEG02WEZnWZG7aiNjLgPFaVG" target="_blank">Black-bellied_Hummingbird_6284.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Scaly-breasted Hummingbird</div>
+                        <div class="french-label">Colibri de Cuvier</div>
+                        <div class="latin-label">(Phaeochroa cuvierii)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/13X_TT7V-8p3NyLwJexo5NMAP6xJ2_AGY" loading="lazy" alt="Scaly-breasted_Hummingbird_0267.jpg">
+                            <div class="meta-label">Panama - 02 Apr 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/13X_TT7V-8p3NyLwJexo5NMAP6xJ2_AGY" target="_blank">Scaly-breasted_Hummingbird_0267.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Buffy Hummingbird</div>
+                        <div class="french-label">Colibri trompeur</div>
+                        <div class="latin-label">(Leucippus fallax)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1DkA-czJL0Nfz3Hsoshxke0NMmOtHMx0n" loading="lazy" alt="Buffy_Hummingbird_5384.jpg">
+                            <div class="meta-label">Colombia - 09 Apr 2025</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1DkA-czJL0Nfz3Hsoshxke0NMmOtHMx0n" target="_blank">Buffy_Hummingbird_5384.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Blue-vented Hummingbird</div>
+                        <div class="french-label">Ariane de Hoffmann</div>
+                        <div class="latin-label">(Saucerottia hoffmanni)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1DVhjs7w7pkAFaiL0ib4BE3PlGO7AMHHz" loading="lazy" alt="Blue-vented_Hummingbird_7600.jpg">
+                            <div class="meta-label">CR - 10 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1DVhjs7w7pkAFaiL0ib4BE3PlGO7AMHHz" target="_blank">Blue-vented_Hummingbird_7600.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1lvDJfvAeRTXHShHMiIt22ckTClLmgAd4" loading="lazy" alt="Blue-vented_Hummingbird_7705.jpg">
+                            <div class="meta-label">CR - 10 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1lvDJfvAeRTXHShHMiIt22ckTClLmgAd4" target="_blank">Blue-vented_Hummingbird_7705.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1aG4OyMo3Kz89kYMUkgEQOhI6qpN7QJFD" loading="lazy" alt="Blue-vented_Hummingbird_MF4814.jpg">
+                            <div class="meta-label">CR - 10 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1aG4OyMo3Kz89kYMUkgEQOhI6qpN7QJFD" target="_blank">Blue-vented_Hummingbird_MF4814.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1e8akbN-KkKvqIPt28XTB0i4ZMxRt5EAv" loading="lazy" alt="Blue-vented_Hummingbird_MF5401.jpg">
+                            <div class="meta-label">CR - 10 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1e8akbN-KkKvqIPt28XTB0i4ZMxRt5EAv" target="_blank">Blue-vented_Hummingbird_MF5401.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/16hyceSh2kRfrJFwLggq_f9S-XcEo519b" loading="lazy" alt="Blue-vented_Hummingbird_MF5435.jpg">
+                            <div class="meta-label">CR - 10 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/16hyceSh2kRfrJFwLggq_f9S-XcEo519b" target="_blank">Blue-vented_Hummingbird_MF5435.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Steely-vented Hummingbird</div>
+                        <div class="french-label">Ariane de Sophie</div>
+                        <div class="latin-label">(Saucerottia saucerottei)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1XlLMQpAncrX9d9k-S6Mio9-bYRj2uvuI" loading="lazy" alt="Steely-vented_Hummingbird_23441.jpg">
+                            <div class="meta-label">Colombia - 16 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1XlLMQpAncrX9d9k-S6Mio9-bYRj2uvuI" target="_blank">Steely-vented_Hummingbird_23441.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Indigo-capped Hummingbird</div>
+                        <div class="french-label">Ariane à front bleu</div>
+                        <div class="latin-label">(Saucerottia cyanifrons)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1vWCtW4npqGo3hG8fvwCNa2wo8EWSLPky" loading="lazy" alt="Indigo-capped_Hummingbird_7376.jpg">
+                            <div class="meta-label">Colombia - 24 Nov 2019</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1vWCtW4npqGo3hG8fvwCNa2wo8EWSLPky" target="_blank">Indigo-capped_Hummingbird_7376.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Copper-rumped Hummingbird</div>
+                        <div class="french-label">Ariane de Félicie</div>
+                        <div class="latin-label">(Saucerottia tobaci)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1cdWBZ1fU5qxAt80ZzJdT8DEmX9wsJg3S" loading="lazy" alt="Copper-rumped_Hummingbird_4089.jpg">
+                            <div class="meta-label">TT - 06 Apr 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1cdWBZ1fU5qxAt80ZzJdT8DEmX9wsJg3S" target="_blank">Copper-rumped_Hummingbird_4089.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Cinnamon Hummingbird</div>
+                        <div class="french-label">Ariane cannelle</div>
+                        <div class="latin-label">(Amazilia rutila)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1d44U6_fUtbopL6GYZbNu0S58vMlsJwpk" loading="lazy" alt="Cinnamon_Hummingbird_MF5934.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1d44U6_fUtbopL6GYZbNu0S58vMlsJwpk" target="_blank">Cinnamon_Hummingbird_MF5934.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Rufous-tailed Hummingbird</div>
+                        <div class="french-label">Ariane à ventre gris</div>
+                        <div class="latin-label">(Amazilia tzacatl)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/16lnK1nMInYPeFl6DkIkhglMPOkKj6No-" loading="lazy" alt="Rufous-tailed_Hummingbird_0212.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/16lnK1nMInYPeFl6DkIkhglMPOkKj6No-" target="_blank">Rufous-tailed_Hummingbird_0212.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1ufV_-iB4j3EdYAOZw6wgCEQJ7SXxcE55" loading="lazy" alt="Rufous-tailed_Hummingbird_1631.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1ufV_-iB4j3EdYAOZw6wgCEQJ7SXxcE55" target="_blank">Rufous-tailed_Hummingbird_1631.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1zKy1300ykni6vBzEfm-p-i9S96uIUH4D" loading="lazy" alt="Rufous-tailed_Hummingbird_2483MF.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1zKy1300ykni6vBzEfm-p-i9S96uIUH4D" target="_blank">Rufous-tailed_Hummingbird_2483MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1IOAuuJ8E-O4fTM4y34BJKTtnkUVW8sls" loading="lazy" alt="Rufous-tailed_Hummingbird_2891.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1IOAuuJ8E-O4fTM4y34BJKTtnkUVW8sls" target="_blank">Rufous-tailed_Hummingbird_2891.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1i_GgaB1J9xy9-typTa5M30IW8bQOxZGp" loading="lazy" alt="Rufous-tailed_Hummingbird_3123.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1i_GgaB1J9xy9-typTa5M30IW8bQOxZGp" target="_blank">Rufous-tailed_Hummingbird_3123.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1yS2et8zJo1BW53al_R4v5SToJs0AMbnx" loading="lazy" alt="Rufous-tailed_Hummingbird_3598MF.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1yS2et8zJo1BW53al_R4v5SToJs0AMbnx" target="_blank">Rufous-tailed_Hummingbird_3598MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1_WYagE2BT6gcUt-so4f7cAzcqOlKHvd0" loading="lazy" alt="Rufous-tailed_Hummingbird_373.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1_WYagE2BT6gcUt-so4f7cAzcqOlKHvd0" target="_blank">Rufous-tailed_Hummingbird_373.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1rR9UrPeQya2j3RQfF747v--e_dFUqhLW" loading="lazy" alt="Rufous-tailed_Hummingbird_MF5431.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1rR9UrPeQya2j3RQfF747v--e_dFUqhLW" target="_blank">Rufous-tailed_Hummingbird_MF5431.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Andean Emerald</div>
+                        <div class="french-label">Ariane de Francia</div>
+                        <div class="latin-label">(Uranomitra franciae)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1zcdRJcSBYQMmb5VtVN6kD914AvrGAlog" loading="lazy" alt="Andean_Emerald_5215.jpg">
+                            <div class="meta-label">Colombia - 18 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1zcdRJcSBYQMmb5VtVN6kD914AvrGAlog" target="_blank">Andean_Emerald_5215.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1LNE2GTyL4rsJGUcJs9eI80pTeeFA6CCy" loading="lazy" alt="Andean_Emerald_6062.jpg">
+                            <div class="meta-label">Colombia - 18 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1LNE2GTyL4rsJGUcJs9eI80pTeeFA6CCy" target="_blank">Andean_Emerald_6062.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Sapphire-throated Hummingbird</div>
+                        <div class="french-label">Colibri faux-saphir</div>
+                        <div class="latin-label">(Chrysuronia coeruleogularis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1zov51oi_hPjyQ-0lFCIH5wZuiQNHb80c" loading="lazy" alt="Sapphire-throated_Hummingbird_0518.jpg">
+                            <div class="meta-label">Panama - 14 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1zov51oi_hPjyQ-0lFCIH5wZuiQNHb80c" target="_blank">Sapphire-throated_Hummingbird_0518.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Sapphire-bellied Hummingbird</div>
+                        <div class="french-label">Colibri de Lillie</div>
+                        <div class="latin-label">(Chrysuronia lilliae)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1DqE8dfG2J9RWzL6D5exEariDZIAwmW68" loading="lazy" alt="Sapphire-bellied_Hummingbird_22822.jpg">
+                            <div class="meta-label">Colombia - 04 Apr 2025</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1DqE8dfG2J9RWzL6D5exEariDZIAwmW68" target="_blank">Sapphire-bellied_Hummingbird_22822.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1cgeMjYvDE6WwuWn0jKp0Ky0YnB_QAy3s" loading="lazy" alt="Sapphire-bellied_Hummingbird_22831.jpg">
+                            <div class="meta-label">Colombia - 04 Apr 2025</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1cgeMjYvDE6WwuWn0jKp0Ky0YnB_QAy3s" target="_blank">Sapphire-bellied_Hummingbird_22831.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">White-chested Emerald</div>
+                        <div class="french-label">Ariane à poitrine blanche</div>
+                        <div class="latin-label">(Chrysuronia brevirostris)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1CyF5sGT2n0TPQqPQ37bJBmJl6owBBLm7" loading="lazy" alt="White-chested_Emerald_4109.jpg">
+                            <div class="meta-label">TT - 06 Apr 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1CyF5sGT2n0TPQqPQ37bJBmJl6owBBLm7" target="_blank">White-chested_Emerald_4109.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Blue-chested Hummingbird</div>
+                        <div class="french-label">Ariane aimable</div>
+                        <div class="latin-label">(Polyerata amabilis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1MU00qTB9XOvjAECkS5onJ2L0So_jzjHA" loading="lazy" alt="Blue-chested_Hummingbird_4704.jpg">
+                            <div class="meta-label">Panama - 18 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1MU00qTB9XOvjAECkS5onJ2L0So_jzjHA" target="_blank">Blue-chested_Hummingbird_4704.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/10l47f3ziFlE0lWYGGvlmjQibxhl585ot" loading="lazy" alt="Blue-chested_Hummingbird_6340.jpg">
+                            <div class="meta-label">Panama - 18 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/10l47f3ziFlE0lWYGGvlmjQibxhl585ot" target="_blank">Blue-chested_Hummingbird_6340.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Violet-bellied Hummingbird</div>
+                        <div class="french-label">Colibri de Julie</div>
+                        <div class="latin-label">(Chlorestes julie)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Q95JDhsDzrepNANYYEmfibd3mqAnP798" loading="lazy" alt="Violet-bellied_Hummingbird_5051.jpg">
+                            <div class="meta-label">Panama - 18 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Q95JDhsDzrepNANYYEmfibd3mqAnP798" target="_blank">Violet-bellied_Hummingbird_5051.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div></div></body></html>

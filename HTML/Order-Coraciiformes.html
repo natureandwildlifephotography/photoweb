@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photo Index</title>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; background: #121212; color: white; margin: 0; padding: 20px; padding-top: 80px; }
+        .family-list { display: flex; flex-direction: column; gap: 60px; max-width: 1800px; margin: 0 auto; }
+        
+        .family-card { background: #1e1e1e; border-radius: 24px; padding: 40px; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .family-header { margin-bottom: 30px; border-bottom: 2px solid #555; padding-bottom: 20px; }
+        .family-name { font-size: 36px; font-weight: 800; color: #4a9eff; text-transform: uppercase; letter-spacing: 2px; }
+        .family-order-label { font-size: 18px; opacity: 0.6; color: #fff; margin-top: 5px; font-weight: 500; }
+        
+        .species-list { display: flex; flex-direction: column; gap: 30px; }
+        .species-card { background: #2a2a2a; border-radius: 16px; padding: 20px; border: 1px solid #444; }
+        .species-header { margin-bottom: 15px; border-bottom: 1px solid #444; padding-bottom: 10px; }
+        .label { font-size: 24px; font-weight: 700; color: #fff; }
+        .french-label { font-size: 18px; opacity: 0.8; color: #ddd; }
+        .latin-label { font-size: 16px; opacity: 0.7; font-style: italic; color: #bbb; }
+        
+        .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
+        .photo-card { background: #333; border-radius: 10px; overflow: hidden; padding: 10px; display: flex; flex-direction: column; align-items: center; transition: transform 0.2s, background 0.2s; }
+        .photo-card:hover { transform: scale(1.02); background: #3d3d3d; }
+        
+        img { max-width: 100%; height: auto; border-radius: 6px; object-fit: contain; }
+        .meta-label { font-size: 11px; opacity: 0.7; align-self: flex-start; margin-top: 8px; color: #fff; }
+        .filename { font-size: 9px; opacity: 0.4; margin-top: 2px; word-break: break-all; align-self: flex-start; }
+        .filename a { color: #4a9eff; text-decoration: none; transition: color 0.2s; }
+        .filename a:hover { text-decoration: underline; }
+        
+        /* Intro Section Styles */
+        .intro-section { max-width: 1200px; margin: 0 auto 80px; padding: 60px; background: #1e1e1e; border-radius: 32px; border: 1px solid #333; box-shadow: 0 20px 50px rgba(0,0,0,0.6); line-height: 1.8; }
+        .intro-title { font-size: 48px; font-weight: 900; margin-bottom: 40px; color: #4a9eff; line-height: 1.2; text-align: center; }
+        .intro-text { font-size: 20px; opacity: 0.9; margin-bottom: 30px; }
+        .intro-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 30px; margin-top: 50px; border-top: 1px solid #444; padding-top: 40px; }
+        .stat-item { text-align: center; }
+        .stat-value { font-size: 36px; font-weight: 800; color: #4a9eff; display: block; }
+        .stat-label { font-size: 14px; opacity: 0.6; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* Mode Selector Styles */
+        .mode-selector { position: fixed; top: 0; left: 0; right: 0; background: rgba(30, 30, 30, 0.95); backdrop-filter: blur(10px); padding: 15px 40px; border-bottom: 1px solid #333; z-index: 1000; display: flex; justify-content: flex-end; align-items: center; gap: 20px; }
+        .mode-button { background: #333; border: 1px solid #444; color: white; padding: 8px 20px; border-radius: 20px; cursor: pointer; font-weight: 600; transition: all 0.2s; }
+        .mode-button.active { background: #4a9eff; border-color: #4a9eff; }
+        .mode-label { font-size: 14px; opacity: 0.6; font-weight: 600; text-transform: uppercase; }
+
+        /* Restricted Mode Styles */
+        body.mode-public .filename { display: none; }
+        body.mode-public .photo-card:hover { transform: none; background: #333; }
+
+        /* Modal Styles */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; justify-content: center; align-items: center; }
+        .modal { background: #1e1e1e; padding: 40px; border-radius: 24px; border: 1px solid #333; width: 400px; box-shadow: 0 20px 50px rgba(0,0,0,0.8); }
+        .modal h2 { margin-top: 0; color: #4a9eff; }
+        .modal input { width: 100%; padding: 12px; margin: 20px 0; background: #2a2a2a; border: 1px solid #444; color: white; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        .modal-buttons { display: flex; justify-content: flex-end; gap: 15px; }
+        .modal-buttons button { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; }
+        .btn-cancel { background: #333; color: white; }
+        .btn-submit { background: #4a9eff; color: white; }
+    </style>
+</head>
+<body class="mode-public">
+    <div class="mode-selector">
+        <span class="mode-label">View Mode:</span>
+        <button id="btn-public" class="mode-button active" onclick="setMode('PUBLIC')">PUBLIC</button>
+        <button id="btn-user" class="mode-button" onclick="requestUserMode()">USER</button>
+    </div>
+
+    <div id="password-modal" class="modal-overlay">
+        <div class="modal">
+            <h2>Enter Password</h2>
+            <p>Please enter the password to activate USER mode.</p>
+            <input type="password" id="password-input" placeholder="Password">
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+                <button class="btn-submit" onclick="submitPassword()">Submit</button>
+            </div>
+        </div>
+    </div>
+
+    
+    <div class="family-list">
+        <div class="family-card">
+            <div class="family-header">
+                <div class="family-name">Bee-eaters</div>
+                <div class="family-order-label">Meropidae / Coraciiformes</div>
+            </div>
+            <div class="species-list">
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">White-fronted Bee-eater</div>
+                        <div class="french-label">Guêpier à front blanc</div>
+                        <div class="latin-label">(Merops bullockoides)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/13_7DJAOJjjHKDTn9hfBylpahJYIW3kaS" loading="lazy" alt="White-fronted_Bee-eater_6854.jpg">
+                            <div class="meta-label">South Africa - 28 Sep 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/13_7DJAOJjjHKDTn9hfBylpahJYIW3kaS" target="_blank">White-fronted_Bee-eater_6854.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Little Bee-eater</div>
+                        <div class="french-label">Guêpier nain</div>
+                        <div class="latin-label">(Merops pusillus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1TO1GDngQEberiT3Kd4z0glACLlKzlfYT" loading="lazy" alt="Little_Bee-eater.jpg">
+                            <div class="meta-label">Tanzania - 09 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1TO1GDngQEberiT3Kd4z0glACLlKzlfYT" target="_blank">Little_Bee-eater.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Olive Bee-eater</div>
+                        <div class="french-label">Guêpier de Madagascar</div>
+                        <div class="latin-label">(Merops superciliosus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1f0RwmK9kwE-2KVEqw9gK0S3v_C0FvirI" loading="lazy" alt="Olive_Bee-eater_-_Guepier_de_Madagascar_5494.jpg">
+                            <div class="meta-label">MG - 07 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1f0RwmK9kwE-2KVEqw9gK0S3v_C0FvirI" target="_blank">Olive_Bee-eater_-_Guepier_de_Madagascar_5494.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1P9Bn--p90im1P2YXyLb2P0kQgJ6T0tmA" loading="lazy" alt="Olive_Bee-eater_-_Guepier_de_Madagascar_7031.jpg">
+                            <div class="meta-label">MG - 07 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1P9Bn--p90im1P2YXyLb2P0kQgJ6T0tmA" target="_blank">Olive_Bee-eater_-_Guepier_de_Madagascar_7031.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1o1R0mwAKRtogi_LpKX1jDTzQXg3TEDZK" loading="lazy" alt="Olive_Bee-eater_-_Guepier_de_Madagascar_7814.jpg">
+                            <div class="meta-label">MG - 07 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1o1R0mwAKRtogi_LpKX1jDTzQXg3TEDZK" target="_blank">Olive_Bee-eater_-_Guepier_de_Madagascar_7814.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1IvYBjss2FXLP5II9ZDCYuLyu-oawbZwF" loading="lazy" alt="Olive_Bee-eater_-_Guepier_de_Madagascar_8529.jpg">
+                            <div class="meta-label">MG - 07 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1IvYBjss2FXLP5II9ZDCYuLyu-oawbZwF" target="_blank">Olive_Bee-eater_-_Guepier_de_Madagascar_8529.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Southern Carmine Bee-eater</div>
+                        <div class="french-label">Guêpier carmin</div>
+                        <div class="latin-label">(Merops nubicoides)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/16DJmoT7RjezS6JTjOaolyzrnMtvUs1I5" loading="lazy" alt="Southern_Carmine_Bee-eater_7947.jpg">
+                            <div class="meta-label">BW - 09 Oct 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/16DJmoT7RjezS6JTjOaolyzrnMtvUs1I5" target="_blank">Southern_Carmine_Bee-eater_7947.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="family-card">
+            <div class="family-header">
+                <div class="family-name">Motmots</div>
+                <div class="family-order-label">Momotidae / Coraciiformes</div>
+            </div>
+            <div class="species-list">
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Tody Motmot</div>
+                        <div class="french-label">Motmot nain</div>
+                        <div class="latin-label">(Hylomanes momotula)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1BcM4Su_Z-Zm_fguWPGX5_xx1HAg1Rsam" loading="lazy" alt="Tody_Motmot.jpg">
+                            <div class="meta-label">Panama - 13 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1BcM4Su_Z-Zm_fguWPGX5_xx1HAg1Rsam" target="_blank">Tody_Motmot.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1GZy5tnGsDZOnaHoq2jMs0sfE4w_fKuZ_" loading="lazy" alt="Tody_motmot_2168.jpg">
+                            <div class="meta-label">Panama - 13 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1GZy5tnGsDZOnaHoq2jMs0sfE4w_fKuZ_" target="_blank">Tody_motmot_2168.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Lesson's Motmot</div>
+                        <div class="french-label">Motmot de Lesson</div>
+                        <div class="latin-label">(Momotus lessonii)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="Photos/Lesson%27s_Motmot_1644.jpg" loading="lazy" alt="Lesson's_Motmot_1644.jpg">
+                            <div class="meta-label">Belize - 01 Dec 2011</div>
+                            <div class="filename"><a href="Photos/Lesson%27s_Motmot_1644.jpg" target="_blank">Lesson's_Motmot_1644.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="Photos/Lesson%27s_Motmot_1689.jpg" loading="lazy" alt="Lesson's_Motmot_1689.jpg">
+                            <div class="meta-label">Belize - 01 Dec 2011</div>
+                            <div class="filename"><a href="Photos/Lesson%27s_Motmot_1689.jpg" target="_blank">Lesson's_Motmot_1689.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="Photos/Lesson%27s_Motmot_3385MF.jpg" loading="lazy" alt="Lesson's_Motmot_3385MF.jpg">
+                            <div class="meta-label">Belize - 01 Dec 2011</div>
+                            <div class="filename"><a href="Photos/Lesson%27s_Motmot_3385MF.jpg" target="_blank">Lesson's_Motmot_3385MF.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Whooping Motmot</div>
+                        <div class="french-label">Motmot caraïbe</div>
+                        <div class="latin-label">(Momotus subrufescens)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1VMp9g4xBsuac93Q9wxRIwGkuiUuNLrc6" loading="lazy" alt="Whooping_Motmot_21695.jpg">
+                            <div class="meta-label">Colombia - 25 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1VMp9g4xBsuac93Q9wxRIwGkuiUuNLrc6" target="_blank">Whooping_Motmot_21695.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Trinidad Motmot</div>
+                        <div class="french-label">Motmot de Trinidad</div>
+                        <div class="latin-label">(Momotus bahamensis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1sx8wd5bzqRoKhSqJB-MNUaVRc5yQJiq5" loading="lazy" alt="Trinidad_Motmot_6267.jpg">
+                            <div class="meta-label">TT - 06 Apr 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1sx8wd5bzqRoKhSqJB-MNUaVRc5yQJiq5" target="_blank">Trinidad_Motmot_6267.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Andean Motmot</div>
+                        <div class="french-label">Motmot d'Équateur</div>
+                        <div class="latin-label">(Momotus aequatorialis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1RAaPKyezStwGhKFSp-U7aL6fEeI3ymqL" loading="lazy" alt="Andean_Motmot_3307.jpg">
+                            <div class="meta-label">Colombia - 18 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1RAaPKyezStwGhKFSp-U7aL6fEeI3ymqL" target="_blank">Andean_Motmot_3307.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1ytl9JM7J1W-R_X7Ek7SAJRrnWRFQVFNO" loading="lazy" alt="Andean_Motmot_5971.jpg">
+                            <div class="meta-label">Colombia - 18 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1ytl9JM7J1W-R_X7Ek7SAJRrnWRFQVFNO" target="_blank">Andean_Motmot_5971.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Rufous Motmot</div>
+                        <div class="french-label">Motmot roux</div>
+                        <div class="latin-label">(Baryphthengus martii)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1nzdlv8dCCuqm0rantBV7niEL4ldY_JX4" loading="lazy" alt="Rufous_Motmot_5123.jpg">
+                            <div class="meta-label">Panama - 11 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1nzdlv8dCCuqm0rantBV7niEL4ldY_JX4" target="_blank">Rufous_Motmot_5123.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1SBAK2WyFbcbxrZfNGTcci-wgtH6xDWey" loading="lazy" alt="Rufous_Motmot_5126.jpg">
+                            <div class="meta-label">Panama - 11 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1SBAK2WyFbcbxrZfNGTcci-wgtH6xDWey" target="_blank">Rufous_Motmot_5126.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1hmVYvhIiKjfXdj5Jup9YBWgjvVQIt-ZS" loading="lazy" alt="Rufous_Motmot_5153.jpg">
+                            <div class="meta-label">Panama - 11 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1hmVYvhIiKjfXdj5Jup9YBWgjvVQIt-ZS" target="_blank">Rufous_Motmot_5153.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Keel-billed Motmot</div>
+                        <div class="french-label">Motmot à bec caréné</div>
+                        <div class="latin-label">(Electron carinatum)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1dFrymg_7mcvl7hXN2dFxsYplzsi2SpCI" loading="lazy" alt="Keel-billed_Motmot_5916.jpg">
+                            <div class="meta-label">CR - 08 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1dFrymg_7mcvl7hXN2dFxsYplzsi2SpCI" target="_blank">Keel-billed_Motmot_5916.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Broad-billed Motmot</div>
+                        <div class="french-label">Motmot à bec large</div>
+                        <div class="latin-label">(Electron platyrhynchum)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1z7tgpNKzQ8qBkWd4sS7zS14XXTP_BRKS" loading="lazy" alt="Broad-billed_Motmot_2.jpg">
+                            <div class="meta-label">Panama - 11 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1z7tgpNKzQ8qBkWd4sS7zS14XXTP_BRKS" target="_blank">Broad-billed_Motmot_2.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1J3dtmOAioZdPZpof0K2acFR5cC5FUJhn" loading="lazy" alt="Broad-billed_motmot-2.jpg">
+                            <div class="meta-label">Panama - 11 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1J3dtmOAioZdPZpof0K2acFR5cC5FUJhn" target="_blank">Broad-billed_motmot-2.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1fRUdrjOK0EZeiDVZa1ztjnnZqVkY3lY-" loading="lazy" alt="Broad-billed_motmot.jpg">
+                            <div class="meta-label">Panama - 11 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1fRUdrjOK0EZeiDVZa1ztjnnZqVkY3lY-" target="_blank">Broad-billed_motmot.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Turquoise-browed Motmot</div>
+                        <div class="french-label">Motmot à sourcils bleus</div>
+                        <div class="latin-label">(Eumomota superciliosa)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/16ODcwZH_8GAvsFMuu9sl0MekUWwJHw4y" loading="lazy" alt="Turquoise-browed_Motmot_8749.jpg">
+                            <div class="meta-label">MX - 21 Dec 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/16ODcwZH_8GAvsFMuu9sl0MekUWwJHw4y" target="_blank">Turquoise-browed_Motmot_8749.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1zFP8d2axkzeZBSLsMc7X8ixDQn9c5JYx" loading="lazy" alt="Turquoise-browed_Motmot_MF5829.jpg">
+                            <div class="meta-label">MX - 21 Dec 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1zFP8d2axkzeZBSLsMc7X8ixDQn9c5JYx" target="_blank">Turquoise-browed_Motmot_MF5829.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="family-card">
+            <div class="family-header">
+                <div class="family-name">Kingfishers</div>
+                <div class="family-order-label">Alcedinidae / Coraciiformes</div>
+            </div>
+            <div class="species-list">
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Malachite Kingfisher</div>
+                        <div class="french-label">Martin-pêcheur huppé</div>
+                        <div class="latin-label">(Corythornis cristatus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/13LcI0dFxOVMHz4A6Udclf9BumZIyvH7i" loading="lazy" alt="Malachite_Kingfisher_7671.jpg">
+                            <div class="meta-label">BW - 08 Oct 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/13LcI0dFxOVMHz4A6Udclf9BumZIyvH7i" target="_blank">Malachite_Kingfisher_7671.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Malagasy Kingfisher</div>
+                        <div class="french-label">Martin-pêcheur vintsi</div>
+                        <div class="latin-label">(Corythornis vintsioides)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/15yOwaFizzhLnWch4Qnc6UfHjWTvhm-j_" loading="lazy" alt="Malagasy_Kingfisher_9316.jpg">
+                            <div class="meta-label">MG - 06 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/15yOwaFizzhLnWch4Qnc6UfHjWTvhm-j_" target="_blank">Malagasy_Kingfisher_9316.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1TSpqvC6rHRDStcEyAE03kzwe1dpoVizf" loading="lazy" alt="Malagasy_Kingfisher_vintsi_8741MF.jpg">
+                            <div class="meta-label">MG - 06 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1TSpqvC6rHRDStcEyAE03kzwe1dpoVizf" target="_blank">Malagasy_Kingfisher_vintsi_8741MF.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Madagascar Pygmy Kingfisher</div>
+                        <div class="french-label">Martin-pêcheur malgache</div>
+                        <div class="latin-label">(Corythornis madagascariensis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1w6-XlgttPXvEtJQkCbYIUe5SNzBLs9k8" loading="lazy" alt="Madagascar_Pygmy_Kingfisher_-_Martin-pecheur_malgache_8840MF.jpg">
+                            <div class="meta-label">MG - 06 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1w6-XlgttPXvEtJQkCbYIUe5SNzBLs9k8" target="_blank">Madagascar_Pygmy_Kingfisher_-_Martin-pecheur_malgache_8840MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1kFtrqaR5faQBkuhbj1pI-VyYM8fcrNXi" loading="lazy" alt="Madagascar_Pygmy_Kingfisher_4842.jpg">
+                            <div class="meta-label">MG - 06 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1kFtrqaR5faQBkuhbj1pI-VyYM8fcrNXi" target="_blank">Madagascar_Pygmy_Kingfisher_4842.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Laughing Kookaburra</div>
+                        <div class="french-label">Martin-chasseur géant</div>
+                        <div class="latin-label">(Dacelo novaeguineae)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Fjpf4_al8isB7rPnf17q2bRssquK44_w" loading="lazy" alt="Laughing_Kookaburra_1326.jpg">
+                            <div class="meta-label">Australia - 07 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Fjpf4_al8isB7rPnf17q2bRssquK44_w" target="_blank">Laughing_Kookaburra_1326.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1OJPL_sbJIye_-PDz7eMq7a9piZ0yMLkf" loading="lazy" alt="Laughing_Kookaburra_2342.jpg">
+                            <div class="meta-label">Australia - 07 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1OJPL_sbJIye_-PDz7eMq7a9piZ0yMLkf" target="_blank">Laughing_Kookaburra_2342.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Qkm8J8geJ62_G2wKnKMziN-4UzVGQBKG" loading="lazy" alt="Laughing_Kookaburra_5237MF.jpg">
+                            <div class="meta-label">Australia - 07 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Qkm8J8geJ62_G2wKnKMziN-4UzVGQBKG" target="_blank">Laughing_Kookaburra_5237MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1hG-6c2ZDfDErpAwdDBk4_2xP_GGBUsDN" loading="lazy" alt="Laughing_Kookaburra_8049.jpg">
+                            <div class="meta-label">Australia - 07 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1hG-6c2ZDfDErpAwdDBk4_2xP_GGBUsDN" target="_blank">Laughing_Kookaburra_8049.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1lkrFtTIwOIyTs97TbESI8iMcdLgNGUya" loading="lazy" alt="Laughing_Kookaburra_9837.jpg">
+                            <div class="meta-label">Australia - 07 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1lkrFtTIwOIyTs97TbESI8iMcdLgNGUya" target="_blank">Laughing_Kookaburra_9837.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Gray-headed Kingfisher</div>
+                        <div class="french-label">Martin-chasseur à tête grise</div>
+                        <div class="latin-label">(Halcyon leucocephala)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1koX8f08IGOUzk-ejzUOYGPxcjLIdnMKc" loading="lazy" alt="Gray-headed_Kingfisher_319.jpg">
+                            <div class="meta-label">Tanzania - 09 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1koX8f08IGOUzk-ejzUOYGPxcjLIdnMKc" target="_blank">Gray-headed_Kingfisher_319.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Brown-hooded Kingfisher</div>
+                        <div class="french-label">Martin-chasseur à tête brune</div>
+                        <div class="latin-label">(Halcyon albiventris)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1m63XQFCxguAockTT6gNJQkKhE_KxcPY9" loading="lazy" alt="Brown-hooded_Kingfisher_7757.jpg">
+                            <div class="meta-label">South Africa - 25 Sep 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1m63XQFCxguAockTT6gNJQkKhE_KxcPY9" target="_blank">Brown-hooded_Kingfisher_7757.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Sacred Kingfisher</div>
+                        <div class="french-label">Martin-chasseur sacré</div>
+                        <div class="latin-label">(Todiramphus sanctus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/14adkWGohNN0FS2793WJJAy5yZMjxCqkN" loading="lazy" alt="Sacred_Kingfisher_8203.jpg">
+                            <div class="meta-label">Australia - 11 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/14adkWGohNN0FS2793WJJAy5yZMjxCqkN" target="_blank">Sacred_Kingfisher_8203.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Giant Kingfisher</div>
+                        <div class="french-label">Martin-pêcheur géant</div>
+                        <div class="latin-label">(Megaceryle maxima)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/10lzhMTlTfCoo9g1iQxvemWp7TArvNkz4" loading="lazy" alt="Giant_Kingfisher_6914.jpg">
+                            <div class="meta-label">South Africa - 25 Sep 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/10lzhMTlTfCoo9g1iQxvemWp7TArvNkz4" target="_blank">Giant_Kingfisher_6914.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Ringed Kingfisher</div>
+                        <div class="french-label">Martin-pêcheur à ventre roux</div>
+                        <div class="latin-label">(Megaceryle torquata)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1MU30sR_1OLOdG1d2CZotggHAamW7gjDB" loading="lazy" alt="Ringed_Kingfisher1778.jpg">
+                            <div class="meta-label">Colombia - 29 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1MU30sR_1OLOdG1d2CZotggHAamW7gjDB" target="_blank">Ringed_Kingfisher1778.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1iCV2AdtJHl0bFox-yqclWHKUuTk-hbGn" loading="lazy" alt="Ringed_Kingfisher_23121.jpg">
+                            <div class="meta-label">Colombia - 29 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1iCV2AdtJHl0bFox-yqclWHKUuTk-hbGn" target="_blank">Ringed_Kingfisher_23121.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Zdfb-NBOYLMW0dblx5zfmzHQ0Z4fmP8h" loading="lazy" alt="Ringed_Kingfisher_2723MF.jpg">
+                            <div class="meta-label">Colombia - 29 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Zdfb-NBOYLMW0dblx5zfmzHQ0Z4fmP8h" target="_blank">Ringed_Kingfisher_2723MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1LAN4jmymDFDzwySk5E41Q1jq_Cz_xCh1" loading="lazy" alt="Ringed_Kingfisher_7217.jpg">
+                            <div class="meta-label">Colombia - 29 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1LAN4jmymDFDzwySk5E41Q1jq_Cz_xCh1" target="_blank">Ringed_Kingfisher_7217.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Belted Kingfisher</div>
+                        <div class="french-label">Martin-pêcheur d'Amérique</div>
+                        <div class="latin-label">(Megaceryle alcyon)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Y5xaEHxG_GRiXfb_AjC3hqYGEqGj6PAS" loading="lazy" alt="Belted_Kingfisher_0616.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Y5xaEHxG_GRiXfb_AjC3hqYGEqGj6PAS" target="_blank">Belted_Kingfisher_0616.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1WWpuLKqe8V08EjCG92NOnilaooVDsvYO" loading="lazy" alt="Belted_Kingfisher_1425.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1WWpuLKqe8V08EjCG92NOnilaooVDsvYO" target="_blank">Belted_Kingfisher_1425.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/17bu3UV_e5VZbKA24rQ0GnWBmM6CM-L4d" loading="lazy" alt="Belted_Kingfisher_6345.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/17bu3UV_e5VZbKA24rQ0GnWBmM6CM-L4d" target="_blank">Belted_Kingfisher_6345.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Zxs5Xw5HjwGl4Y2Wqd2TR9e6JM_uqg-v" loading="lazy" alt="Belted_Kingfisher_7254.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Zxs5Xw5HjwGl4Y2Wqd2TR9e6JM_uqg-v" target="_blank">Belted_Kingfisher_7254.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1IgP7LlfN-gmMjcZqsw48v60C4QeI3CLZ" loading="lazy" alt="Belted_Kingfisher_9466.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1IgP7LlfN-gmMjcZqsw48v60C4QeI3CLZ" target="_blank">Belted_Kingfisher_9466.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Pied Kingfisher</div>
+                        <div class="french-label">Martin-pêcheur pie</div>
+                        <div class="latin-label">(Ceryle rudis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1GdfwMsrukBzV6wyOziaRTNWSqLDWlkGV" loading="lazy" alt="Pied_Kingfisher_6677.jpg">
+                            <div class="meta-label">South Africa - 25 Sep 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1GdfwMsrukBzV6wyOziaRTNWSqLDWlkGV" target="_blank">Pied_Kingfisher_6677.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Amazon Kingfisher</div>
+                        <div class="french-label">Martin-pêcheur d'Amazonie</div>
+                        <div class="latin-label">(Chloroceryle amazona)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/17tWedOMl9s6KbdQp_XumIatnxzCg0HIw" loading="lazy" alt="Amazon_Kingfisher_7123.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/17tWedOMl9s6KbdQp_XumIatnxzCg0HIw" target="_blank">Amazon_Kingfisher_7123.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">American Pygmy Kingfisher</div>
+                        <div class="french-label">Martin-pêcheur nain</div>
+                        <div class="latin-label">(Chloroceryle aenea)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/13l-RONKuWf-nukDDelrO9KG9Jjp5DI_z" loading="lazy" alt="American_Pygmy_Kingfisher_7384.jpg">
+                            <div class="meta-label">Panama - 23 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/13l-RONKuWf-nukDDelrO9KG9Jjp5DI_z" target="_blank">American_Pygmy_Kingfisher_7384.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1fUmKu6nwxdV5bOq3snS4WrfrIIDVedZ_" loading="lazy" alt="American_Pygmy_Kingfisher_8916.jpg">
+                            <div class="meta-label">Panama - 23 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1fUmKu6nwxdV5bOq3snS4WrfrIIDVedZ_" target="_blank">American_Pygmy_Kingfisher_8916.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Green Kingfisher</div>
+                        <div class="french-label">Martin-pêcheur vert</div>
+                        <div class="latin-label">(Chloroceryle americana)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1uZTnF0z5fLMl6mzdJUgLxBrU9LYEn7gL" loading="lazy" alt="Green_Kingfisher.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1uZTnF0z5fLMl6mzdJUgLxBrU9LYEn7gL" target="_blank">Green_Kingfisher.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1kSB0fGSjKZn0_21d6n2ceR04XErBh8Q5" loading="lazy" alt="Green_Kingfisher_191.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1kSB0fGSjKZn0_21d6n2ceR04XErBh8Q5" target="_blank">Green_Kingfisher_191.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1TPEy2ocXJEaD0zawuzL7yooG3ztHqoU1" loading="lazy" alt="Green_Kingfisher_21568.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1TPEy2ocXJEaD0zawuzL7yooG3ztHqoU1" target="_blank">Green_Kingfisher_21568.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1lRlzttcaGiRdWsHE0zpIxjhga3_eTj5j" loading="lazy" alt="Green_Kingfisher_7205.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1lRlzttcaGiRdWsHE0zpIxjhga3_eTj5j" target="_blank">Green_Kingfisher_7205.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1szpMItjRnqaTP0cJrq7pipgD-mlM-agL" loading="lazy" alt="Green_Kingfisher_9117.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1szpMItjRnqaTP0cJrq7pipgD-mlM-agL" target="_blank">Green_Kingfisher_9117.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Green-and-rufous Kingfisher</div>
+                        <div class="french-label">Martin-pêcheur bicolore</div>
+                        <div class="latin-label">(Chloroceryle inda)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1pc4rFbqmp1Hz9T9jA_W2-8Fj2JEvJZMu" loading="lazy" alt="Green-and-rufous_Kingfisher_1760.jpg">
+                            <div class="meta-label">Panama - 05 Apr 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1pc4rFbqmp1Hz9T9jA_W2-8Fj2JEvJZMu" target="_blank">Green-and-rufous_Kingfisher_1760.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="family-card">
+            <div class="family-header">
+                <div class="family-name">Rollers</div>
+                <div class="family-order-label">Coraciidae / Coraciiformes</div>
+            </div>
+            <div class="species-list">
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Lilac-breasted Roller</div>
+                        <div class="french-label">Rollier à longs brins</div>
+                        <div class="latin-label">(Coracias caudatus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1n-bQBVNfuqojgZjGNedLV1YIjZgZQBs2" loading="lazy" alt="Lilac-breasted_Roller_147.jpg">
+                            <div class="meta-label">Tanzania - 09 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1n-bQBVNfuqojgZjGNedLV1YIjZgZQBs2" target="_blank">Lilac-breasted_Roller_147.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/18eMZO7vrfDAGcwfev-KJGEXNVqRKE3sv" loading="lazy" alt="Lilac-breasted_Roller_206.jpg">
+                            <div class="meta-label">Tanzania - 09 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/18eMZO7vrfDAGcwfev-KJGEXNVqRKE3sv" target="_blank">Lilac-breasted_Roller_206.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1L2hnLpJ1lnzeWyOcg7uF3Nm9LwDT5rZn" loading="lazy" alt="Lilac-breasted_Roller_263.jpg">
+                            <div class="meta-label">Tanzania - 09 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1L2hnLpJ1lnzeWyOcg7uF3Nm9LwDT5rZn" target="_blank">Lilac-breasted_Roller_263.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1lp1voGOXQWLnFezwY4imKWi8oY76GJTG" loading="lazy" alt="Lilac-breasted_Roller_8003.jpg">
+                            <div class="meta-label">Tanzania - 09 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1lp1voGOXQWLnFezwY4imKWi8oY76GJTG" target="_blank">Lilac-breasted_Roller_8003.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Broad-billed Roller</div>
+                        <div class="french-label">Rolle violet</div>
+                        <div class="latin-label">(Eurystomus glaucurus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1R5nXKjglDX-6K3f-aVhObn-A_ZqjOth7" loading="lazy" alt="Broad-billed_Roller_9442.jpg">
+                            <div class="meta-label">BW - 12 Oct 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1R5nXKjglDX-6K3f-aVhObn-A_ZqjOth7" target="_blank">Broad-billed_Roller_9442.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Dollarbird</div>
+                        <div class="french-label">Rolle oriental</div>
+                        <div class="latin-label">(Eurystomus orientalis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1erhOS1q8BhvQ4Zjs2Nsj8h_zvIhM91Mr" loading="lazy" alt="Dollarbird.jpg">
+                            <div class="meta-label">Australia - 14 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1erhOS1q8BhvQ4Zjs2Nsj8h_zvIhM91Mr" target="_blank">Dollarbird.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="family-card">
+            <div class="family-header">
+                <div class="family-name">Ground-Rollers</div>
+                <div class="family-order-label">Brachypteraciidae / Coraciiformes</div>
+            </div>
+            <div class="species-list">
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Scaly Ground-Roller</div>
+                        <div class="french-label">Brachyptérolle écaillé</div>
+                        <div class="latin-label">(Geobiastes squamiger)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Ea_26gnZb9c46WnMB0ubhkRKpREFkogw" loading="lazy" alt="Scaly_Ground-Roller_-_Brachypterolle_ecaille_6222.jpg">
+                            <div class="meta-label">MG - 10 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Ea_26gnZb9c46WnMB0ubhkRKpREFkogw" target="_blank">Scaly_Ground-Roller_-_Brachypterolle_ecaille_6222.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Long-tailed Ground-Roller</div>
+                        <div class="french-label">Brachyptérolle à longue queue</div>
+                        <div class="latin-label">(Uratelornis chimaera)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1f5DPnPuXn6cSQ_-GfTMvAQ-cn6KqRns_" loading="lazy" alt="Long-tailed_Ground-Roller_-_Brachypterolle_a_longue_queue_6623.jpg">
+                            <div class="meta-label">MG - 13 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1f5DPnPuXn6cSQ_-GfTMvAQ-cn6KqRns_" target="_blank">Long-tailed_Ground-Roller_-_Brachypterolle_a_longue_queue_6623.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1zHY7Wqn4oWRTILi8v0PnmweZopR7nkfH" loading="lazy" alt="Long-tailed_Ground-Roller_-_Brachypterolle_a_longue_queue_9401MF.jpg">
+                            <div class="meta-label">MG - 13 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1zHY7Wqn4oWRTILi8v0PnmweZopR7nkfH" target="_blank">Long-tailed_Ground-Roller_-_Brachypterolle_a_longue_queue_9401MF.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Rufous-headed Ground-Roller</div>
+                        <div class="french-label">Brachyptérolle de Crossley</div>
+                        <div class="latin-label">(Atelornis crossleyi)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1m_44pcyqXQ_oWKJB-dbEdGxVNsSpj_3v" loading="lazy" alt="Rufous-headed_Ground-roller_-_Brachypterolle_de_Crossley_5418.jpg">
+                            <div class="meta-label">MG - 07 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1m_44pcyqXQ_oWKJB-dbEdGxVNsSpj_3v" target="_blank">Rufous-headed_Ground-roller_-_Brachypterolle_de_Crossley_5418.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1s-xeK8bPVaSngJiLU5D4ohDcE-hlTRnH" loading="lazy" alt="Rufous-headed_Ground-roller_-_Brachypterolle_de_Crossley_9078MF.jpg">
+                            <div class="meta-label">MG - 07 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1s-xeK8bPVaSngJiLU5D4ohDcE-hlTRnH" target="_blank">Rufous-headed_Ground-roller_-_Brachypterolle_de_Crossley_9078MF.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div></div></body></html>

@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photo Index</title>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; background: #121212; color: white; margin: 0; padding: 20px; padding-top: 80px; }
+        .family-list { display: flex; flex-direction: column; gap: 60px; max-width: 1800px; margin: 0 auto; }
+        
+        .family-card { background: #1e1e1e; border-radius: 24px; padding: 40px; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .family-header { margin-bottom: 30px; border-bottom: 2px solid #555; padding-bottom: 20px; }
+        .family-name { font-size: 36px; font-weight: 800; color: #4a9eff; text-transform: uppercase; letter-spacing: 2px; }
+        .family-order-label { font-size: 18px; opacity: 0.6; color: #fff; margin-top: 5px; font-weight: 500; }
+        
+        .species-list { display: flex; flex-direction: column; gap: 30px; }
+        .species-card { background: #2a2a2a; border-radius: 16px; padding: 20px; border: 1px solid #444; }
+        .species-header { margin-bottom: 15px; border-bottom: 1px solid #444; padding-bottom: 10px; }
+        .label { font-size: 24px; font-weight: 700; color: #fff; }
+        .french-label { font-size: 18px; opacity: 0.8; color: #ddd; }
+        .latin-label { font-size: 16px; opacity: 0.7; font-style: italic; color: #bbb; }
+        
+        .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
+        .photo-card { background: #333; border-radius: 10px; overflow: hidden; padding: 10px; display: flex; flex-direction: column; align-items: center; transition: transform 0.2s, background 0.2s; }
+        .photo-card:hover { transform: scale(1.02); background: #3d3d3d; }
+        
+        img { max-width: 100%; height: auto; border-radius: 6px; object-fit: contain; }
+        .meta-label { font-size: 11px; opacity: 0.7; align-self: flex-start; margin-top: 8px; color: #fff; }
+        .filename { font-size: 9px; opacity: 0.4; margin-top: 2px; word-break: break-all; align-self: flex-start; }
+        .filename a { color: #4a9eff; text-decoration: none; transition: color 0.2s; }
+        .filename a:hover { text-decoration: underline; }
+        
+        /* Intro Section Styles */
+        .intro-section { max-width: 1200px; margin: 0 auto 80px; padding: 60px; background: #1e1e1e; border-radius: 32px; border: 1px solid #333; box-shadow: 0 20px 50px rgba(0,0,0,0.6); line-height: 1.8; }
+        .intro-title { font-size: 48px; font-weight: 900; margin-bottom: 40px; color: #4a9eff; line-height: 1.2; text-align: center; }
+        .intro-text { font-size: 20px; opacity: 0.9; margin-bottom: 30px; }
+        .intro-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 30px; margin-top: 50px; border-top: 1px solid #444; padding-top: 40px; }
+        .stat-item { text-align: center; }
+        .stat-value { font-size: 36px; font-weight: 800; color: #4a9eff; display: block; }
+        .stat-label { font-size: 14px; opacity: 0.6; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* Mode Selector Styles */
+        .mode-selector { position: fixed; top: 0; left: 0; right: 0; background: rgba(30, 30, 30, 0.95); backdrop-filter: blur(10px); padding: 15px 40px; border-bottom: 1px solid #333; z-index: 1000; display: flex; justify-content: flex-end; align-items: center; gap: 20px; }
+        .mode-button { background: #333; border: 1px solid #444; color: white; padding: 8px 20px; border-radius: 20px; cursor: pointer; font-weight: 600; transition: all 0.2s; }
+        .mode-button.active { background: #4a9eff; border-color: #4a9eff; }
+        .mode-label { font-size: 14px; opacity: 0.6; font-weight: 600; text-transform: uppercase; }
+
+        /* Restricted Mode Styles */
+        body.mode-public .filename { display: none; }
+        body.mode-public .photo-card:hover { transform: none; background: #333; }
+
+        /* Modal Styles */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; justify-content: center; align-items: center; }
+        .modal { background: #1e1e1e; padding: 40px; border-radius: 24px; border: 1px solid #333; width: 400px; box-shadow: 0 20px 50px rgba(0,0,0,0.8); }
+        .modal h2 { margin-top: 0; color: #4a9eff; }
+        .modal input { width: 100%; padding: 12px; margin: 20px 0; background: #2a2a2a; border: 1px solid #444; color: white; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        .modal-buttons { display: flex; justify-content: flex-end; gap: 15px; }
+        .modal-buttons button { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; }
+        .btn-cancel { background: #333; color: white; }
+        .btn-submit { background: #4a9eff; color: white; }
+    </style>
+</head>
+<body class="mode-public">
+    <div class="mode-selector">
+        <span class="mode-label">View Mode:</span>
+        <button id="btn-public" class="mode-button active" onclick="setMode('PUBLIC')">PUBLIC</button>
+        <button id="btn-user" class="mode-button" onclick="requestUserMode()">USER</button>
+    </div>
+
+    <div id="password-modal" class="modal-overlay">
+        <div class="modal">
+            <h2>Enter Password</h2>
+            <p>Please enter the password to activate USER mode.</p>
+            <input type="password" id="password-input" placeholder="Password">
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+                <button class="btn-submit" onclick="submitPassword()">Submit</button>
+            </div>
+        </div>
+    </div>
+
+    
+    <div class="family-list">
+        <div class="family-card">
+            <div class="family-header">
+                <div class="family-name">Frigatebirds</div>
+                <div class="family-order-label">Fregatidae / Suliformes</div>
+            </div>
+            <div class="species-list">
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Magnificent Frigatebird</div>
+                        <div class="french-label">Frégate superbe</div>
+                        <div class="latin-label">(Fregata magnificens)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1nejDwjwrh6EvVUD20Ka-j0Cn2VKlGhlR" loading="lazy" alt="Magnificent_Frigatebird_21212.jpg">
+                            <div class="meta-label">Ecuador - 07 Jul 2004</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1nejDwjwrh6EvVUD20Ka-j0Cn2VKlGhlR" target="_blank">Magnificent_Frigatebird_21212.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/15pC8kJ1qLLDjNr5NrYXKn-RrLr3P3AA_" loading="lazy" alt="Magnificent_Frigatebird_3050.jpg">
+                            <div class="meta-label">Ecuador - 07 Jul 2004</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/15pC8kJ1qLLDjNr5NrYXKn-RrLr3P3AA_" target="_blank">Magnificent_Frigatebird_3050.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1pfHI9a5Ds_TurMoWGJYaKQp0lD2zvIeX" loading="lazy" alt="Magnificent_Frigatebird_5096.jpg">
+                            <div class="meta-label">Ecuador - 07 Jul 2004</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1pfHI9a5Ds_TurMoWGJYaKQp0lD2zvIeX" target="_blank">Magnificent_Frigatebird_5096.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/13yTMMSE8jFbr5VSQDSRbP6n-BF5Pxx6R" loading="lazy" alt="Magnificent_Frigatebird_5992.jpg">
+                            <div class="meta-label">Ecuador - 07 Jul 2004</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/13yTMMSE8jFbr5VSQDSRbP6n-BF5Pxx6R" target="_blank">Magnificent_Frigatebird_5992.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/15_8sBWnDaRDkwfNokjN5W17arDpVSdl1" loading="lazy" alt="Magnificent_Frigatebird_6472.jpg">
+                            <div class="meta-label">Ecuador - 07 Jul 2004</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/15_8sBWnDaRDkwfNokjN5W17arDpVSdl1" target="_blank">Magnificent_Frigatebird_6472.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1SBVyyGSzj9IKwGS0vJNmEnITpuScJXVo" loading="lazy" alt="Magnificent_Frigatebird_6490.jpg">
+                            <div class="meta-label">Ecuador - 07 Jul 2004</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1SBVyyGSzj9IKwGS0vJNmEnITpuScJXVo" target="_blank">Magnificent_Frigatebird_6490.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1x10HT_diHQDcQsj98JMVjQdxJ9CZ1GWw" loading="lazy" alt="Magnificent_Frigatebird_6613.jpg">
+                            <div class="meta-label">Ecuador - 07 Jul 2004</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1x10HT_diHQDcQsj98JMVjQdxJ9CZ1GWw" target="_blank">Magnificent_Frigatebird_6613.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1rUPOnjIb-XyA-Y-dMv1918vWb2FNyRDb" loading="lazy" alt="Magnificent_Frigatebird_736.jpg">
+                            <div class="meta-label">Ecuador - 07 Jul 2004</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1rUPOnjIb-XyA-Y-dMv1918vWb2FNyRDb" target="_blank">Magnificent_Frigatebird_736.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1NTTKEa2LToML6O_dQFDJ5mCHbhm9dbuM" loading="lazy" alt="Magnificent_Frigatebird_7749MF.jpg">
+                            <div class="meta-label">Ecuador - 07 Jul 2004</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1NTTKEa2LToML6O_dQFDJ5mCHbhm9dbuM" target="_blank">Magnificent_Frigatebird_7749MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1wCsQ52W5UV1YBijmkB3seLCltXic98zj" loading="lazy" alt="Magnificent_Frigatebird_MF6388.jpg">
+                            <div class="meta-label">Ecuador - 07 Jul 2004</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1wCsQ52W5UV1YBijmkB3seLCltXic98zj" target="_blank">Magnificent_Frigatebird_MF6388.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1i4qzulIXKV923RMjBTOR94ZQE7UK-_bn" loading="lazy" alt="Magnificent_Frigatebird_MF6392.jpg">
+                            <div class="meta-label">Ecuador - 07 Jul 2004</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1i4qzulIXKV923RMjBTOR94ZQE7UK-_bn" target="_blank">Magnificent_Frigatebird_MF6392.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="family-card">
+            <div class="family-header">
+                <div class="family-name">Boobies and Gannets</div>
+                <div class="family-order-label">Sulidae / Suliformes</div>
+            </div>
+            <div class="species-list">
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Northern Gannet</div>
+                        <div class="french-label">Fou de Bassan</div>
+                        <div class="latin-label">(Morus bassanus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1f3ptm3sfZA9sj-ACemFel2sM0c5UBy-t" loading="lazy" alt="Northern_gannet_9833TIF.jpg">
+                            <div class="meta-label">USA - 25 Nov 2015</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1f3ptm3sfZA9sj-ACemFel2sM0c5UBy-t" target="_blank">Northern_gannet_9833TIF.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Australasian Gannet</div>
+                        <div class="french-label">Fou austral</div>
+                        <div class="latin-label">(Morus serrator)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1RX896Rpyv3pL5wYdONjw_vXKQ5Ibz1Xh" loading="lazy" alt="Australasian_Gannet_9546.jpg">
+                            <div class="meta-label">Australia - 15 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1RX896Rpyv3pL5wYdONjw_vXKQ5Ibz1Xh" target="_blank">Australasian_Gannet_9546.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1kogNGcPLQLUox1hJ83jgHctYVtUzJeGH" loading="lazy" alt="Australasian_Gannet_9550.jpg">
+                            <div class="meta-label">Australia - 15 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1kogNGcPLQLUox1hJ83jgHctYVtUzJeGH" target="_blank">Australasian_Gannet_9550.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Red-footed Booby</div>
+                        <div class="french-label">Fou à pieds rouges</div>
+                        <div class="latin-label">(Sula sula)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1BFD0bFjsR3aAYXU6xVRRWDRzDhG8jnPX" loading="lazy" alt="Red-footed_Booby_6764.jpg">
+                            <div class="meta-label">TT - 14 Apr 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1BFD0bFjsR3aAYXU6xVRRWDRzDhG8jnPX" target="_blank">Red-footed_Booby_6764.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Brown Booby</div>
+                        <div class="french-label">Fou brun</div>
+                        <div class="latin-label">(Sula leucogaster)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1F14mIOzSVGKkvknIKAJmaHm7bjVeUPeM" loading="lazy" alt="Brown_Booby_6812.jpg">
+                            <div class="meta-label">TT - 14 Apr 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1F14mIOzSVGKkvknIKAJmaHm7bjVeUPeM" target="_blank">Brown_Booby_6812.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Nazca Booby</div>
+                        <div class="french-label">Fou de Grant</div>
+                        <div class="latin-label">(Sula granti)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1tuhKliHtjXVZVGGSEGurJF6-2EtZBfsK" loading="lazy" alt="Nazca_Booby_63.jpg">
+                            <div class="meta-label">Ecuador - 06 Jul 2004</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1tuhKliHtjXVZVGGSEGurJF6-2EtZBfsK" target="_blank">Nazca_Booby_63.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Blue-footed Booby</div>
+                        <div class="french-label">Fou à pieds bleus</div>
+                        <div class="latin-label">(Sula nebouxii)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1_tvrAyGYLsO3RvapwXBBWus_guXjUB22" loading="lazy" alt="Blue-footed_Booby_230.jpg">
+                            <div class="meta-label">Ecuador - 06 Jul 2004</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1_tvrAyGYLsO3RvapwXBBWus_guXjUB22" target="_blank">Blue-footed_Booby_230.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1E0-vr8lGjeS50DcVWuzxpM4k-JdabcAC" loading="lazy" alt="Blue-footed_Booby_56.jpg">
+                            <div class="meta-label">Ecuador - 06 Jul 2004</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1E0-vr8lGjeS50DcVWuzxpM4k-JdabcAC" target="_blank">Blue-footed_Booby_56.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="family-card">
+            <div class="family-header">
+                <div class="family-name">Anhingas</div>
+                <div class="family-order-label">Anhingidae / Suliformes</div>
+            </div>
+            <div class="species-list">
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Anhinga</div>
+                        <div class="french-label">Anhinga d'Amérique</div>
+                        <div class="latin-label">(Anhinga anhinga)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="Photos/Anhinga_%28juveniles%29_4963.jpg" loading="lazy" alt="Anhinga_(juveniles)_4963.jpg">
+                            <div class="meta-label">Belize - 27 Nov 2011</div>
+                            <div class="filename"><a href="Photos/Anhinga_%28juveniles%29_4963.jpg" target="_blank">Anhinga_(juveniles)_4963.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Vkw6VB2ZBbL791GCenQoqUuI_1HeBB8O" loading="lazy" alt="Anhinga_0317.jpg">
+                            <div class="meta-label">Belize - 27 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Vkw6VB2ZBbL791GCenQoqUuI_1HeBB8O" target="_blank">Anhinga_0317.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1eIQdsZcix1nPixlb-okULNRJTzLTRwCh" loading="lazy" alt="Anhinga_034.jpg">
+                            <div class="meta-label">Belize - 27 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1eIQdsZcix1nPixlb-okULNRJTzLTRwCh" target="_blank">Anhinga_034.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1_nrkx-2Tp9Mx1EkTkiC_OCXYb0VXso3b" loading="lazy" alt="Anhinga_0997.jpg">
+                            <div class="meta-label">Belize - 27 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1_nrkx-2Tp9Mx1EkTkiC_OCXYb0VXso3b" target="_blank">Anhinga_0997.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1mk891zetITWFPyJA6q6M0XkbSo0kv4wK" loading="lazy" alt="Anhinga_1654.jpg">
+                            <div class="meta-label">Belize - 27 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1mk891zetITWFPyJA6q6M0XkbSo0kv4wK" target="_blank">Anhinga_1654.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/16q2iGITqjnuOrBbbKhKEcFDGWazj1lGK" loading="lazy" alt="Anhinga_20543.jpg">
+                            <div class="meta-label">Belize - 27 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/16q2iGITqjnuOrBbbKhKEcFDGWazj1lGK" target="_blank">Anhinga_20543.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1YwfwFC4wKs_thvM2X2Y2vUYXLsJhfD9O" loading="lazy" alt="Anhinga_21377.jpg">
+                            <div class="meta-label">Belize - 27 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1YwfwFC4wKs_thvM2X2Y2vUYXLsJhfD9O" target="_blank">Anhinga_21377.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1V2Lq1bwjEFNxUrfA0tqOih-c0UwEKxbi" loading="lazy" alt="Anhinga_2179MF.jpg">
+                            <div class="meta-label">Belize - 27 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1V2Lq1bwjEFNxUrfA0tqOih-c0UwEKxbi" target="_blank">Anhinga_2179MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1aOB4SHOskTWfJSMNx1d-Oe4OWm73_WX2" loading="lazy" alt="Anhinga_2216.jpg">
+                            <div class="meta-label">Belize - 27 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1aOB4SHOskTWfJSMNx1d-Oe4OWm73_WX2" target="_blank">Anhinga_2216.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/12L1oBr5Rffn-KYOekcVWkcf4MA8Ah1E7" loading="lazy" alt="Anhinga_2792.jpg">
+                            <div class="meta-label">Belize - 27 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/12L1oBr5Rffn-KYOekcVWkcf4MA8Ah1E7" target="_blank">Anhinga_2792.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1eGbJFK_MMpE6IKnH4hyC-JvhkFN7TibZ" loading="lazy" alt="Anhinga_3256.jpg">
+                            <div class="meta-label">Belize - 27 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1eGbJFK_MMpE6IKnH4hyC-JvhkFN7TibZ" target="_blank">Anhinga_3256.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1mCM1YAzH9aGn68LsKHDO_etAtmirUJ77" loading="lazy" alt="Anhinga_3258.jpg">
+                            <div class="meta-label">Belize - 27 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1mCM1YAzH9aGn68LsKHDO_etAtmirUJ77" target="_blank">Anhinga_3258.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1hLS6YcsxO9YydeC_oW-YYkazqPRWknZa" loading="lazy" alt="Anhinga_6822MF.jpg">
+                            <div class="meta-label">Belize - 27 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1hLS6YcsxO9YydeC_oW-YYkazqPRWknZa" target="_blank">Anhinga_6822MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1fHZWUIdxQ_oGFIbcJOhlBfhPnsShppYO" loading="lazy" alt="Anhinga_8593MF.jpg">
+                            <div class="meta-label">Belize - 27 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1fHZWUIdxQ_oGFIbcJOhlBfhPnsShppYO" target="_blank">Anhinga_8593MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1TZCxJ_RjvUb0x3LhfWVr1paNLK88t8oA" loading="lazy" alt="Anhinga_9702.jpg">
+                            <div class="meta-label">Belize - 27 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1TZCxJ_RjvUb0x3LhfWVr1paNLK88t8oA" target="_blank">Anhinga_9702.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1fFszPyRMzwPgjiC4gBM8zHJRNvCC6ZE7" loading="lazy" alt="Anhinga_9728.jpg">
+                            <div class="meta-label">Belize - 27 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1fFszPyRMzwPgjiC4gBM8zHJRNvCC6ZE7" target="_blank">Anhinga_9728.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1LPd6Ii0ecWtaBHf527xG1FVwYl0r7DKn" loading="lazy" alt="Anhinga_with_fish_4550.jpg">
+                            <div class="meta-label">Belize - 27 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1LPd6Ii0ecWtaBHf527xG1FVwYl0r7DKn" target="_blank">Anhinga_with_fish_4550.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">African Darter</div>
+                        <div class="french-label">Anhinga d'Afrique</div>
+                        <div class="latin-label">(Anhinga rufa)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="Photos/African_Darter_6406.jpg" loading="lazy" alt="African_Darter_6406.jpg">
+                            <div class="meta-label">South Africa - 28 Sep 2014</div>
+                            <div class="filename"><a href="Photos/African_Darter_6406.jpg" target="_blank">African_Darter_6406.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="family-card">
+            <div class="family-header">
+                <div class="family-name">Cormorants and Shags</div>
+                <div class="family-order-label">Phalacrocoracidae / Suliformes</div>
+            </div>
+            <div class="species-list">
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Little Pied Cormorant</div>
+                        <div class="french-label">Cormoran pie</div>
+                        <div class="latin-label">(Microcarbo melanoleucos)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/14CSl6NpCto2uoxhsrjwE2nA4wNVz15eT" loading="lazy" alt="Little_Pied_Cormorant_8127.jpg">
+                            <div class="meta-label">Australia - 07 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/14CSl6NpCto2uoxhsrjwE2nA4wNVz15eT" target="_blank">Little_Pied_Cormorant_8127.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Reed Cormorant</div>
+                        <div class="french-label">Cormoran africain</div>
+                        <div class="latin-label">(Microcarbo africanus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1GGO-lWxxXQuAWClQi5NyEbCKL2INijkm" loading="lazy" alt="Reed_Cormorant_2002.jpg">
+                            <div class="meta-label">South Africa - 23 Sep 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1GGO-lWxxXQuAWClQi5NyEbCKL2INijkm" target="_blank">Reed_Cormorant_2002.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Pelagic Cormorant</div>
+                        <div class="french-label">Cormoran pélagique</div>
+                        <div class="latin-label">(Urile pelagicus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1tPsbH7N3AaTRJQzXILYMCRcHmUvVyh0q" loading="lazy" alt="Pelagic_Cormorant_8834.jpg">
+                            <div class="meta-label">USA - 13 Oct 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1tPsbH7N3AaTRJQzXILYMCRcHmUvVyh0q" target="_blank">Pelagic_Cormorant_8834.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Great Cormorant</div>
+                        <div class="french-label">Grand Cormoran</div>
+                        <div class="latin-label">(Phalacrocorax carbo)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1EEZApoNg2oE5geYDSWzDmP_SR4RO89fk" loading="lazy" alt="Great_Cormorant.jpg">
+                            <div class="meta-label">BW - 08 Oct 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1EEZApoNg2oE5geYDSWzDmP_SR4RO89fk" target="_blank">Great_Cormorant.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Little Black Cormorant</div>
+                        <div class="french-label">Cormoran noir</div>
+                        <div class="latin-label">(Phalacrocorax sulcirostris)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/13NfuOsQn2datDeZ_FH21zFNoavRzNRNt" loading="lazy" alt="Little_Black_Cormorant.jpg">
+                            <div class="meta-label">Australia - 07 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/13NfuOsQn2datDeZ_FH21zFNoavRzNRNt" target="_blank">Little_Black_Cormorant.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/14ozO7pj0h9FXhBJH3HLWP7t6UIsS_vtw" loading="lazy" alt="Little_Black_Cormorant_3923MF.jpg">
+                            <div class="meta-label">Australia - 07 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/14ozO7pj0h9FXhBJH3HLWP7t6UIsS_vtw" target="_blank">Little_Black_Cormorant_3923MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1FhaQVrsgU4OeXBR9DsN3OSTilZqEcCbG" loading="lazy" alt="Little_Black_Cormorant_7367.jpg">
+                            <div class="meta-label">Australia - 07 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1FhaQVrsgU4OeXBR9DsN3OSTilZqEcCbG" target="_blank">Little_Black_Cormorant_7367.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Double-crested Cormorant</div>
+                        <div class="french-label">Cormoran à aigrettes</div>
+                        <div class="latin-label">(Nannopterum auritum)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1u4ndI7GZ2PYua7NSKakqg4V31cTQuR-z" loading="lazy" alt="Double-crested_Cormorant.jpg">
+                            <div class="meta-label">USA - 25 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1u4ndI7GZ2PYua7NSKakqg4V31cTQuR-z" target="_blank">Double-crested_Cormorant.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1cl9ombOizJPxrB6fOwFSz-w_1EzTdZf1" loading="lazy" alt="Double-crested_Cormorant_0338.jpg">
+                            <div class="meta-label">USA - 25 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1cl9ombOizJPxrB6fOwFSz-w_1EzTdZf1" target="_blank">Double-crested_Cormorant_0338.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1vf_Pg98v-iFczKQjqdzPD7DMi9mm2YVn" loading="lazy" alt="Double-crested_Cormorant_0346.jpg">
+                            <div class="meta-label">USA - 25 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1vf_Pg98v-iFczKQjqdzPD7DMi9mm2YVn" target="_blank">Double-crested_Cormorant_0346.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/12Sm0ACG886qAbfAJnXh4ovBJg8qXX_PH" loading="lazy" alt="Double-crested_Cormorant_1592.jpg">
+                            <div class="meta-label">USA - 25 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/12Sm0ACG886qAbfAJnXh4ovBJg8qXX_PH" target="_blank">Double-crested_Cormorant_1592.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1OhkHd6iPxF2kgvv4aIkawYOUMMRqy2pn" loading="lazy" alt="Double-crested_Cormorant_6038MF.jpg">
+                            <div class="meta-label">USA - 25 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1OhkHd6iPxF2kgvv4aIkawYOUMMRqy2pn" target="_blank">Double-crested_Cormorant_6038MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/16ZlgdgmtQf7_4cJ6eddtslmkxBJxjr_K" loading="lazy" alt="Double-crested_Cormorant_8390MF.jpg">
+                            <div class="meta-label">USA - 25 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/16ZlgdgmtQf7_4cJ6eddtslmkxBJxjr_K" target="_blank">Double-crested_Cormorant_8390MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1_CFoyw-97WNhRjLbFohoJQLGxzAJ-_Rw" loading="lazy" alt="Double-crested_Cormorant_8839.jpg">
+                            <div class="meta-label">USA - 25 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1_CFoyw-97WNhRjLbFohoJQLGxzAJ-_Rw" target="_blank">Double-crested_Cormorant_8839.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1dHerO2B1t1rtg6ID1sJcgee_Gwy-VLWp" loading="lazy" alt="Double-crested_Cormorant_9752MF.jpg">
+                            <div class="meta-label">USA - 25 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1dHerO2B1t1rtg6ID1sJcgee_Gwy-VLWp" target="_blank">Double-crested_Cormorant_9752MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1UNoUNXx2IkFKnGm15Y6igKrl9O89ypDd" loading="lazy" alt="Double-crested_cormorant-2.jpg">
+                            <div class="meta-label">USA - 25 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1UNoUNXx2IkFKnGm15Y6igKrl9O89ypDd" target="_blank">Double-crested_cormorant-2.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Neotropic Cormorant</div>
+                        <div class="french-label">Cormoran vigua</div>
+                        <div class="latin-label">(Nannopterum brasilianum)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1UBf52jMdoj8TO7uhPuQBsNa2796ijoGz" loading="lazy" alt="Neotropic_Cormorant.jpg">
+                            <div class="meta-label">Colombia - 29 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1UBf52jMdoj8TO7uhPuQBsNa2796ijoGz" target="_blank">Neotropic_Cormorant.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1MW_caBOk5jsH5u2EnZZqC-CoScTrcSMD" loading="lazy" alt="Neotropic_Cormorant_5048MF.jpg">
+                            <div class="meta-label">Colombia - 29 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1MW_caBOk5jsH5u2EnZZqC-CoScTrcSMD" target="_blank">Neotropic_Cormorant_5048MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1nNp3p-3WVvxCwR2_w5yNDSduCiTuDCV8" loading="lazy" alt="Neotropic_Cormorant_6508.jpg">
+                            <div class="meta-label">Colombia - 29 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1nNp3p-3WVvxCwR2_w5yNDSduCiTuDCV8" target="_blank">Neotropic_Cormorant_6508.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1sYeC0eCmnJ16B2mL_BT0G_xH8Nwu3tU8" loading="lazy" alt="Neotropic_Cormorant_7371.jpg">
+                            <div class="meta-label">Colombia - 29 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1sYeC0eCmnJ16B2mL_BT0G_xH8Nwu3tU8" target="_blank">Neotropic_Cormorant_7371.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div></div></body></html>

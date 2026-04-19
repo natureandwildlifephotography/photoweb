@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photo Index</title>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; background: #121212; color: white; margin: 0; padding: 20px; padding-top: 80px; }
+        .family-list { display: flex; flex-direction: column; gap: 60px; max-width: 1800px; margin: 0 auto; }
+        
+        .family-card { background: #1e1e1e; border-radius: 24px; padding: 40px; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .family-header { margin-bottom: 30px; border-bottom: 2px solid #555; padding-bottom: 20px; }
+        .family-name { font-size: 36px; font-weight: 800; color: #4a9eff; text-transform: uppercase; letter-spacing: 2px; }
+        .family-order-label { font-size: 18px; opacity: 0.6; color: #fff; margin-top: 5px; font-weight: 500; }
+        
+        .species-list { display: flex; flex-direction: column; gap: 30px; }
+        .species-card { background: #2a2a2a; border-radius: 16px; padding: 20px; border: 1px solid #444; }
+        .species-header { margin-bottom: 15px; border-bottom: 1px solid #444; padding-bottom: 10px; }
+        .label { font-size: 24px; font-weight: 700; color: #fff; }
+        .french-label { font-size: 18px; opacity: 0.8; color: #ddd; }
+        .latin-label { font-size: 16px; opacity: 0.7; font-style: italic; color: #bbb; }
+        
+        .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
+        .photo-card { background: #333; border-radius: 10px; overflow: hidden; padding: 10px; display: flex; flex-direction: column; align-items: center; transition: transform 0.2s, background 0.2s; }
+        .photo-card:hover { transform: scale(1.02); background: #3d3d3d; }
+        
+        img { max-width: 100%; height: auto; border-radius: 6px; object-fit: contain; }
+        .meta-label { font-size: 11px; opacity: 0.7; align-self: flex-start; margin-top: 8px; color: #fff; }
+        .filename { font-size: 9px; opacity: 0.4; margin-top: 2px; word-break: break-all; align-self: flex-start; }
+        .filename a { color: #4a9eff; text-decoration: none; transition: color 0.2s; }
+        .filename a:hover { text-decoration: underline; }
+        
+        /* Intro Section Styles */
+        .intro-section { max-width: 1200px; margin: 0 auto 80px; padding: 60px; background: #1e1e1e; border-radius: 32px; border: 1px solid #333; box-shadow: 0 20px 50px rgba(0,0,0,0.6); line-height: 1.8; }
+        .intro-title { font-size: 48px; font-weight: 900; margin-bottom: 40px; color: #4a9eff; line-height: 1.2; text-align: center; }
+        .intro-text { font-size: 20px; opacity: 0.9; margin-bottom: 30px; }
+        .intro-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 30px; margin-top: 50px; border-top: 1px solid #444; padding-top: 40px; }
+        .stat-item { text-align: center; }
+        .stat-value { font-size: 36px; font-weight: 800; color: #4a9eff; display: block; }
+        .stat-label { font-size: 14px; opacity: 0.6; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* Mode Selector Styles */
+        .mode-selector { position: fixed; top: 0; left: 0; right: 0; background: rgba(30, 30, 30, 0.95); backdrop-filter: blur(10px); padding: 15px 40px; border-bottom: 1px solid #333; z-index: 1000; display: flex; justify-content: flex-end; align-items: center; gap: 20px; }
+        .mode-button { background: #333; border: 1px solid #444; color: white; padding: 8px 20px; border-radius: 20px; cursor: pointer; font-weight: 600; transition: all 0.2s; }
+        .mode-button.active { background: #4a9eff; border-color: #4a9eff; }
+        .mode-label { font-size: 14px; opacity: 0.6; font-weight: 600; text-transform: uppercase; }
+
+        /* Restricted Mode Styles */
+        body.mode-public .filename { display: none; }
+        body.mode-public .photo-card:hover { transform: none; background: #333; }
+
+        /* Modal Styles */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; justify-content: center; align-items: center; }
+        .modal { background: #1e1e1e; padding: 40px; border-radius: 24px; border: 1px solid #333; width: 400px; box-shadow: 0 20px 50px rgba(0,0,0,0.8); }
+        .modal h2 { margin-top: 0; color: #4a9eff; }
+        .modal input { width: 100%; padding: 12px; margin: 20px 0; background: #2a2a2a; border: 1px solid #444; color: white; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        .modal-buttons { display: flex; justify-content: flex-end; gap: 15px; }
+        .modal-buttons button { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; }
+        .btn-cancel { background: #333; color: white; }
+        .btn-submit { background: #4a9eff; color: white; }
+    </style>
+</head>
+<body class="mode-public">
+    <div class="mode-selector">
+        <span class="mode-label">View Mode:</span>
+        <button id="btn-public" class="mode-button active" onclick="setMode('PUBLIC')">PUBLIC</button>
+        <button id="btn-user" class="mode-button" onclick="requestUserMode()">USER</button>
+    </div>
+
+    <div id="password-modal" class="modal-overlay">
+        <div class="modal">
+            <h2>Enter Password</h2>
+            <p>Please enter the password to activate USER mode.</p>
+            <input type="password" id="password-input" placeholder="Password">
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+                <button class="btn-submit" onclick="submitPassword()">Submit</button>
+            </div>
+        </div>
+    </div>
+
+    
+    <div class="family-list">
+        <div class="family-card">
+            <div class="family-header">
+                <div class="family-name">Barn-Owls</div>
+                <div class="family-order-label">Tytonidae / Strigiformes</div>
+            </div>
+            <div class="species-list">
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">American Barn Owl</div>
+                        <div class="french-label">Effraie d'Amérique</div>
+                        <div class="latin-label">(Tyto furcata)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="Photos/American_Barn_Owl_%28punctatissima%29.jpg" loading="lazy" alt="American_Barn_Owl_(punctatissima).jpg">
+                            <div class="meta-label">Ecuador - 08 Jul 2004</div>
+                            <div class="filename"><a href="Photos/American_Barn_Owl_%28punctatissima%29.jpg" target="_blank">American_Barn_Owl_(punctatissima).jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1kE-SktmKiZ9peOTgUrlqyjEF79-wKPum" loading="lazy" alt="American_Barn_Owl_3904.jpg">
+                            <div class="meta-label">Ecuador - 08 Jul 2004</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1kE-SktmKiZ9peOTgUrlqyjEF79-wKPum" target="_blank">American_Barn_Owl_3904.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="family-card">
+            <div class="family-header">
+                <div class="family-name">Owls</div>
+                <div class="family-order-label">Strigidae / Strigiformes</div>
+            </div>
+            <div class="species-list">
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Madagascar Scops-Owl</div>
+                        <div class="french-label">Petit-duc malgache</div>
+                        <div class="latin-label">(Otus rutilus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1fCYJ9F_rVqUSZ9aj7g3SKhQSWFWtnI9p" loading="lazy" alt="Madagascar_Scops-Owl_-_Petit-duc_malgache.jpg">
+                            <div class="meta-label">MG - 06 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1fCYJ9F_rVqUSZ9aj7g3SKhQSWFWtnI9p" target="_blank">Madagascar_Scops-Owl_-_Petit-duc_malgache.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/19a9D5iodxN6gY3MKHx59YgHlOs4GLZuR" loading="lazy" alt="Madagascar_Scops-Owl_-_Petit-duc_malgache_5135.jpg">
+                            <div class="meta-label">MG - 06 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/19a9D5iodxN6gY3MKHx59YgHlOs4GLZuR" target="_blank">Madagascar_Scops-Owl_-_Petit-duc_malgache_5135.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Tropical Screech-Owl</div>
+                        <div class="french-label">Petit-duc choliba</div>
+                        <div class="latin-label">(Megascops choliba)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1GoQSwIdbQbBv1Tr8Ywf28YVXO6SxnBP6" loading="lazy" alt="Tropical_Screech-Owl_0949.jpg">
+                            <div class="meta-label">Panama - 11 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1GoQSwIdbQbBv1Tr8Ywf28YVXO6SxnBP6" target="_blank">Tropical_Screech-Owl_0949.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1AjpNfF5mJ1spLV4eiNOzv-bg-8N_24EZ" loading="lazy" alt="Tropical_Screech-Owl_5568.jpg">
+                            <div class="meta-label">Panama - 11 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1AjpNfF5mJ1spLV4eiNOzv-bg-8N_24EZ" target="_blank">Tropical_Screech-Owl_5568.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Pacific Screech-Owl</div>
+                        <div class="french-label">Petit-duc de Cooper</div>
+                        <div class="latin-label">(Megascops cooperi)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1AfkWUaQaMCQYvyKtuQQIyXtGilYgPVdf" loading="lazy" alt="Pacific_Screech-Owl_MF4887.jpg">
+                            <div class="meta-label">CR - 11 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1AfkWUaQaMCQYvyKtuQQIyXtGilYgPVdf" target="_blank">Pacific_Screech-Owl_MF4887.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Eastern Screech-Owl</div>
+                        <div class="french-label">Petit-duc maculé</div>
+                        <div class="latin-label">(Megascops asio)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1YIlnlzo8UdiQPwOa_n69XipLuql3mXKN" loading="lazy" alt="Eastern_Screech-Owl_1280.jpg">
+                            <div class="meta-label">USA - 12 May 2015</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1YIlnlzo8UdiQPwOa_n69XipLuql3mXKN" target="_blank">Eastern_Screech-Owl_1280.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1zkebg7i47Lm8C02l6GoY2csoqOWrFpDR" loading="lazy" alt="Eastern_Screech-Owl_4214MF.jpg">
+                            <div class="meta-label">USA - 12 May 2015</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1zkebg7i47Lm8C02l6GoY2csoqOWrFpDR" target="_blank">Eastern_Screech-Owl_4214MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1B4z7_QxWC9IYSDYhbeV04_FVbtFdKWkw" loading="lazy" alt="Eastern_Screech-Owl_4236MF.jpg">
+                            <div class="meta-label">USA - 12 May 2015</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1B4z7_QxWC9IYSDYhbeV04_FVbtFdKWkw" target="_blank">Eastern_Screech-Owl_4236MF.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Crested Owl</div>
+                        <div class="french-label">Duc à aigrettes</div>
+                        <div class="latin-label">(Lophostrix cristata)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1mkcg9pFlPKJolwXm9DSYQqU-yRT-KDKo" loading="lazy" alt="Crested_Owl_4865.jpg">
+                            <div class="meta-label">CR - 07 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1mkcg9pFlPKJolwXm9DSYQqU-yRT-KDKo" target="_blank">Crested_Owl_4865.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Spectacled Owl</div>
+                        <div class="french-label">Chouette à lunettes</div>
+                        <div class="latin-label">(Pulsatrix perspicillata)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1dtZK_gDuwZg-cOvBfA32HL7suXLy6aNU" loading="lazy" alt="Spectacled_Owl.jpg">
+                            <div class="meta-label">Panama - 19 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1dtZK_gDuwZg-cOvBfA32HL7suXLy6aNU" target="_blank">Spectacled_Owl.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1lp8vFMogrh1joG0-WqvUxuD-dN-yDRrf" loading="lazy" alt="Spectacled_Owl_1313.jpg">
+                            <div class="meta-label">Panama - 19 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1lp8vFMogrh1joG0-WqvUxuD-dN-yDRrf" target="_blank">Spectacled_Owl_1313.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1mA58WS-bkHyalF9j4VuyZ1Bs9YmGSxgG" loading="lazy" alt="Spectacled_Owl_5001.jpg">
+                            <div class="meta-label">Panama - 19 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1mA58WS-bkHyalF9j4VuyZ1Bs9YmGSxgG" target="_blank">Spectacled_Owl_5001.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1tM5JYj2OAP61NJUGbo5RxWywT287iJ45" loading="lazy" alt="Spectacled_Owl_5018.jpg">
+                            <div class="meta-label">Panama - 19 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1tM5JYj2OAP61NJUGbo5RxWywT287iJ45" target="_blank">Spectacled_Owl_5018.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1vDPMOeOGIX5teY1Ib0kuZAWer15rajHK" loading="lazy" alt="Spectacled_Owl_MF3597.jpg">
+                            <div class="meta-label">Panama - 19 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1vDPMOeOGIX5teY1Ib0kuZAWer15rajHK" target="_blank">Spectacled_Owl_MF3597.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Snowy Owl</div>
+                        <div class="french-label">Harfang des neiges</div>
+                        <div class="latin-label">(Bubo scandiacus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1_dCEmKPi0-q2AzP04d_zoV8NCKoTuM-X" loading="lazy" alt="Snowy_Owl_119.jpg">
+                            <div class="meta-label">Canada - 24 Dec 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1_dCEmKPi0-q2AzP04d_zoV8NCKoTuM-X" target="_blank">Snowy_Owl_119.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1iDxAsi1NbphHYaqNhQuEyejWxsCXBEbc" loading="lazy" alt="Snowy_Owl_211.jpg">
+                            <div class="meta-label">Canada - 24 Dec 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1iDxAsi1NbphHYaqNhQuEyejWxsCXBEbc" target="_blank">Snowy_Owl_211.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1p-w9CASOHE_ftt_TFtcSMkp3AqCwmVAr" loading="lazy" alt="Snowy_Owl_7058.jpg">
+                            <div class="meta-label">Canada - 24 Dec 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1p-w9CASOHE_ftt_TFtcSMkp3AqCwmVAr" target="_blank">Snowy_Owl_7058.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Great Horned Owl</div>
+                        <div class="french-label">Grand-duc d'Amérique</div>
+                        <div class="latin-label">(Bubo virginianus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1TYsZOINCUXRnIk1mfxhpJ1Y2PbpC0SGG" loading="lazy" alt="Great_Horned_Owl_0125.jpg">
+                            <div class="meta-label">Canada - 06 May 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1TYsZOINCUXRnIk1mfxhpJ1Y2PbpC0SGG" target="_blank">Great_Horned_Owl_0125.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1_uArEKYGjSwlrZqy7_jljJ-EmRePoerq" loading="lazy" alt="Great_Horned_Owl_2122MF.jpg">
+                            <div class="meta-label">Canada - 06 May 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1_uArEKYGjSwlrZqy7_jljJ-EmRePoerq" target="_blank">Great_Horned_Owl_2122MF.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Spotted Eagle-Owl</div>
+                        <div class="french-label">Grand-duc africain</div>
+                        <div class="latin-label">(Bubo africanus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1q8r_n1kIblMzBe9A-l5Ip4NMSlcTNNhu" loading="lazy" alt="Spotted_Eagle-Owl_345.jpg">
+                            <div class="meta-label">NA - 04 Jun 2007</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1q8r_n1kIblMzBe9A-l5Ip4NMSlcTNNhu" target="_blank">Spotted_Eagle-Owl_345.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Verreaux's Eagle-Owl</div>
+                        <div class="french-label">Grand-duc de Verreaux</div>
+                        <div class="latin-label">(Ketupa lactea)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="Photos/Verreaux%27s_Eagle-Owl.jpg" loading="lazy" alt="Verreaux's_Eagle-Owl.jpg">
+                            <div class="meta-label">NA - 04 Jun 2007</div>
+                            <div class="filename"><a href="Photos/Verreaux%27s_Eagle-Owl.jpg" target="_blank">Verreaux's_Eagle-Owl.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Northern Hawk Owl</div>
+                        <div class="french-label">Chouette épervière</div>
+                        <div class="latin-label">(Surnia ulula)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1UDx2EnVVJ-1v9JaN-IBJgIAbm1DkRdyi" loading="lazy" alt="Northern_Hawk_Owl_7023.jpg">
+                            <div class="meta-label">Canada - 05 Mar 2026</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1UDx2EnVVJ-1v9JaN-IBJgIAbm1DkRdyi" target="_blank">Northern_Hawk_Owl_7023.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Andean Pygmy-Owl</div>
+                        <div class="french-label">Chevêchette des Andes</div>
+                        <div class="latin-label">(Glaucidium jardinii)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1F2V4MqbgC7o_6zqwC6BtGDd7XmKUNvAF" loading="lazy" alt="Andean_Pygmy-owl_5185.jpg">
+                            <div class="meta-label">Colombia - 17 Nov 2019</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1F2V4MqbgC7o_6zqwC6BtGDd7XmKUNvAF" target="_blank">Andean_Pygmy-owl_5185.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Ferruginous Pygmy-Owl</div>
+                        <div class="french-label">Chevêchette brune</div>
+                        <div class="latin-label">(Glaucidium brasilianum)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1W8oiKWGdhYut1DCVAsX6A9NHdtfxmDPZ" loading="lazy" alt="Ferruginous_Pygmy-Owl_1707.jpg">
+                            <div class="meta-label">Panama - 14 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1W8oiKWGdhYut1DCVAsX6A9NHdtfxmDPZ" target="_blank">Ferruginous_Pygmy-Owl_1707.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1X_E6ahaqT8oGgv21Ov3yAGCgwp5-2tZ9" loading="lazy" alt="Ferruginous_Pygmy-Owl_4023MF.jpg">
+                            <div class="meta-label">Panama - 14 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1X_E6ahaqT8oGgv21Ov3yAGCgwp5-2tZ9" target="_blank">Ferruginous_Pygmy-Owl_4023MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/13e4n5piWp597J-1dwzKiAraJtD_ePXz-" loading="lazy" alt="Ferruginous_Pygmy-Owl_4920.jpg">
+                            <div class="meta-label">Panama - 14 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/13e4n5piWp597J-1dwzKiAraJtD_ePXz-" target="_blank">Ferruginous_Pygmy-Owl_4920.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">White-browed Owl</div>
+                        <div class="french-label">Chevêche à sourcils blancs</div>
+                        <div class="latin-label">(Athene superciliaris)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1rvMpqwkyEjLRL780mZH_hHPdhFCOo7ZG" loading="lazy" alt="White-browed_Owl_-_Chevechette_a_sourcil_blanc_6434.jpg">
+                            <div class="meta-label">MG - 12 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1rvMpqwkyEjLRL780mZH_hHPdhFCOo7ZG" target="_blank">White-browed_Owl_-_Chevechette_a_sourcil_blanc_6434.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Burrowing Owl</div>
+                        <div class="french-label">Chevêche des terriers</div>
+                        <div class="latin-label">(Athene cunicularia)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1y4eQEmz4FFN0g530qDU0iz76fApeWsuB" loading="lazy" alt="Burrowing_Owl_2211.jpg">
+                            <div class="meta-label">USA - 23 Mar 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1y4eQEmz4FFN0g530qDU0iz76fApeWsuB" target="_blank">Burrowing_Owl_2211.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/153FOEQ8U4RX5vtdxUz6G7890X5H8fyhG" loading="lazy" alt="Burrowing_Owl_2304.jpg">
+                            <div class="meta-label">USA - 23 Mar 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/153FOEQ8U4RX5vtdxUz6G7890X5H8fyhG" target="_blank">Burrowing_Owl_2304.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Mottled Owl</div>
+                        <div class="french-label">Chouette mouchetée</div>
+                        <div class="latin-label">(Strix virgata)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1dQ4yyK1oiK-DhXAgP7UC6aeLKxms-vAL" loading="lazy" alt="Mottled_Owl_1221.jpg">
+                            <div class="meta-label">Belize - 27 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1dQ4yyK1oiK-DhXAgP7UC6aeLKxms-vAL" target="_blank">Mottled_Owl_1221.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1r718PdPEHj5RcEbb4kmLt5LCmr_Vm1Eq" loading="lazy" alt="Mottled_Owl_1567.jpg">
+                            <div class="meta-label">Belize - 27 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1r718PdPEHj5RcEbb4kmLt5LCmr_Vm1Eq" target="_blank">Mottled_Owl_1567.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Black-and-white Owl</div>
+                        <div class="french-label">Chouette à lignes noires</div>
+                        <div class="latin-label">(Strix nigrolineata)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1nKimIAj-rPfUTWT8TViHksHdu4_CBeTB" loading="lazy" alt="Black-and-white_Owl_6428.jpg">
+                            <div class="meta-label">CR - 09 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1nKimIAj-rPfUTWT8TViHksHdu4_CBeTB" target="_blank">Black-and-white_Owl_6428.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Barred Owl</div>
+                        <div class="french-label">Chouette rayée</div>
+                        <div class="latin-label">(Strix varia)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/11-aqthT5BYmkjmj2avprx5DqpAwiGzpf" loading="lazy" alt="Barred_Owl_159.jpg">
+                            <div class="meta-label">Canada - 16 Feb 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/11-aqthT5BYmkjmj2avprx5DqpAwiGzpf" target="_blank">Barred_Owl_159.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/18UNbx7llBQGptbRitRZT__YLCbcpsZT9" loading="lazy" alt="Barred_Owl_5924.jpg">
+                            <div class="meta-label">Canada - 16 Feb 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/18UNbx7llBQGptbRitRZT__YLCbcpsZT9" target="_blank">Barred_Owl_5924.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/167c9yey8iRHgl5iBlGyJ6h9o34y69dTq" loading="lazy" alt="Barred_Owl_7313MF.jpg">
+                            <div class="meta-label">Canada - 16 Feb 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/167c9yey8iRHgl5iBlGyJ6h9o34y69dTq" target="_blank">Barred_Owl_7313MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/13emC7_nM0CmP09tWlq3MdMtm-iYrmjwn" loading="lazy" alt="Barred_Owl_7944.jpg">
+                            <div class="meta-label">Canada - 16 Feb 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/13emC7_nM0CmP09tWlq3MdMtm-iYrmjwn" target="_blank">Barred_Owl_7944.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1MwQoGO1vIOth6ccFRdswq_2RlZ6AzCtt" loading="lazy" alt="Barred_Owl_7953.jpg">
+                            <div class="meta-label">Canada - 16 Feb 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1MwQoGO1vIOth6ccFRdswq_2RlZ6AzCtt" target="_blank">Barred_Owl_7953.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Great Gray Owl</div>
+                        <div class="french-label">Chouette lapone</div>
+                        <div class="latin-label">(Strix nebulosa)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Okd5MdE1Ibnf6byK36hFXIwFbMTrSFHy" loading="lazy" alt="Great_Gray_Owl_008.jpg">
+                            <div class="meta-label">Canada - 11 Mar 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Okd5MdE1Ibnf6byK36hFXIwFbMTrSFHy" target="_blank">Great_Gray_Owl_008.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Long-eared Owl</div>
+                        <div class="french-label">Hibou moyen-duc</div>
+                        <div class="latin-label">(Asio otus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1LjbWQKFhuMzHrzjkvWprlLGrJOOkhBTb" loading="lazy" alt="Long-eared_Owl_4495.jpg">
+                            <div class="meta-label">Canada - 07 May 2019</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1LjbWQKFhuMzHrzjkvWprlLGrJOOkhBTb" target="_blank">Long-eared_Owl_4495.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Madagascar Owl</div>
+                        <div class="french-label">Hibou malgache</div>
+                        <div class="latin-label">(Asio madagascariensis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1jMuw3Evl5vRmuojYt95q34b5daiRL-tG" loading="lazy" alt="Madagascar_Owl_-_Hibou_malgache_5171.jpg">
+                            <div class="meta-label">MG - 06 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1jMuw3Evl5vRmuojYt95q34b5daiRL-tG" target="_blank">Madagascar_Owl_-_Hibou_malgache_5171.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Stygian Owl</div>
+                        <div class="french-label">Hibou maître-bois</div>
+                        <div class="latin-label">(Asio stygius)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1xieJXQ-9-xFjPkW9gHRVFl-D1FzzyKim" loading="lazy" alt="Stygian_Owl_495.jpg">
+                            <div class="meta-label">Belize - 30 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1xieJXQ-9-xFjPkW9gHRVFl-D1FzzyKim" target="_blank">Stygian_Owl_495.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1YumNcXo3RY8M8qThg3iffxroCexz741h" loading="lazy" alt="Stygian_Owl_496.jpg">
+                            <div class="meta-label">Belize - 30 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1YumNcXo3RY8M8qThg3iffxroCexz741h" target="_blank">Stygian_Owl_496.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Short-eared Owl</div>
+                        <div class="french-label">Hibou des marais</div>
+                        <div class="latin-label">(Asio flammeus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1ujReOwCNj1kgG_r_tJARzRbvjNq0gG2j" loading="lazy" alt="Short-eared_Owl_0922.jpg">
+                            <div class="meta-label">USA - 01 Nov 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1ujReOwCNj1kgG_r_tJARzRbvjNq0gG2j" target="_blank">Short-eared_Owl_0922.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div></div></body></html>

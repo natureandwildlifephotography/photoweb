@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photo Index</title>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; background: #121212; color: white; margin: 0; padding: 20px; padding-top: 80px; }
+        .family-list { display: flex; flex-direction: column; gap: 60px; max-width: 1800px; margin: 0 auto; }
+        
+        .family-card { background: #1e1e1e; border-radius: 24px; padding: 40px; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .family-header { margin-bottom: 30px; border-bottom: 2px solid #555; padding-bottom: 20px; }
+        .family-name { font-size: 36px; font-weight: 800; color: #4a9eff; text-transform: uppercase; letter-spacing: 2px; }
+        .family-order-label { font-size: 18px; opacity: 0.6; color: #fff; margin-top: 5px; font-weight: 500; }
+        
+        .species-list { display: flex; flex-direction: column; gap: 30px; }
+        .species-card { background: #2a2a2a; border-radius: 16px; padding: 20px; border: 1px solid #444; }
+        .species-header { margin-bottom: 15px; border-bottom: 1px solid #444; padding-bottom: 10px; }
+        .label { font-size: 24px; font-weight: 700; color: #fff; }
+        .french-label { font-size: 18px; opacity: 0.8; color: #ddd; }
+        .latin-label { font-size: 16px; opacity: 0.7; font-style: italic; color: #bbb; }
+        
+        .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
+        .photo-card { background: #333; border-radius: 10px; overflow: hidden; padding: 10px; display: flex; flex-direction: column; align-items: center; transition: transform 0.2s, background 0.2s; }
+        .photo-card:hover { transform: scale(1.02); background: #3d3d3d; }
+        
+        img { max-width: 100%; height: auto; border-radius: 6px; object-fit: contain; }
+        .meta-label { font-size: 11px; opacity: 0.7; align-self: flex-start; margin-top: 8px; color: #fff; }
+        .filename { font-size: 9px; opacity: 0.4; margin-top: 2px; word-break: break-all; align-self: flex-start; }
+        .filename a { color: #4a9eff; text-decoration: none; transition: color 0.2s; }
+        .filename a:hover { text-decoration: underline; }
+        
+        /* Intro Section Styles */
+        .intro-section { max-width: 1200px; margin: 0 auto 80px; padding: 60px; background: #1e1e1e; border-radius: 32px; border: 1px solid #333; box-shadow: 0 20px 50px rgba(0,0,0,0.6); line-height: 1.8; }
+        .intro-title { font-size: 48px; font-weight: 900; margin-bottom: 40px; color: #4a9eff; line-height: 1.2; text-align: center; }
+        .intro-text { font-size: 20px; opacity: 0.9; margin-bottom: 30px; }
+        .intro-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 30px; margin-top: 50px; border-top: 1px solid #444; padding-top: 40px; }
+        .stat-item { text-align: center; }
+        .stat-value { font-size: 36px; font-weight: 800; color: #4a9eff; display: block; }
+        .stat-label { font-size: 14px; opacity: 0.6; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* Mode Selector Styles */
+        .mode-selector { position: fixed; top: 0; left: 0; right: 0; background: rgba(30, 30, 30, 0.95); backdrop-filter: blur(10px); padding: 15px 40px; border-bottom: 1px solid #333; z-index: 1000; display: flex; justify-content: flex-end; align-items: center; gap: 20px; }
+        .mode-button { background: #333; border: 1px solid #444; color: white; padding: 8px 20px; border-radius: 20px; cursor: pointer; font-weight: 600; transition: all 0.2s; }
+        .mode-button.active { background: #4a9eff; border-color: #4a9eff; }
+        .mode-label { font-size: 14px; opacity: 0.6; font-weight: 600; text-transform: uppercase; }
+
+        /* Restricted Mode Styles */
+        body.mode-public .filename { display: none; }
+        body.mode-public .photo-card:hover { transform: none; background: #333; }
+
+        /* Modal Styles */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; justify-content: center; align-items: center; }
+        .modal { background: #1e1e1e; padding: 40px; border-radius: 24px; border: 1px solid #333; width: 400px; box-shadow: 0 20px 50px rgba(0,0,0,0.8); }
+        .modal h2 { margin-top: 0; color: #4a9eff; }
+        .modal input { width: 100%; padding: 12px; margin: 20px 0; background: #2a2a2a; border: 1px solid #444; color: white; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        .modal-buttons { display: flex; justify-content: flex-end; gap: 15px; }
+        .modal-buttons button { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; }
+        .btn-cancel { background: #333; color: white; }
+        .btn-submit { background: #4a9eff; color: white; }
+    </style>
+</head>
+<body class="mode-public">
+    <div class="mode-selector">
+        <span class="mode-label">View Mode:</span>
+        <button id="btn-public" class="mode-button active" onclick="setMode('PUBLIC')">PUBLIC</button>
+        <button id="btn-user" class="mode-button" onclick="requestUserMode()">USER</button>
+    </div>
+
+    <div id="password-modal" class="modal-overlay">
+        <div class="modal">
+            <h2>Enter Password</h2>
+            <p>Please enter the password to activate USER mode.</p>
+            <input type="password" id="password-input" placeholder="Password">
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+                <button class="btn-submit" onclick="submitPassword()">Submit</button>
+            </div>
+        </div>
+    </div>
+
+    
+    <div class="family-list">
+        <div class="family-card">
+            <div class="family-header">
+                <div class="family-name">Grebes</div>
+                <div class="family-order-label">Podicipedidae / Podicipediformes</div>
+            </div>
+            <div class="species-list">
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Australasian Grebe</div>
+                        <div class="french-label">Grèbe australasien</div>
+                        <div class="latin-label">(Tachybaptus novaehollandiae)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1iiqbj4Zk3t_7FzLJcG46pSPNevW8QRfx" loading="lazy" alt="Australasian_Grebe_8279.jpg">
+                            <div class="meta-label">Australia - 11 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1iiqbj4Zk3t_7FzLJcG46pSPNevW8QRfx" target="_blank">Australasian_Grebe_8279.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Least Grebe</div>
+                        <div class="french-label">Grèbe minime</div>
+                        <div class="latin-label">(Tachybaptus dominicus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1gxU12VcJHaqSnxVmm1rxdORpiJJGudcX" loading="lazy" alt="Least_Grebe_1475.jpg">
+                            <div class="meta-label">Colombia - 16 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1gxU12VcJHaqSnxVmm1rxdORpiJJGudcX" target="_blank">Least_Grebe_1475.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1j5mnVw7VtuD78wR8JQlI20xqbFunWvdG" loading="lazy" alt="Least_Grebe_5948.jpg">
+                            <div class="meta-label">Colombia - 16 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1j5mnVw7VtuD78wR8JQlI20xqbFunWvdG" target="_blank">Least_Grebe_5948.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Pied-billed Grebe</div>
+                        <div class="french-label">Grèbe à bec bigarré</div>
+                        <div class="latin-label">(Podilymbus podiceps)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1eao5SH9GR1i_GoZLlEThYlS5a1Ie0Ysd" loading="lazy" alt="Pied-billed_Grebe_0281.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1eao5SH9GR1i_GoZLlEThYlS5a1Ie0Ysd" target="_blank">Pied-billed_Grebe_0281.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1xyp3bDbjLEI0OPp_rPfhkvnW3PpKIkVv" loading="lazy" alt="Pied-billed_Grebe_1125.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1xyp3bDbjLEI0OPp_rPfhkvnW3PpKIkVv" target="_blank">Pied-billed_Grebe_1125.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1lsRGPD0dChbUSSlBqKCEpaESi4JR6QEe" loading="lazy" alt="Pied-billed_Grebe_1813.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1lsRGPD0dChbUSSlBqKCEpaESi4JR6QEe" target="_blank">Pied-billed_Grebe_1813.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1-o_Qui9Vqr-1dd1jEnNjXjzVePs5mNqm" loading="lazy" alt="Pied-billed_Grebe_20702.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1-o_Qui9Vqr-1dd1jEnNjXjzVePs5mNqm" target="_blank">Pied-billed_Grebe_20702.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1hPQnt-l0xdF7i2RqYOhtw8QaU6RaVrr9" loading="lazy" alt="Pied-billed_Grebe_2406.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1hPQnt-l0xdF7i2RqYOhtw8QaU6RaVrr9" target="_blank">Pied-billed_Grebe_2406.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1VXiXorf4v23tdsD-deIyu6z3wGdsp2s0" loading="lazy" alt="Pied-billed_Grebe_2935.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1VXiXorf4v23tdsD-deIyu6z3wGdsp2s0" target="_blank">Pied-billed_Grebe_2935.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/111L3m3VJ4Mmw6D4s3y3y7wlMc9Ec79_m" loading="lazy" alt="Pied-billed_Grebe_5284.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/111L3m3VJ4Mmw6D4s3y3y7wlMc9Ec79_m" target="_blank">Pied-billed_Grebe_5284.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1AXxp2ptdBQgACLKmz_8Uhghg96-lFlL6" loading="lazy" alt="Pied-billed_Grebe_6508MF.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1AXxp2ptdBQgACLKmz_8Uhghg96-lFlL6" target="_blank">Pied-billed_Grebe_6508MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1JRcZmleoSV_q3Uk4NFUY_f_m3D5Sl7jy" loading="lazy" alt="Pied-billed_Grebe_7310.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1JRcZmleoSV_q3Uk4NFUY_f_m3D5Sl7jy" target="_blank">Pied-billed_Grebe_7310.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1OT3G8CDuiDpiLk_jnV_8QDVcziyrvUfo" loading="lazy" alt="Pied-billed_Grebe_7649.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1OT3G8CDuiDpiLk_jnV_8QDVcziyrvUfo" target="_blank">Pied-billed_Grebe_7649.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1MmJeg6HJDOtMnmd5WkUhwbviAi1j92wq" loading="lazy" alt="Pied-billed_grebe.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1MmJeg6HJDOtMnmd5WkUhwbviAi1j92wq" target="_blank">Pied-billed_grebe.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Hoary-headed Grebe</div>
+                        <div class="french-label">Grèbe argenté</div>
+                        <div class="latin-label">(Poliocephalus poliocephalus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1QZLSMYM1QGcd8XDpbWH8MEpf7tyXa0v3" loading="lazy" alt="Hoary-headed_Grebe_0875.jpg">
+                            <div class="meta-label">Australia - 20 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1QZLSMYM1QGcd8XDpbWH8MEpf7tyXa0v3" target="_blank">Hoary-headed_Grebe_0875.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Mrv0XL5Z0HG9bjmIU1J-Beq5itq923F_" loading="lazy" alt="Hoary-headed_Grebe_5232MF.jpg">
+                            <div class="meta-label">Australia - 20 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Mrv0XL5Z0HG9bjmIU1J-Beq5itq923F_" target="_blank">Hoary-headed_Grebe_5232MF.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Horned Grebe</div>
+                        <div class="french-label">Grèbe esclavon</div>
+                        <div class="latin-label">(Podiceps auritus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Ypqa65ubEH8sOzCS6M4sINi3YfUabHWX" loading="lazy" alt="Horned_Grebe_1946.jpg">
+                            <div class="meta-label">Canada - 02 May 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Ypqa65ubEH8sOzCS6M4sINi3YfUabHWX" target="_blank">Horned_Grebe_1946.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1J78jeBXb3t7mMDpnipRpQxhbn2QWg4CI" loading="lazy" alt="Horned_Grebe_3876.jpg">
+                            <div class="meta-label">Canada - 02 May 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1J78jeBXb3t7mMDpnipRpQxhbn2QWg4CI" target="_blank">Horned_Grebe_3876.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1r2J5w9WUngiU_0JdiTsh39Jgs8CzD7XE" loading="lazy" alt="Horned_Grebe_8111.jpg">
+                            <div class="meta-label">Canada - 02 May 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1r2J5w9WUngiU_0JdiTsh39Jgs8CzD7XE" target="_blank">Horned_Grebe_8111.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Great Crested Grebe</div>
+                        <div class="french-label">Grèbe huppé</div>
+                        <div class="latin-label">(Podiceps cristatus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1ojwYCHb7K0zpGLi-_jZ8szg2xdTdVCc8" loading="lazy" alt="Great_Crested_Grebe_1379.jpg">
+                            <div class="meta-label">Australia - 26 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1ojwYCHb7K0zpGLi-_jZ8szg2xdTdVCc8" target="_blank">Great_Crested_Grebe_1379.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Silvery Grebe</div>
+                        <div class="french-label">Grèbe aux belles joues</div>
+                        <div class="latin-label">(Podiceps occipitalis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1CtKMnCzRkdC6ATzkzIodYXCUNPP-djuk" loading="lazy" alt="Silvery_Grebe_7038.jpg">
+                            <div class="meta-label">Ecuador - 12 Apr 2019</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1CtKMnCzRkdC6ATzkzIodYXCUNPP-djuk" target="_blank">Silvery_Grebe_7038.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/132iXNyz68PJ1K76Wbxvm5cl7DZdL6Xdv" loading="lazy" alt="Silvery_Grebe_7048.jpg">
+                            <div class="meta-label">Ecuador - 12 Apr 2019</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/132iXNyz68PJ1K76Wbxvm5cl7DZdL6Xdv" target="_blank">Silvery_Grebe_7048.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div></div></body></html>

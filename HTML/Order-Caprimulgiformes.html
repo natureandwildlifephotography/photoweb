@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photo Index</title>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; background: #121212; color: white; margin: 0; padding: 20px; padding-top: 80px; }
+        .family-list { display: flex; flex-direction: column; gap: 60px; max-width: 1800px; margin: 0 auto; }
+        
+        .family-card { background: #1e1e1e; border-radius: 24px; padding: 40px; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .family-header { margin-bottom: 30px; border-bottom: 2px solid #555; padding-bottom: 20px; }
+        .family-name { font-size: 36px; font-weight: 800; color: #4a9eff; text-transform: uppercase; letter-spacing: 2px; }
+        .family-order-label { font-size: 18px; opacity: 0.6; color: #fff; margin-top: 5px; font-weight: 500; }
+        
+        .species-list { display: flex; flex-direction: column; gap: 30px; }
+        .species-card { background: #2a2a2a; border-radius: 16px; padding: 20px; border: 1px solid #444; }
+        .species-header { margin-bottom: 15px; border-bottom: 1px solid #444; padding-bottom: 10px; }
+        .label { font-size: 24px; font-weight: 700; color: #fff; }
+        .french-label { font-size: 18px; opacity: 0.8; color: #ddd; }
+        .latin-label { font-size: 16px; opacity: 0.7; font-style: italic; color: #bbb; }
+        
+        .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
+        .photo-card { background: #333; border-radius: 10px; overflow: hidden; padding: 10px; display: flex; flex-direction: column; align-items: center; transition: transform 0.2s, background 0.2s; }
+        .photo-card:hover { transform: scale(1.02); background: #3d3d3d; }
+        
+        img { max-width: 100%; height: auto; border-radius: 6px; object-fit: contain; }
+        .meta-label { font-size: 11px; opacity: 0.7; align-self: flex-start; margin-top: 8px; color: #fff; }
+        .filename { font-size: 9px; opacity: 0.4; margin-top: 2px; word-break: break-all; align-self: flex-start; }
+        .filename a { color: #4a9eff; text-decoration: none; transition: color 0.2s; }
+        .filename a:hover { text-decoration: underline; }
+        
+        /* Intro Section Styles */
+        .intro-section { max-width: 1200px; margin: 0 auto 80px; padding: 60px; background: #1e1e1e; border-radius: 32px; border: 1px solid #333; box-shadow: 0 20px 50px rgba(0,0,0,0.6); line-height: 1.8; }
+        .intro-title { font-size: 48px; font-weight: 900; margin-bottom: 40px; color: #4a9eff; line-height: 1.2; text-align: center; }
+        .intro-text { font-size: 20px; opacity: 0.9; margin-bottom: 30px; }
+        .intro-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 30px; margin-top: 50px; border-top: 1px solid #444; padding-top: 40px; }
+        .stat-item { text-align: center; }
+        .stat-value { font-size: 36px; font-weight: 800; color: #4a9eff; display: block; }
+        .stat-label { font-size: 14px; opacity: 0.6; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* Mode Selector Styles */
+        .mode-selector { position: fixed; top: 0; left: 0; right: 0; background: rgba(30, 30, 30, 0.95); backdrop-filter: blur(10px); padding: 15px 40px; border-bottom: 1px solid #333; z-index: 1000; display: flex; justify-content: flex-end; align-items: center; gap: 20px; }
+        .mode-button { background: #333; border: 1px solid #444; color: white; padding: 8px 20px; border-radius: 20px; cursor: pointer; font-weight: 600; transition: all 0.2s; }
+        .mode-button.active { background: #4a9eff; border-color: #4a9eff; }
+        .mode-label { font-size: 14px; opacity: 0.6; font-weight: 600; text-transform: uppercase; }
+
+        /* Restricted Mode Styles */
+        body.mode-public .filename { display: none; }
+        body.mode-public .photo-card:hover { transform: none; background: #333; }
+
+        /* Modal Styles */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; justify-content: center; align-items: center; }
+        .modal { background: #1e1e1e; padding: 40px; border-radius: 24px; border: 1px solid #333; width: 400px; box-shadow: 0 20px 50px rgba(0,0,0,0.8); }
+        .modal h2 { margin-top: 0; color: #4a9eff; }
+        .modal input { width: 100%; padding: 12px; margin: 20px 0; background: #2a2a2a; border: 1px solid #444; color: white; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        .modal-buttons { display: flex; justify-content: flex-end; gap: 15px; }
+        .modal-buttons button { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; }
+        .btn-cancel { background: #333; color: white; }
+        .btn-submit { background: #4a9eff; color: white; }
+    </style>
+</head>
+<body class="mode-public">
+    <div class="mode-selector">
+        <span class="mode-label">View Mode:</span>
+        <button id="btn-public" class="mode-button active" onclick="setMode('PUBLIC')">PUBLIC</button>
+        <button id="btn-user" class="mode-button" onclick="requestUserMode()">USER</button>
+    </div>
+
+    <div id="password-modal" class="modal-overlay">
+        <div class="modal">
+            <h2>Enter Password</h2>
+            <p>Please enter the password to activate USER mode.</p>
+            <input type="password" id="password-input" placeholder="Password">
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+                <button class="btn-submit" onclick="submitPassword()">Submit</button>
+            </div>
+        </div>
+    </div>
+
+    
+    <div class="family-list">
+        <div class="family-card">
+            <div class="family-header">
+                <div class="family-name">Nightjars and Allies</div>
+                <div class="family-order-label">Caprimulgidae / Caprimulgiformes</div>
+            </div>
+            <div class="species-list">
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">White-tailed Nightjar</div>
+                        <div class="french-label">Engoulevent coré</div>
+                        <div class="latin-label">(Hydropsalis cayennensis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1fMDJDJIPKOU7AOzk61ijXO_RTJ8xxhwV" loading="lazy" alt="White-tailed_Nightjar_6015.jpg">
+                            <div class="meta-label">TT - 12 Apr 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1fMDJDJIPKOU7AOzk61ijXO_RTJ8xxhwV" target="_blank">White-tailed_Nightjar_6015.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1ZA9LGTLtc8B_SSDtPKRmTIPjOBJp3CfN" loading="lazy" alt="White-tailed_Nightjar_6594.jpg">
+                            <div class="meta-label">TT - 12 Apr 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1ZA9LGTLtc8B_SSDtPKRmTIPjOBJp3CfN" target="_blank">White-tailed_Nightjar_6594.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1SBMe8j8CE4J0w24ykv1CSQTpXnBBGJCn" loading="lazy" alt="White-tailed_Nightjar_6600.jpg">
+                            <div class="meta-label">TT - 12 Apr 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1SBMe8j8CE4J0w24ykv1CSQTpXnBBGJCn" target="_blank">White-tailed_Nightjar_6600.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1MrmvS4AISnpCsz3MY6fb18XcrCcv6LUc" loading="lazy" alt="White-tailed_Nightjar_6620.jpg">
+                            <div class="meta-label">TT - 12 Apr 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1MrmvS4AISnpCsz3MY6fb18XcrCcv6LUc" target="_blank">White-tailed_Nightjar_6620.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Chuck-will's-widow</div>
+                        <div class="french-label">Engoulevent de Caroline</div>
+                        <div class="latin-label">(Antrostomus carolinensis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="Photos/Chuck-Will%27s-Widow_1707.jpg" loading="lazy" alt="Chuck-Will's-Widow_1707.jpg">
+                            <div class="meta-label">USA - 22 Mar 2022</div>
+                            <div class="filename"><a href="Photos/Chuck-Will%27s-Widow_1707.jpg" target="_blank">Chuck-Will's-Widow_1707.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="Photos/Chuck-Will%27s-Widow_1724.jpg" loading="lazy" alt="Chuck-Will's-Widow_1724.jpg">
+                            <div class="meta-label">USA - 22 Mar 2022</div>
+                            <div class="filename"><a href="Photos/Chuck-Will%27s-Widow_1724.jpg" target="_blank">Chuck-Will's-Widow_1724.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="Photos/Chuck-will%27s-widow_20686.jpg" loading="lazy" alt="Chuck-will's-widow_20686.jpg">
+                            <div class="meta-label">USA - 22 Mar 2022</div>
+                            <div class="filename"><a href="Photos/Chuck-will%27s-widow_20686.jpg" target="_blank">Chuck-will's-widow_20686.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Eastern Whip-poor-will</div>
+                        <div class="french-label">Engoulevent bois-pourri</div>
+                        <div class="latin-label">(Antrostomus vociferus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1oFoEg5P6F7C4YVseYG0yHJcf8Ish2aQn" loading="lazy" alt="Eastern_Whip-poor-will_4335MF.jpg">
+                            <div class="meta-label">Canada - 09 May 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1oFoEg5P6F7C4YVseYG0yHJcf8Ish2aQn" target="_blank">Eastern_Whip-poor-will_4335MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1mLOsG5icKN1uZLyRo-hzIk-zKt_9rxTh" loading="lazy" alt="Eastern_Whip-poor-will_6802.jpg">
+                            <div class="meta-label">Canada - 09 May 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1mLOsG5icKN1uZLyRo-hzIk-zKt_9rxTh" target="_blank">Eastern_Whip-poor-will_6802.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1nEk0ULHSyLOndWkYJjG8Rs8IPuypLjVU" loading="lazy" alt="Eastern_Whip-poor-will_7482.jpg">
+                            <div class="meta-label">Canada - 09 May 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1nEk0ULHSyLOndWkYJjG8Rs8IPuypLjVU" target="_blank">Eastern_Whip-poor-will_7482.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Madagascar Nightjar</div>
+                        <div class="french-label">Engoulevent malgache</div>
+                        <div class="latin-label">(Caprimulgus madagascariensis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1PY9DoIf7_-ZFQWj2-XLyLvA1PzOyykYQ" loading="lazy" alt="Madagascar_Nightjar_-_Engoulevent_malgache_6824.jpg">
+                            <div class="meta-label">MG - 06 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1PY9DoIf7_-ZFQWj2-XLyLvA1PzOyykYQ" target="_blank">Madagascar_Nightjar_-_Engoulevent_malgache_6824.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div></div></body></html>

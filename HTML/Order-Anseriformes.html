@@ -1,0 +1,1530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photo Index</title>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; background: #121212; color: white; margin: 0; padding: 20px; padding-top: 80px; }
+        .family-list { display: flex; flex-direction: column; gap: 60px; max-width: 1800px; margin: 0 auto; }
+        
+        .family-card { background: #1e1e1e; border-radius: 24px; padding: 40px; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .family-header { margin-bottom: 30px; border-bottom: 2px solid #555; padding-bottom: 20px; }
+        .family-name { font-size: 36px; font-weight: 800; color: #4a9eff; text-transform: uppercase; letter-spacing: 2px; }
+        .family-order-label { font-size: 18px; opacity: 0.6; color: #fff; margin-top: 5px; font-weight: 500; }
+        
+        .species-list { display: flex; flex-direction: column; gap: 30px; }
+        .species-card { background: #2a2a2a; border-radius: 16px; padding: 20px; border: 1px solid #444; }
+        .species-header { margin-bottom: 15px; border-bottom: 1px solid #444; padding-bottom: 10px; }
+        .label { font-size: 24px; font-weight: 700; color: #fff; }
+        .french-label { font-size: 18px; opacity: 0.8; color: #ddd; }
+        .latin-label { font-size: 16px; opacity: 0.7; font-style: italic; color: #bbb; }
+        
+        .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
+        .photo-card { background: #333; border-radius: 10px; overflow: hidden; padding: 10px; display: flex; flex-direction: column; align-items: center; transition: transform 0.2s, background 0.2s; }
+        .photo-card:hover { transform: scale(1.02); background: #3d3d3d; }
+        
+        img { max-width: 100%; height: auto; border-radius: 6px; object-fit: contain; }
+        .meta-label { font-size: 11px; opacity: 0.7; align-self: flex-start; margin-top: 8px; color: #fff; }
+        .filename { font-size: 9px; opacity: 0.4; margin-top: 2px; word-break: break-all; align-self: flex-start; }
+        .filename a { color: #4a9eff; text-decoration: none; transition: color 0.2s; }
+        .filename a:hover { text-decoration: underline; }
+        
+        /* Intro Section Styles */
+        .intro-section { max-width: 1200px; margin: 0 auto 80px; padding: 60px; background: #1e1e1e; border-radius: 32px; border: 1px solid #333; box-shadow: 0 20px 50px rgba(0,0,0,0.6); line-height: 1.8; }
+        .intro-title { font-size: 48px; font-weight: 900; margin-bottom: 40px; color: #4a9eff; line-height: 1.2; text-align: center; }
+        .intro-text { font-size: 20px; opacity: 0.9; margin-bottom: 30px; }
+        .intro-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 30px; margin-top: 50px; border-top: 1px solid #444; padding-top: 40px; }
+        .stat-item { text-align: center; }
+        .stat-value { font-size: 36px; font-weight: 800; color: #4a9eff; display: block; }
+        .stat-label { font-size: 14px; opacity: 0.6; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* Mode Selector Styles */
+        .mode-selector { position: fixed; top: 0; left: 0; right: 0; background: rgba(30, 30, 30, 0.95); backdrop-filter: blur(10px); padding: 15px 40px; border-bottom: 1px solid #333; z-index: 1000; display: flex; justify-content: flex-end; align-items: center; gap: 20px; }
+        .mode-button { background: #333; border: 1px solid #444; color: white; padding: 8px 20px; border-radius: 20px; cursor: pointer; font-weight: 600; transition: all 0.2s; }
+        .mode-button.active { background: #4a9eff; border-color: #4a9eff; }
+        .mode-label { font-size: 14px; opacity: 0.6; font-weight: 600; text-transform: uppercase; }
+
+        /* Restricted Mode Styles */
+        body.mode-public .filename { display: none; }
+        body.mode-public .photo-card:hover { transform: none; background: #333; }
+
+        /* Modal Styles */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; justify-content: center; align-items: center; }
+        .modal { background: #1e1e1e; padding: 40px; border-radius: 24px; border: 1px solid #333; width: 400px; box-shadow: 0 20px 50px rgba(0,0,0,0.8); }
+        .modal h2 { margin-top: 0; color: #4a9eff; }
+        .modal input { width: 100%; padding: 12px; margin: 20px 0; background: #2a2a2a; border: 1px solid #444; color: white; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        .modal-buttons { display: flex; justify-content: flex-end; gap: 15px; }
+        .modal-buttons button { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; }
+        .btn-cancel { background: #333; color: white; }
+        .btn-submit { background: #4a9eff; color: white; }
+    </style>
+</head>
+<body class="mode-public">
+    <div class="mode-selector">
+        <span class="mode-label">View Mode:</span>
+        <button id="btn-public" class="mode-button active" onclick="setMode('PUBLIC')">PUBLIC</button>
+        <button id="btn-user" class="mode-button" onclick="requestUserMode()">USER</button>
+    </div>
+
+    <div id="password-modal" class="modal-overlay">
+        <div class="modal">
+            <h2>Enter Password</h2>
+            <p>Please enter the password to activate USER mode.</p>
+            <input type="password" id="password-input" placeholder="Password">
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+                <button class="btn-submit" onclick="submitPassword()">Submit</button>
+            </div>
+        </div>
+    </div>
+
+    
+    <div class="family-list">
+        <div class="family-card">
+            <div class="family-header">
+                <div class="family-name">Screamers</div>
+                <div class="family-order-label">Anhimidae / Anseriformes</div>
+            </div>
+            <div class="species-list">
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Northern Screamer</div>
+                        <div class="french-label">Kamichi chavaria</div>
+                        <div class="latin-label">(Chauna chavaria)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1AC4Xtf6PgFsWuiG0qEKKjp40UWE9NtWx" loading="lazy" alt="Northern_Screamer_21227.jpg">
+                            <div class="meta-label">Colombia - 02 Apr 2025</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1AC4Xtf6PgFsWuiG0qEKKjp40UWE9NtWx" target="_blank">Northern_Screamer_21227.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1UZabpdhqDrzyynToQLcsG3oyNA0m_ncG" loading="lazy" alt="Northern_Screamer_22257.jpg">
+                            <div class="meta-label">Colombia - 02 Apr 2025</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1UZabpdhqDrzyynToQLcsG3oyNA0m_ncG" target="_blank">Northern_Screamer_22257.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1J5Wxa7JBahN2a_NY-cbPwCRwzu8zPend" loading="lazy" alt="Northern_Screamer_22511.jpg">
+                            <div class="meta-label">Colombia - 02 Apr 2025</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1J5Wxa7JBahN2a_NY-cbPwCRwzu8zPend" target="_blank">Northern_Screamer_22511.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="family-card">
+            <div class="family-header">
+                <div class="family-name">Ducks, Geese, and Waterfowl</div>
+                <div class="family-order-label">"Anatidae " / Anseriformes</div>
+            </div>
+            <div class="species-list">
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">White-faced Whistling-Duck</div>
+                        <div class="french-label">Dendrocygne veuf</div>
+                        <div class="latin-label">(Dendrocygna viduata)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1v5wMRp1096R5xlr51t9S9m_aeXsfxbPS" loading="lazy" alt="White-faced_Whistling-Duck_0346.jpg">
+                            <div class="meta-label">South Africa - 29 Sep 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1v5wMRp1096R5xlr51t9S9m_aeXsfxbPS" target="_blank">White-faced_Whistling-Duck_0346.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1SX79JGk08JIGcmKY7uqzw66JKg0kBzsf" loading="lazy" alt="White-faced_Whistling-Duck_1908.jpg">
+                            <div class="meta-label">South Africa - 29 Sep 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1SX79JGk08JIGcmKY7uqzw66JKg0kBzsf" target="_blank">White-faced_Whistling-Duck_1908.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1LjrrNvuATkPfdrWb5GlMQh5WSvBrG7oP" loading="lazy" alt="White-faced_Whistling-Duck_22165.jpg">
+                            <div class="meta-label">South Africa - 29 Sep 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1LjrrNvuATkPfdrWb5GlMQh5WSvBrG7oP" target="_blank">White-faced_Whistling-Duck_22165.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1cFvHs7QBPc87C8gpIMGZuiMN2fLId_3u" loading="lazy" alt="White-faced_Whistling-Duck_9105.jpg">
+                            <div class="meta-label">South Africa - 29 Sep 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1cFvHs7QBPc87C8gpIMGZuiMN2fLId_3u" target="_blank">White-faced_Whistling-Duck_9105.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Black-bellied Whistling-Duck</div>
+                        <div class="french-label">Dendrocygne à ventre noir</div>
+                        <div class="latin-label">(Dendrocygna autumnalis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/157lb4a5fgHLy-7cJTdkXHpt0tgD3QD2D" loading="lazy" alt="Black-bellied_Whistling-Duck.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/157lb4a5fgHLy-7cJTdkXHpt0tgD3QD2D" target="_blank">Black-bellied_Whistling-Duck.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1h4iyXtG5z-2SI06qf7-GEnphsVY3OZs4" loading="lazy" alt="Black-bellied_Whistling-Duck_1058.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1h4iyXtG5z-2SI06qf7-GEnphsVY3OZs4" target="_blank">Black-bellied_Whistling-Duck_1058.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1PAilLlgQhebLiUfoP2gKlChQUzRURjTk" loading="lazy" alt="Black-bellied_Whistling-Duck_22291.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1PAilLlgQhebLiUfoP2gKlChQUzRURjTk" target="_blank">Black-bellied_Whistling-Duck_22291.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/17WPNd87ZoLm-WP3-iFDwnuRo8K1EbACf" loading="lazy" alt="Black-bellied_Whistling-Duck_376.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/17WPNd87ZoLm-WP3-iFDwnuRo8K1EbACf" target="_blank">Black-bellied_Whistling-Duck_376.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1qiBPfvEJa4JWTyFgKUxRmv0iFQ-a285u" loading="lazy" alt="Black-bellied_Whistling-Duck_4437.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1qiBPfvEJa4JWTyFgKUxRmv0iFQ-a285u" target="_blank">Black-bellied_Whistling-Duck_4437.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1-hC-HyC5u4BxIYvhpOgskmXf_lJPh4D2" loading="lazy" alt="Black-bellied_Whistling-Duck_8237.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1-hC-HyC5u4BxIYvhpOgskmXf_lJPh4D2" target="_blank">Black-bellied_Whistling-Duck_8237.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1SVBMwQbdoEDp9BWDwzkfbQWX-Rqy8sQp" loading="lazy" alt="Black-bellied_Whistling-Duck_9985.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1SVBMwQbdoEDp9BWDwzkfbQWX-Rqy8sQp" target="_blank">Black-bellied_Whistling-Duck_9985.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Fulvous Whistling-Duck</div>
+                        <div class="french-label">Dendrocygne fauve</div>
+                        <div class="latin-label">(Dendrocygna bicolor)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1rJyRW1B72uncTeaxvbV5GCHa97l8hArS" loading="lazy" alt="Fulvous_Whistling-Duck_21195.jpg">
+                            <div class="meta-label">USA - 03 Dec 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1rJyRW1B72uncTeaxvbV5GCHa97l8hArS" target="_blank">Fulvous_Whistling-Duck_21195.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1V4yfz4tVanqeYdVHYOP8rvl84_n4q2GS" loading="lazy" alt="Fulvous_Whistling-Duck_21465.jpg">
+                            <div class="meta-label">USA - 03 Dec 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1V4yfz4tVanqeYdVHYOP8rvl84_n4q2GS" target="_blank">Fulvous_Whistling-Duck_21465.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Snow Goose</div>
+                        <div class="french-label">Oie des neiges</div>
+                        <div class="latin-label">(Anser caerulescens)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1X0WWyRKvPCz33WqRG4-z6q-oFEYRXbL1" loading="lazy" alt="Snow_Goose_01.jpg">
+                            <div class="meta-label">Canada - 05 Apr 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1X0WWyRKvPCz33WqRG4-z6q-oFEYRXbL1" target="_blank">Snow_Goose_01.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1NXFPNn03RvoOD-Pr0Ca1Q5oXcPygyd8s" loading="lazy" alt="Snow_Goose_02.jpg">
+                            <div class="meta-label">Canada - 05 Apr 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1NXFPNn03RvoOD-Pr0Ca1Q5oXcPygyd8s" target="_blank">Snow_Goose_02.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1IivXylZZQ2F_ssHzJz775EXEO7a0CaiG" loading="lazy" alt="Snow_Goose_03.jpg">
+                            <div class="meta-label">Canada - 05 Apr 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1IivXylZZQ2F_ssHzJz775EXEO7a0CaiG" target="_blank">Snow_Goose_03.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1zfmN_o5jR3sLqvj39w9T9rWApRngeTXz" loading="lazy" alt="Snow_Goose_1370.jpg">
+                            <div class="meta-label">Canada - 05 Apr 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1zfmN_o5jR3sLqvj39w9T9rWApRngeTXz" target="_blank">Snow_Goose_1370.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1hF1923DOvH7VRoraazC8pXjw8V21Xa9H" loading="lazy" alt="Snow_Goose_2014-12.jpg">
+                            <div class="meta-label">Canada - 05 Apr 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1hF1923DOvH7VRoraazC8pXjw8V21Xa9H" target="_blank">Snow_Goose_2014-12.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/152ICE0JDujH6IAT9KGjdimUSBHrCrNiu" loading="lazy" alt="Snow_Goose_26720.jpg">
+                            <div class="meta-label">Canada - 05 Apr 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/152ICE0JDujH6IAT9KGjdimUSBHrCrNiu" target="_blank">Snow_Goose_26720.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1fBvD3pwJQkp79oATnrQWaIy05lB6SXJR" loading="lazy" alt="Snow_Goose_7098MF.jpg">
+                            <div class="meta-label">Canada - 05 Apr 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1fBvD3pwJQkp79oATnrQWaIy05lB6SXJR" target="_blank">Snow_Goose_7098MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1vxf_FQnAKVpSPAzpLuFM_xFr5K-qTbmp" loading="lazy" alt="Snow_Goose_7769.jpg">
+                            <div class="meta-label">Canada - 05 Apr 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1vxf_FQnAKVpSPAzpLuFM_xFr5K-qTbmp" target="_blank">Snow_Goose_7769.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1-Gu5--TJU95pmVETL_dOyv2BF29ayGRd" loading="lazy" alt="Snow_Goose_8243.jpg">
+                            <div class="meta-label">Canada - 05 Apr 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1-Gu5--TJU95pmVETL_dOyv2BF29ayGRd" target="_blank">Snow_Goose_8243.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1n1M33zdTB8NKraA_DdNxhXUTjiowSbrx" loading="lazy" alt="Snow_Goose_8323.jpg">
+                            <div class="meta-label">Canada - 05 Apr 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1n1M33zdTB8NKraA_DdNxhXUTjiowSbrx" target="_blank">Snow_Goose_8323.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Tmlrdwt6DT5HEA0s365eRaW1NC1i7iKC" loading="lazy" alt="Snow_Goose_8657.jpg">
+                            <div class="meta-label">Canada - 05 Apr 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Tmlrdwt6DT5HEA0s365eRaW1NC1i7iKC" target="_blank">Snow_Goose_8657.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Greater White-fronted Goose</div>
+                        <div class="french-label">Oie rieuse</div>
+                        <div class="latin-label">(Anser albifrons)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1uFvFXxYAKvaGFeun388X4Jz0fwhE6UUY" loading="lazy" alt="Greater_White-Fronted_Goose_2714.jpg">
+                            <div class="meta-label">USA - 25 Oct 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1uFvFXxYAKvaGFeun388X4Jz0fwhE6UUY" target="_blank">Greater_White-Fronted_Goose_2714.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Y8zc-PhKXRtG_-gzVaIk1_z-TeW5dGrL" loading="lazy" alt="Greater_White-fronted_Goose_8829.jpg">
+                            <div class="meta-label">USA - 25 Oct 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Y8zc-PhKXRtG_-gzVaIk1_z-TeW5dGrL" target="_blank">Greater_White-fronted_Goose_8829.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/16jvZM9B4CXy_oamcc_o_jzLqJgenPoWa" loading="lazy" alt="Greater_white-fronted_Goose_8782.jpg">
+                            <div class="meta-label">USA - 25 Oct 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/16jvZM9B4CXy_oamcc_o_jzLqJgenPoWa" target="_blank">Greater_white-fronted_Goose_8782.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Brant</div>
+                        <div class="french-label">Bernache cravant</div>
+                        <div class="latin-label">(Branta bernicla)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/117jOFouA7lxfR4H1ELD-12F1QT7Rb78r" loading="lazy" alt="Brant_2014-033.jpg">
+                            <div class="meta-label">USA - 25 Oct 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/117jOFouA7lxfR4H1ELD-12F1QT7Rb78r" target="_blank">Brant_2014-033.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Cackling Goose</div>
+                        <div class="french-label">Bernache de Hutchins</div>
+                        <div class="latin-label">(Branta hutchinsii)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Ahbyd4dIOeGHfvPYjqxBxy5zsSVDaBnd" loading="lazy" alt="Cackling_Goose_2047.jpg">
+                            <div class="meta-label">Canada - 14 Oct 2015</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Ahbyd4dIOeGHfvPYjqxBxy5zsSVDaBnd" target="_blank">Cackling_Goose_2047.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1m0qg9mYelwr4JRgRjEDf5GALECH9kBtS" loading="lazy" alt="Cackling_Goose_9291.jpg">
+                            <div class="meta-label">Canada - 14 Oct 2015</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1m0qg9mYelwr4JRgRjEDf5GALECH9kBtS" target="_blank">Cackling_Goose_9291.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Canada Goose</div>
+                        <div class="french-label">Bernache du Canada</div>
+                        <div class="latin-label">(Branta canadensis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1r1QLDlXGKu5pjPPERQf9jyPDqiVUHp47" loading="lazy" alt="Canada_Goose_1313.jpg">
+                            <div class="meta-label">Canada - 23 Apr 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1r1QLDlXGKu5pjPPERQf9jyPDqiVUHp47" target="_blank">Canada_Goose_1313.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1nI5eFzsgS39TaHDb2Q0JhMfjeoaM7n2Y" loading="lazy" alt="Canada_Goose_1441.jpg">
+                            <div class="meta-label">Canada - 23 Apr 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1nI5eFzsgS39TaHDb2Q0JhMfjeoaM7n2Y" target="_blank">Canada_Goose_1441.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1cVumDlBtr1IsT0yca3Ef9tpwWK2Yplup" loading="lazy" alt="Canada_Goose_2719.jpg">
+                            <div class="meta-label">Canada - 23 Apr 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1cVumDlBtr1IsT0yca3Ef9tpwWK2Yplup" target="_blank">Canada_Goose_2719.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1wiJvVw8SUi8jDpo3cfUBSL1I5SlXa1O4" loading="lazy" alt="Canada_Goose_4668.jpg">
+                            <div class="meta-label">Canada - 23 Apr 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1wiJvVw8SUi8jDpo3cfUBSL1I5SlXa1O4" target="_blank">Canada_Goose_4668.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/14aEE3xx1-i_t0klwpS0aWN4J5uLGMJZL" loading="lazy" alt="Canada_Goose_Flying.jpg">
+                            <div class="meta-label">Canada - 23 Apr 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/14aEE3xx1-i_t0klwpS0aWN4J5uLGMJZL" target="_blank">Canada_Goose_Flying.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Hawaiian Goose</div>
+                        <div class="french-label">Bernache néné</div>
+                        <div class="latin-label">(Branta sandvicensis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="Photos/Hawaiian_Goose_%28Nene%29_0587.jpg" loading="lazy" alt="Hawaiian_Goose_(Nene)_0587.jpg">
+                            <div class="meta-label">USA - 31 Oct 2018</div>
+                            <div class="filename"><a href="Photos/Hawaiian_Goose_%28Nene%29_0587.jpg" target="_blank">Hawaiian_Goose_(Nene)_0587.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Mute Swan</div>
+                        <div class="french-label">Cygne tuberculé</div>
+                        <div class="latin-label">(Cygnus olor)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1MHVEcOh-H4UZjlfO_2Cj95cppEK2dFEG" loading="lazy" alt="Mute_Swan_0384.jpg">
+                            <div class="meta-label">France - 02 Feb 2019</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1MHVEcOh-H4UZjlfO_2Cj95cppEK2dFEG" target="_blank">Mute_Swan_0384.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/16sI9Oc6cKt-qAVfmIEBu0SCaw4qusukW" loading="lazy" alt="Mute_Swan_1510.jpg">
+                            <div class="meta-label">France - 02 Feb 2019</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/16sI9Oc6cKt-qAVfmIEBu0SCaw4qusukW" target="_blank">Mute_Swan_1510.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1lWrDAFW2T3gyZf1ceT12MBNJpOTGD18z" loading="lazy" alt="Mute_Swan_2853.jpg">
+                            <div class="meta-label">France - 02 Feb 2019</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1lWrDAFW2T3gyZf1ceT12MBNJpOTGD18z" target="_blank">Mute_Swan_2853.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1WncgcLTs1P1JfD_0fWF3XLUHai67c-bb" loading="lazy" alt="Mute_Swan_7631.jpg">
+                            <div class="meta-label">France - 02 Feb 2019</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1WncgcLTs1P1JfD_0fWF3XLUHai67c-bb" target="_blank">Mute_Swan_7631.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Black Swan</div>
+                        <div class="french-label">Cygne noir</div>
+                        <div class="latin-label">(Cygnus atratus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1HTKjdm3bk8pJP7UPI14voGsvlNG2VlyU" loading="lazy" alt="Black_Swan_1578.jpg">
+                            <div class="meta-label">Australia - 15 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1HTKjdm3bk8pJP7UPI14voGsvlNG2VlyU" target="_blank">Black_Swan_1578.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1oNIgmSZ9zt4kzuIVlCZRth1jFOZd68RA" loading="lazy" alt="Black_Swan_3502MF.jpg">
+                            <div class="meta-label">Australia - 15 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1oNIgmSZ9zt4kzuIVlCZRth1jFOZd68RA" target="_blank">Black_Swan_3502MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1PFXffIywyxF4y2Egh0pdlkOqiv25johf" loading="lazy" alt="Black_Swan_3640MF.jpg">
+                            <div class="meta-label">Australia - 15 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1PFXffIywyxF4y2Egh0pdlkOqiv25johf" target="_blank">Black_Swan_3640MF.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Trumpeter Swan</div>
+                        <div class="french-label">Cygne trompette</div>
+                        <div class="latin-label">(Cygnus buccinator)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1-NggW657jJr6TrsFqfzGCWo4yvRJ8lsY" loading="lazy" alt="Trumpeter_Swan_1356.jpg">
+                            <div class="meta-label">Canada - 05 May 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1-NggW657jJr6TrsFqfzGCWo4yvRJ8lsY" target="_blank">Trumpeter_Swan_1356.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1txVzi1x868Q9Zz2ZOLSRZMDsroaPoKUk" loading="lazy" alt="Trumpeter_Swan_5532MF.jpg">
+                            <div class="meta-label">Canada - 05 May 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1txVzi1x868Q9Zz2ZOLSRZMDsroaPoKUk" target="_blank">Trumpeter_Swan_5532MF.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Tundra Swan</div>
+                        <div class="french-label">Cygne siffleur</div>
+                        <div class="latin-label">(Cygnus columbianus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1mKnCssigvu8jv9NU5T9Bw-CfU8ArwiOX" loading="lazy" alt="Tundra_Swan_3025.jpg">
+                            <div class="meta-label">Canada - 13 Oct 2015</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1mKnCssigvu8jv9NU5T9Bw-CfU8ArwiOX" target="_blank">Tundra_Swan_3025.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1XSBTPnDfX-AhNfE7eD8eY4YyGhB9XUE7" loading="lazy" alt="Tundra_Swan_4108.jpg">
+                            <div class="meta-label">Canada - 13 Oct 2015</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1XSBTPnDfX-AhNfE7eD8eY4YyGhB9XUE7" target="_blank">Tundra_Swan_4108.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Knob-billed Duck</div>
+                        <div class="french-label">Canard à bosse</div>
+                        <div class="latin-label">(Sarkidiornis melanotos)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1HMOX14JQtlRIo13caNZN0cxs01fiiPys" loading="lazy" alt="Knob-billed_Duck_8339.jpg">
+                            <div class="meta-label">BW - 09 Oct 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1HMOX14JQtlRIo13caNZN0cxs01fiiPys" target="_blank">Knob-billed_Duck_8339.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Egyptian Goose</div>
+                        <div class="french-label">Ouette d'Égypte</div>
+                        <div class="latin-label">(Alopochen aegyptiaca)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1VmbZgmwg_HM-6XiE4_-sGmNZgY4qOYD7" loading="lazy" alt="Egyptian_Goose_161.jpg">
+                            <div class="meta-label">Tanzania - 09 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1VmbZgmwg_HM-6XiE4_-sGmNZgY4qOYD7" target="_blank">Egyptian_Goose_161.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1dNCc-Mjyol9HiB-IlRB2fjG_FQPHWJja" loading="lazy" alt="Egyptian_Goose_2607.jpg">
+                            <div class="meta-label">Tanzania - 09 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1dNCc-Mjyol9HiB-IlRB2fjG_FQPHWJja" target="_blank">Egyptian_Goose_2607.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1AgiQcTWWVQvSDQfZ3VXEeBR5olcebZE-" loading="lazy" alt="Egyptian_Goose_355.jpg">
+                            <div class="meta-label">Tanzania - 09 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1AgiQcTWWVQvSDQfZ3VXEeBR5olcebZE-" target="_blank">Egyptian_Goose_355.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">South African Shelduck</div>
+                        <div class="french-label">Tadorne à tête grise</div>
+                        <div class="latin-label">(Tadorna cana)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1sERnlmCKMhlkJ9hPaRkHohnmEhFWiDca" loading="lazy" alt="South_African_Shelduck.jpg">
+                            <div class="meta-label">NA - 04 Jun 2007</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1sERnlmCKMhlkJ9hPaRkHohnmEhFWiDca" target="_blank">South_African_Shelduck.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Australian Shelduck</div>
+                        <div class="french-label">Tadorne d'Australie</div>
+                        <div class="latin-label">(Tadorna tadornoides)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1_2JyboCWrE_gtduqwSanqtn8Dx7bQmsX" loading="lazy" alt="Australian_Shelduck_0277.jpg">
+                            <div class="meta-label">Australia - 22 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1_2JyboCWrE_gtduqwSanqtn8Dx7bQmsX" target="_blank">Australian_Shelduck_0277.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Spur-winged Goose</div>
+                        <div class="french-label">Oie-armée de Gambie</div>
+                        <div class="latin-label">(Plectropterus gambensis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1CMhtBoQXX1Rmx1yWnMHHgw2QyLSMtCZT" loading="lazy" alt="Spur-winged_Goose_8450.jpg">
+                            <div class="meta-label">South Africa - 03 Oct 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1CMhtBoQXX1Rmx1yWnMHHgw2QyLSMtCZT" target="_blank">Spur-winged_Goose_8450.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Wood Duck</div>
+                        <div class="french-label">Canard branchu</div>
+                        <div class="latin-label">(Aix sponsa)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/12WgIEPIVSl-cNRWFC4P5zyqoaCOO2Y1Z" loading="lazy" alt="Wood_Duck_1377.jpg">
+                            <div class="meta-label">Canada - 02 May 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/12WgIEPIVSl-cNRWFC4P5zyqoaCOO2Y1Z" target="_blank">Wood_Duck_1377.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Gcq_xBayHMpjg960XZKdtyfrvXHLXmJM" loading="lazy" alt="Wood_Duck_1684.jpg">
+                            <div class="meta-label">Canada - 02 May 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Gcq_xBayHMpjg960XZKdtyfrvXHLXmJM" target="_blank">Wood_Duck_1684.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Yip_LqxmKgqrjOt9F9DfkixEJXnAXtM9" loading="lazy" alt="Wood_Duck_1938.jpg">
+                            <div class="meta-label">Canada - 02 May 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Yip_LqxmKgqrjOt9F9DfkixEJXnAXtM9" target="_blank">Wood_Duck_1938.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1pX1judU-Dst8RAItZburw808dntgmNVH" loading="lazy" alt="Wood_Duck_2346.jpg">
+                            <div class="meta-label">Canada - 02 May 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1pX1judU-Dst8RAItZburw808dntgmNVH" target="_blank">Wood_Duck_2346.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1-9wG7rk20OnuC2DYeLvW9X2GrHVyP9GR" loading="lazy" alt="Wood_Duck_4546.jpg">
+                            <div class="meta-label">Canada - 02 May 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1-9wG7rk20OnuC2DYeLvW9X2GrHVyP9GR" target="_blank">Wood_Duck_4546.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1W8QkGNCfjOCl01zQz0tkFnDeUJjWMMoX" loading="lazy" alt="Wood_Duck_5558MF.jpg">
+                            <div class="meta-label">Canada - 02 May 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1W8QkGNCfjOCl01zQz0tkFnDeUJjWMMoX" target="_blank">Wood_Duck_5558MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/10wzpyIG9YgfDKlT5gr1LLJ19NjfEtTFp" loading="lazy" alt="Wood_Duck_7630.jpg">
+                            <div class="meta-label">Canada - 02 May 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/10wzpyIG9YgfDKlT5gr1LLJ19NjfEtTFp" target="_blank">Wood_Duck_7630.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Maned Duck</div>
+                        <div class="french-label">Canard à crinière</div>
+                        <div class="latin-label">(Chenonetta jubata)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Pvp4_m2o-XjC9EpVTpKJHVDCbX0994SC" loading="lazy" alt="Maned_Duck_8066.jpg">
+                            <div class="meta-label">Australia - 08 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Pvp4_m2o-XjC9EpVTpKJHVDCbX0994SC" target="_blank">Maned_Duck_8066.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1E0jZMwhJ4nJ-zPACLDxs3olHuQJXd5QH" loading="lazy" alt="Maned_duck_1933.jpg">
+                            <div class="meta-label">Australia - 08 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1E0jZMwhJ4nJ-zPACLDxs3olHuQJXd5QH" target="_blank">Maned_duck_1933.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Torrent Duck</div>
+                        <div class="french-label">Merganette des torrents</div>
+                        <div class="latin-label">(Merganetta armata)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1I6LxK7BwTQgPUL1rYIo20J3I-endqzI1" loading="lazy" alt="Torrent_Duck.jpg">
+                            <div class="meta-label">Ecuador - 10 Jul 2004</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1I6LxK7BwTQgPUL1rYIo20J3I-endqzI1" target="_blank">Torrent_Duck.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Blue-billed Teal</div>
+                        <div class="french-label">Sarcelle à bec bleu</div>
+                        <div class="latin-label">(Spatula hottentota)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1egu_CVkc2LJ0DH1L6MgOx5LHa4ZmIMms" loading="lazy" alt="Blue-billed_Teal_9414.jpg">
+                            <div class="meta-label">Tanzania - 15 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1egu_CVkc2LJ0DH1L6MgOx5LHa4ZmIMms" target="_blank">Blue-billed_Teal_9414.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Blue-winged Teal</div>
+                        <div class="french-label">Sarcelle à ailes bleues</div>
+                        <div class="latin-label">(Spatula discors)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1wYFWNgxNSq30MVz7I-87e9mmQSAX_dba" loading="lazy" alt="Blue-winged_Teal_1843.jpg">
+                            <div class="meta-label">Colombia - 29 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1wYFWNgxNSq30MVz7I-87e9mmQSAX_dba" target="_blank">Blue-winged_Teal_1843.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1XFGcCX68K6USfZr589gBp49M3De_mfJh" loading="lazy" alt="Blue-winged_Teal_21134.jpg">
+                            <div class="meta-label">Colombia - 29 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1XFGcCX68K6USfZr589gBp49M3De_mfJh" target="_blank">Blue-winged_Teal_21134.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/102mYGEyz7rAOWFxbGT1dMsM7nUpdA1eD" loading="lazy" alt="Blue-winged_Teal_3142.jpg">
+                            <div class="meta-label">Colombia - 29 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/102mYGEyz7rAOWFxbGT1dMsM7nUpdA1eD" target="_blank">Blue-winged_Teal_3142.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/13QL3IR--kcFy43s2apxMi9krKLbp5m-X" loading="lazy" alt="Blue-winged_Teal_4070.jpg">
+                            <div class="meta-label">Colombia - 29 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/13QL3IR--kcFy43s2apxMi9krKLbp5m-X" target="_blank">Blue-winged_Teal_4070.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1vpIMpfBUkfntyFAXNBZwNPxEuWjyyOpx" loading="lazy" alt="Blue-winged_Teal_4192MF.jpg">
+                            <div class="meta-label">Colombia - 29 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1vpIMpfBUkfntyFAXNBZwNPxEuWjyyOpx" target="_blank">Blue-winged_Teal_4192MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1idli-Mj22BYljgLM6z45wB5Jy7ED2t92" loading="lazy" alt="Blue-winged_Teal_6559.jpg">
+                            <div class="meta-label">Colombia - 29 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1idli-Mj22BYljgLM6z45wB5Jy7ED2t92" target="_blank">Blue-winged_Teal_6559.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1o4b2pT7uYYemnxWpqwrvBCIIKlRar3AW" loading="lazy" alt="Blue-winged_Teal_7012MF.jpg">
+                            <div class="meta-label">Colombia - 29 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1o4b2pT7uYYemnxWpqwrvBCIIKlRar3AW" target="_blank">Blue-winged_Teal_7012MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1UQ7zMcLuAm5Qrhgztt7Oj6pvNdZPI9xc" loading="lazy" alt="Blue-winged_Teal_9617.jpg">
+                            <div class="meta-label">Colombia - 29 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1UQ7zMcLuAm5Qrhgztt7Oj6pvNdZPI9xc" target="_blank">Blue-winged_Teal_9617.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Northern Shoveler</div>
+                        <div class="french-label">Canard souchet</div>
+                        <div class="latin-label">(Spatula clypeata)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/14gtYFotJMyJ4iyPpm5bXrcpokfAVcoIL" loading="lazy" alt="Northern_Shoveler.jpg">
+                            <div class="meta-label">USA - 01 Jan 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/14gtYFotJMyJ4iyPpm5bXrcpokfAVcoIL" target="_blank">Northern_Shoveler.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1k3teOXfZJSGFgRkOR069gdNSHIkoIY99" loading="lazy" alt="Northern_Shoveler_0250.jpg">
+                            <div class="meta-label">USA - 01 Jan 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1k3teOXfZJSGFgRkOR069gdNSHIkoIY99" target="_blank">Northern_Shoveler_0250.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1g1iTHmgO0ho1huLJd8bC9EzL0HRAsSWe" loading="lazy" alt="Northern_Shoveler_1291.jpg">
+                            <div class="meta-label">USA - 01 Jan 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1g1iTHmgO0ho1huLJd8bC9EzL0HRAsSWe" target="_blank">Northern_Shoveler_1291.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1YHYcjHqAYftxHIq-4OpCInx9dc57nncs" loading="lazy" alt="Northern_Shoveler_1400.jpg">
+                            <div class="meta-label">USA - 01 Jan 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1YHYcjHqAYftxHIq-4OpCInx9dc57nncs" target="_blank">Northern_Shoveler_1400.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1-0Y89vHcY2lkPqSITMYUI7fK2zioNZ6e" loading="lazy" alt="Northern_Shoveler_2608.jpg">
+                            <div class="meta-label">USA - 01 Jan 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1-0Y89vHcY2lkPqSITMYUI7fK2zioNZ6e" target="_blank">Northern_Shoveler_2608.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1UEBybKX2RVQZD4cZUikK4IQet3CQSdo-" loading="lazy" alt="Northern_Shoveler_3429.jpg">
+                            <div class="meta-label">USA - 01 Jan 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1UEBybKX2RVQZD4cZUikK4IQet3CQSdo-" target="_blank">Northern_Shoveler_3429.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1App_hfK0my8JZ9HLWPEz-PJnr3BQ8KYO" loading="lazy" alt="Northern_Shoveler_5626MF.jpg">
+                            <div class="meta-label">USA - 01 Jan 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1App_hfK0my8JZ9HLWPEz-PJnr3BQ8KYO" target="_blank">Northern_Shoveler_5626MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1z44sOAaitN-v5zAdkk_lJdvRFzKh9jFj" loading="lazy" alt="Northern_Shoveler_7002MF.jpg">
+                            <div class="meta-label">USA - 01 Jan 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1z44sOAaitN-v5zAdkk_lJdvRFzKh9jFj" target="_blank">Northern_Shoveler_7002MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1VB1ohbu5wu9xE3T3sfgaXp5KpwSNNYNZ" loading="lazy" alt="Northern_Shoveler_7005MF.jpg">
+                            <div class="meta-label">USA - 01 Jan 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1VB1ohbu5wu9xE3T3sfgaXp5KpwSNNYNZ" target="_blank">Northern_Shoveler_7005MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1zebp3kb8jdJRNKSqi0cDoqb6lhtChexQ" loading="lazy" alt="Northern_Shoveler_7830.jpg">
+                            <div class="meta-label">USA - 01 Jan 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1zebp3kb8jdJRNKSqi0cDoqb6lhtChexQ" target="_blank">Northern_Shoveler_7830.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/14EmsQCsvBhwdANcYKbJBKgvT9iGSJ89v" loading="lazy" alt="Northern_Shoveler_8536.jpg">
+                            <div class="meta-label">USA - 01 Jan 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/14EmsQCsvBhwdANcYKbJBKgvT9iGSJ89v" target="_blank">Northern_Shoveler_8536.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1vxmbb3QF4WiffRgnRLm6kP8t4AFy5WFJ" loading="lazy" alt="Northern_Shoveler_9676.jpg">
+                            <div class="meta-label">USA - 01 Jan 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1vxmbb3QF4WiffRgnRLm6kP8t4AFy5WFJ" target="_blank">Northern_Shoveler_9676.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Gadwall</div>
+                        <div class="french-label">Canard chipeau</div>
+                        <div class="latin-label">(Mareca strepera)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/10_lQ0XV0XJBd8rhRLFab9vQO8scXTuLm" loading="lazy" alt="Gadwall_1196.jpg">
+                            <div class="meta-label">USA - 16 Oct 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/10_lQ0XV0XJBd8rhRLFab9vQO8scXTuLm" target="_blank">Gadwall_1196.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1tfhtmSeAyCf1YBusz796ik9xFCa-EqXv" loading="lazy" alt="Gadwall_1290MF.jpg">
+                            <div class="meta-label">USA - 16 Oct 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1tfhtmSeAyCf1YBusz796ik9xFCa-EqXv" target="_blank">Gadwall_1290MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1VlojGDtjdFYt6vYCsd1ygSE4mirKec6G" loading="lazy" alt="Gadwall_5541MF.jpg">
+                            <div class="meta-label">USA - 16 Oct 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1VlojGDtjdFYt6vYCsd1ygSE4mirKec6G" target="_blank">Gadwall_5541MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1tehpBC9ldHWcr6stJcSpYbJfv0IT2-G9" loading="lazy" alt="Gadwall_7265.jpg">
+                            <div class="meta-label">USA - 16 Oct 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1tehpBC9ldHWcr6stJcSpYbJfv0IT2-G9" target="_blank">Gadwall_7265.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Eurasian Wigeon</div>
+                        <div class="french-label">Canard siffleur</div>
+                        <div class="latin-label">(Mareca penelope)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1SfUH0cEzKTh_Rzuqp3FtrFe3isGd1PPq" loading="lazy" alt="Eurasian_Wigeon.jpg">
+                            <div class="meta-label">Canada - 19 Oct 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1SfUH0cEzKTh_Rzuqp3FtrFe3isGd1PPq" target="_blank">Eurasian_Wigeon.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">American Wigeon</div>
+                        <div class="french-label">Canard d'Amérique</div>
+                        <div class="latin-label">(Mareca americana)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1swn1cQ7rrvSVKsUjB4vgHv7nf14-dqtx" loading="lazy" alt="American_Wigeon_0246.jpg">
+                            <div class="meta-label">USA - 01 Jan 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1swn1cQ7rrvSVKsUjB4vgHv7nf14-dqtx" target="_blank">American_Wigeon_0246.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/12Z_uc50GkuGqLiLSJ7TLV3PDg52iMXWm" loading="lazy" alt="American_Wigeon_1288MF.jpg">
+                            <div class="meta-label">USA - 01 Jan 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/12Z_uc50GkuGqLiLSJ7TLV3PDg52iMXWm" target="_blank">American_Wigeon_1288MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1iF6UpegeAT-f4AfC2MB6G6XP_Jnb3pke" loading="lazy" alt="American_Wigeon_2161.jpg">
+                            <div class="meta-label">USA - 01 Jan 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1iF6UpegeAT-f4AfC2MB6G6XP_Jnb3pke" target="_blank">American_Wigeon_2161.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1qv1_Ley7kvsLrKuCNvcjmbo-KVHLslAI" loading="lazy" alt="American_Wigeon_2906.jpg">
+                            <div class="meta-label">USA - 01 Jan 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1qv1_Ley7kvsLrKuCNvcjmbo-KVHLslAI" target="_blank">American_Wigeon_2906.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1jvDa-81K57x1_-AsJnQALw_eJphF2U8A" loading="lazy" alt="American_Wigeon_8995.jpg">
+                            <div class="meta-label">USA - 01 Jan 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1jvDa-81K57x1_-AsJnQALw_eJphF2U8A" target="_blank">American_Wigeon_8995.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Meller's Duck</div>
+                        <div class="french-label">Canard de Meller</div>
+                        <div class="latin-label">(Anas melleri)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="Photos/Meller%27s_Duck_9792.jpg" loading="lazy" alt="Meller's_Duck_9792.jpg">
+                            <div class="meta-label">MG - 17 Nov 2024</div>
+                            <div class="filename"><a href="Photos/Meller%27s_Duck_9792.jpg" target="_blank">Meller's_Duck_9792.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Pacific Black Duck</div>
+                        <div class="french-label">Canard à sourcils</div>
+                        <div class="latin-label">(Anas superciliosa)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1YIuxNgsqnoHSUpheGvAfLaQql85tTfD1" loading="lazy" alt="Pacific_Black_Duck_8179.jpg">
+                            <div class="meta-label">Australia - 07 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1YIuxNgsqnoHSUpheGvAfLaQql85tTfD1" target="_blank">Pacific_Black_Duck_8179.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1rpRYnUeL8HR1frxF9V4d1unKfyC-zfwh" loading="lazy" alt="Pacific_black_duck_9265.jpg">
+                            <div class="meta-label">Australia - 07 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1rpRYnUeL8HR1frxF9V4d1unKfyC-zfwh" target="_blank">Pacific_black_duck_9265.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Mallard</div>
+                        <div class="french-label">Canard colvert</div>
+                        <div class="latin-label">(Anas platyrhynchos)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1111GUAKIH2Zx3bDbZlmg4IdsWRG8WWxd" loading="lazy" alt="Mallard_0242.jpg">
+                            <div class="meta-label">Canada - 09 Sep 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1111GUAKIH2Zx3bDbZlmg4IdsWRG8WWxd" target="_blank">Mallard_0242.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1VYH62IVzaNgQAGjOqVC3A9r7iY1iDcn6" loading="lazy" alt="Mallard_1548.jpg">
+                            <div class="meta-label">Canada - 09 Sep 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1VYH62IVzaNgQAGjOqVC3A9r7iY1iDcn6" target="_blank">Mallard_1548.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1tAv-kjpNhscp1FC2DWHQz1V2UGLN-uXw" loading="lazy" alt="Mallard_2367.jpg">
+                            <div class="meta-label">Canada - 09 Sep 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1tAv-kjpNhscp1FC2DWHQz1V2UGLN-uXw" target="_blank">Mallard_2367.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/16fYZpZV_zwVVC9_zxBvYNmJsXGL_IAI6" loading="lazy" alt="Mallard_2508.jpg">
+                            <div class="meta-label">Canada - 09 Sep 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/16fYZpZV_zwVVC9_zxBvYNmJsXGL_IAI6" target="_blank">Mallard_2508.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/144LsE6VIpPgm0JXit8_Qn6dMzSat_UUC" loading="lazy" alt="Mallard_4552.jpg">
+                            <div class="meta-label">Canada - 09 Sep 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/144LsE6VIpPgm0JXit8_Qn6dMzSat_UUC" target="_blank">Mallard_4552.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1DlbiwlyO0txR7NuMuOUsT0SgIU_qjAYX" loading="lazy" alt="Mallard_9233.jpg">
+                            <div class="meta-label">Canada - 09 Sep 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1DlbiwlyO0txR7NuMuOUsT0SgIU_qjAYX" target="_blank">Mallard_9233.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">American Black Duck</div>
+                        <div class="french-label">Canard noir</div>
+                        <div class="latin-label">(Anas rubripes)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Lujkmzo2-O-4O82z52Xwq1ln3o-bWSdf" loading="lazy" alt="American_Black_Duck_0305.jpg">
+                            <div class="meta-label">Canada - 01 Oct 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Lujkmzo2-O-4O82z52Xwq1ln3o-bWSdf" target="_blank">American_Black_Duck_0305.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/17zuLXEo2Pz3EJNwyTyAUgcyUSdaiK1qp" loading="lazy" alt="American_Black_Duck_26634.jpg">
+                            <div class="meta-label">Canada - 01 Oct 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/17zuLXEo2Pz3EJNwyTyAUgcyUSdaiK1qp" target="_blank">American_Black_Duck_26634.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1LTS3SUDjdpqHLMRVkIvwRwzVDkL9j7lb" loading="lazy" alt="American_Black_Duck_9041.jpg">
+                            <div class="meta-label">Canada - 01 Oct 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1LTS3SUDjdpqHLMRVkIvwRwzVDkL9j7lb" target="_blank">American_Black_Duck_9041.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Mottled Duck</div>
+                        <div class="french-label">Canard brun</div>
+                        <div class="latin-label">(Anas fulvigula)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1H5KGYpxRkJV8D86vwi-2DLrxlkRkqFta" loading="lazy" alt="Mottled_Duck_2202.jpg">
+                            <div class="meta-label">USA - 18 Nov 2015</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1H5KGYpxRkJV8D86vwi-2DLrxlkRkqFta" target="_blank">Mottled_Duck_2202.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1_ve6vTRdlNN44ByBd8QZiz1KnBrbpz3m" loading="lazy" alt="Mottled_Duck_4077.jpg">
+                            <div class="meta-label">USA - 18 Nov 2015</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1_ve6vTRdlNN44ByBd8QZiz1KnBrbpz3m" target="_blank">Mottled_Duck_4077.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1NpAtXuoHR31Xr7Q5n5u_5fYbzUu1elnY" loading="lazy" alt="Mottled_Duck_7023MF.jpg">
+                            <div class="meta-label">USA - 18 Nov 2015</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1NpAtXuoHR31Xr7Q5n5u_5fYbzUu1elnY" target="_blank">Mottled_Duck_7023MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1hzSMvV3nQx-QvThKmRq5zGXekzfyN7Pj" loading="lazy" alt="Mottled_Duck_7917MF.jpg">
+                            <div class="meta-label">USA - 18 Nov 2015</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1hzSMvV3nQx-QvThKmRq5zGXekzfyN7Pj" target="_blank">Mottled_Duck_7917MF.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Red-billed Duck</div>
+                        <div class="french-label">Canard à bec rouge</div>
+                        <div class="latin-label">(Anas erythrorhyncha)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1vnhiw6uLflVL4sQftQDp16d1qO1nA7J6" loading="lazy" alt="Red-billed_Duck_9385.jpg">
+                            <div class="meta-label">Tanzania - 15 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1vnhiw6uLflVL4sQftQDp16d1qO1nA7J6" target="_blank">Red-billed_Duck_9385.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Northern Pintail</div>
+                        <div class="french-label">Canard pilet</div>
+                        <div class="latin-label">(Anas acuta)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1zr3WBYmUn7pnHQXFL9E7WZyTEddF6t-3" loading="lazy" alt="Northern_Pintail.jpg">
+                            <div class="meta-label">USA - 01 Jan 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1zr3WBYmUn7pnHQXFL9E7WZyTEddF6t-3" target="_blank">Northern_Pintail.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1-BFP4bK5kbVJrLx9BoC2Y5veQekXJfr7" loading="lazy" alt="Northern_Pintail_0221.jpg">
+                            <div class="meta-label">USA - 01 Jan 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1-BFP4bK5kbVJrLx9BoC2Y5veQekXJfr7" target="_blank">Northern_Pintail_0221.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1YDCZuJ7Ja7wiofQsDyoihN3MwcQjEWTP" loading="lazy" alt="Northern_Pintail_2018.jpg">
+                            <div class="meta-label">USA - 01 Jan 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1YDCZuJ7Ja7wiofQsDyoihN3MwcQjEWTP" target="_blank">Northern_Pintail_2018.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1QmwBUHjxtCg-SfbOA5mmYJzLE1kvwGJS" loading="lazy" alt="Northern_pintail_1300MF.jpg">
+                            <div class="meta-label">USA - 01 Jan 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1QmwBUHjxtCg-SfbOA5mmYJzLE1kvwGJS" target="_blank">Northern_pintail_1300MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/14cAXDyIu_YQ2G8mBEqsP16v4YIQB84c8" loading="lazy" alt="Northern_pintail_1837MF.jpg">
+                            <div class="meta-label">USA - 01 Jan 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/14cAXDyIu_YQ2G8mBEqsP16v4YIQB84c8" target="_blank">Northern_pintail_1837MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1ZTC3eK18r7VQrg4PynbPwEacY0XEyIFG" loading="lazy" alt="Northern_pintail_7467.jpg">
+                            <div class="meta-label">USA - 01 Jan 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1ZTC3eK18r7VQrg4PynbPwEacY0XEyIFG" target="_blank">Northern_pintail_7467.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Green-winged Teal</div>
+                        <div class="french-label">Sarcelle d'hiver</div>
+                        <div class="latin-label">(Anas crecca)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1wslscUOS1OBB2nQMCSEKGeGy2j9NK_r8" loading="lazy" alt="Green-winged_Teal.jpg">
+                            <div class="meta-label">USA - 16 Oct 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1wslscUOS1OBB2nQMCSEKGeGy2j9NK_r8" target="_blank">Green-winged_Teal.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="Photos/Green-winged_Teal_216%2B5.jpg" loading="lazy" alt="Green-winged_Teal_216+5.jpg">
+                            <div class="meta-label">USA - 16 Oct 2013</div>
+                            <div class="filename"><a href="Photos/Green-winged_Teal_216%2B5.jpg" target="_blank">Green-winged_Teal_216+5.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1MAQDynH2SSqFbixXcnqHsVecUlhchn_2" loading="lazy" alt="Green-winged_Teal_2370.jpg">
+                            <div class="meta-label">USA - 16 Oct 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1MAQDynH2SSqFbixXcnqHsVecUlhchn_2" target="_blank">Green-winged_Teal_2370.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/121gGR1ZiDTh7lLgd-VgK-IpDsTGsNUwn" loading="lazy" alt="Green-winged_Teal_5830MF.jpg">
+                            <div class="meta-label">USA - 16 Oct 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/121gGR1ZiDTh7lLgd-VgK-IpDsTGsNUwn" target="_blank">Green-winged_Teal_5830MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1dvOjiF4ln7lYC-YeAaActicCEFJb9BSv" loading="lazy" alt="Green-winged_Teal_9223.jpg">
+                            <div class="meta-label">USA - 16 Oct 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1dvOjiF4ln7lYC-YeAaActicCEFJb9BSv" target="_blank">Green-winged_Teal_9223.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/11X1veEk5SccfJ2kyfIud2tBsSc8Q-TaS" loading="lazy" alt="Green-winged_teal_8368.jpg">
+                            <div class="meta-label">USA - 16 Oct 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/11X1veEk5SccfJ2kyfIud2tBsSc8Q-TaS" target="_blank">Green-winged_teal_8368.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Chestnut Teal</div>
+                        <div class="french-label">Sarcelle rousse</div>
+                        <div class="latin-label">(Anas castanea)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1XHsJCPJSyVQI_3dPGVIbJz2aWdnf26RS" loading="lazy" alt="Chestnut_Teal_0027.jpg">
+                            <div class="meta-label">Australia - 11 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1XHsJCPJSyVQI_3dPGVIbJz2aWdnf26RS" target="_blank">Chestnut_Teal_0027.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/15CmvDCu6fS42WtD4Qy2vjp42zRLC7upB" loading="lazy" alt="Chestnut_Teal_0985.jpg">
+                            <div class="meta-label">Australia - 11 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/15CmvDCu6fS42WtD4Qy2vjp42zRLC7upB" target="_blank">Chestnut_Teal_0985.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1lTT21ymzGtj198z3AQlL9FmUR68DQCke" loading="lazy" alt="Chestnut_Teal_2864MF.jpg">
+                            <div class="meta-label">Australia - 11 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1lTT21ymzGtj198z3AQlL9FmUR68DQCke" target="_blank">Chestnut_Teal_2864MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1WGJA5zk1nD9_2Z_ufRT4PgbK-f9Feko4" loading="lazy" alt="Chestnut_Teal_3120MF.jpg">
+                            <div class="meta-label">Australia - 11 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1WGJA5zk1nD9_2Z_ufRT4PgbK-f9Feko4" target="_blank">Chestnut_Teal_3120MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1OwXaW7RG167KCMGg0cmxK6_kfv3O5S3_" loading="lazy" alt="Chestnut_Teal_8178.jpg">
+                            <div class="meta-label">Australia - 11 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1OwXaW7RG167KCMGg0cmxK6_kfv3O5S3_" target="_blank">Chestnut_Teal_8178.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Pink-eared Duck</div>
+                        <div class="french-label">Malacorhynque à oreilles roses</div>
+                        <div class="latin-label">(Malacorhynchus membranaceus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1f2QCxTcTD8qBUXQeMZYEo595a50QByhR" loading="lazy" alt="Pink-eared_Duck_1926.jpg">
+                            <div class="meta-label">Australia - 28 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1f2QCxTcTD8qBUXQeMZYEo595a50QByhR" target="_blank">Pink-eared_Duck_1926.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1TRSvhC-mqpNmOfVemXhkRZBXbi_ghRTN" loading="lazy" alt="Pink-eared_Duck_3483MF.jpg">
+                            <div class="meta-label">Australia - 28 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1TRSvhC-mqpNmOfVemXhkRZBXbi_ghRTN" target="_blank">Pink-eared_Duck_3483MF.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Redhead</div>
+                        <div class="french-label">Fuligule à tête rouge</div>
+                        <div class="latin-label">(Aythya americana)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/13GLpe9cy8bw1gfWpVknXgnADC6lVnAry" loading="lazy" alt="Redhead.jpg">
+                            <div class="meta-label">Canada - 06 Apr 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/13GLpe9cy8bw1gfWpVknXgnADC6lVnAry" target="_blank">Redhead.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1siBERphI9uit066ciknM63UTEc7p64a8" loading="lazy" alt="Redhead_1209.jpg">
+                            <div class="meta-label">Canada - 06 Apr 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1siBERphI9uit066ciknM63UTEc7p64a8" target="_blank">Redhead_1209.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1CruNyCJeg4vyWZVwQ6FvdISvowkk9P1J" loading="lazy" alt="Redhead_1249.jpg">
+                            <div class="meta-label">Canada - 06 Apr 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1CruNyCJeg4vyWZVwQ6FvdISvowkk9P1J" target="_blank">Redhead_1249.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1gKBDxxyVAm_EhYjdy8LcVfg1ILJK15uk" loading="lazy" alt="Redhead_2009MF.jpg">
+                            <div class="meta-label">Canada - 06 Apr 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1gKBDxxyVAm_EhYjdy8LcVfg1ILJK15uk" target="_blank">Redhead_2009MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1yTYYAmea5_Gp8tYum6CInJ7uSUS1mqpR" loading="lazy" alt="Redhead_26703.jpg">
+                            <div class="meta-label">Canada - 06 Apr 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1yTYYAmea5_Gp8tYum6CInJ7uSUS1mqpR" target="_blank">Redhead_26703.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1MpjHPDDQszElY6IHnGxmXJlk2Tm3fNgn" loading="lazy" alt="Redhead_3320.jpg">
+                            <div class="meta-label">Canada - 06 Apr 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1MpjHPDDQszElY6IHnGxmXJlk2Tm3fNgn" target="_blank">Redhead_3320.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/11MW0lzQQhNORwva-QCyOtlP0HU0OJ2EP" loading="lazy" alt="Redhead_7512.jpg">
+                            <div class="meta-label">Canada - 06 Apr 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/11MW0lzQQhNORwva-QCyOtlP0HU0OJ2EP" target="_blank">Redhead_7512.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Ring-necked Duck</div>
+                        <div class="french-label">Fuligule à collier</div>
+                        <div class="latin-label">(Aythya collaris)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/14oNmmnXJE0URzKkUknmcWQ4R_gLoK8gj" loading="lazy" alt="Ring-necked_Duck.jpg">
+                            <div class="meta-label">Canada - 17 Apr 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/14oNmmnXJE0URzKkUknmcWQ4R_gLoK8gj" target="_blank">Ring-necked_Duck.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1b2SzPHFf2emKnl9OGN7n4E8NQMmLQG75" loading="lazy" alt="Ring-necked_Duck_2.jpg">
+                            <div class="meta-label">Canada - 17 Apr 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1b2SzPHFf2emKnl9OGN7n4E8NQMmLQG75" target="_blank">Ring-necked_Duck_2.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1KoFN5CgX7a2WMZohq0njan9EJ0vnu8XM" loading="lazy" alt="Ring-necked_Duck_21267.jpg">
+                            <div class="meta-label">Canada - 17 Apr 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1KoFN5CgX7a2WMZohq0njan9EJ0vnu8XM" target="_blank">Ring-necked_Duck_21267.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1YE_ZaAP-gn1iesp0YsvZygxcECG4Mfd3" loading="lazy" alt="Ring-necked_Duck_26707.jpg">
+                            <div class="meta-label">Canada - 17 Apr 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1YE_ZaAP-gn1iesp0YsvZygxcECG4Mfd3" target="_blank">Ring-necked_Duck_26707.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1xhRHSRrLoY6-O4UpsK4kNYdBUDD35a07" loading="lazy" alt="Ring-necked_Duck_7103MF.jpg">
+                            <div class="meta-label">Canada - 17 Apr 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1xhRHSRrLoY6-O4UpsK4kNYdBUDD35a07" target="_blank">Ring-necked_Duck_7103MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1rhn0tEx-tWVtkTWMWtxLioQT8W5Eu6XP" loading="lazy" alt="Ring-necked_Duck_8853MF.jpg">
+                            <div class="meta-label">Canada - 17 Apr 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1rhn0tEx-tWVtkTWMWtxLioQT8W5Eu6XP" target="_blank">Ring-necked_Duck_8853MF.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Greater Scaup</div>
+                        <div class="french-label">Fuligule milouinan</div>
+                        <div class="latin-label">(Aythya marila)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1rSemurgJTE-q6HsM-5QiTTZJ-A8_Ovyu" loading="lazy" alt="Greater_Scaup_0253.jpg">
+                            <div class="meta-label">Canada - 03 May 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1rSemurgJTE-q6HsM-5QiTTZJ-A8_Ovyu" target="_blank">Greater_Scaup_0253.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1H1vW4T_9JSXHaxb4ycalaar9I0OtTUQk" loading="lazy" alt="Greater_Scaup_2014-077.jpg">
+                            <div class="meta-label">Canada - 03 May 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1H1vW4T_9JSXHaxb4ycalaar9I0OtTUQk" target="_blank">Greater_Scaup_2014-077.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1j39iX_SJOg6o5t7V1b5dzju53Rmh1SoZ" loading="lazy" alt="Greater_Scaup_7437.jpg">
+                            <div class="meta-label">Canada - 03 May 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1j39iX_SJOg6o5t7V1b5dzju53Rmh1SoZ" target="_blank">Greater_Scaup_7437.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Jxsef3rkCzgoHVv0oEis_d1NJbEu7yOs" loading="lazy" alt="Greater_scaup_1908.jpg">
+                            <div class="meta-label">Canada - 03 May 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Jxsef3rkCzgoHVv0oEis_d1NJbEu7yOs" target="_blank">Greater_scaup_1908.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Lesser Scaup</div>
+                        <div class="french-label">Petit Fuligule</div>
+                        <div class="latin-label">(Aythya affinis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1LCAyrWa3BEE8aiIziPmhuT_29QFLC5RW" loading="lazy" alt="Lesser_Scaup.jpg">
+                            <div class="meta-label">USA - 01 Jan 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1LCAyrWa3BEE8aiIziPmhuT_29QFLC5RW" target="_blank">Lesser_Scaup.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1221My38AErvdT0Pr_fzdZYeloAqLmieP" loading="lazy" alt="Lesser_Scaup_1131.jpg">
+                            <div class="meta-label">USA - 01 Jan 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1221My38AErvdT0Pr_fzdZYeloAqLmieP" target="_blank">Lesser_Scaup_1131.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/13OZZ86sUlQBhjU61CC48zuPo2SS7OLb1" loading="lazy" alt="Lesser_Scaup_1132.jpg">
+                            <div class="meta-label">USA - 01 Jan 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/13OZZ86sUlQBhjU61CC48zuPo2SS7OLb1" target="_blank">Lesser_Scaup_1132.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1yJ7-_jYEbYb36qpStJzHZvwI-LOu7F9u" loading="lazy" alt="Lesser_Scaup_1321.jpg">
+                            <div class="meta-label">USA - 01 Jan 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1yJ7-_jYEbYb36qpStJzHZvwI-LOu7F9u" target="_blank">Lesser_Scaup_1321.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1-eqz90RKRJ9AHzAv6b_A8SJ2b6xsNOOQ" loading="lazy" alt="Lesser_Scaup_2670.jpg">
+                            <div class="meta-label">USA - 01 Jan 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1-eqz90RKRJ9AHzAv6b_A8SJ2b6xsNOOQ" target="_blank">Lesser_Scaup_2670.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1DLyIRKTxTqVUZs5vCAnZZfcygTX9fOmu" loading="lazy" alt="Lesser_Scaup_2695.jpg">
+                            <div class="meta-label">USA - 01 Jan 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1DLyIRKTxTqVUZs5vCAnZZfcygTX9fOmu" target="_blank">Lesser_Scaup_2695.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1tb9IBHZ1s6OlM9pBdQ4R6BpdxSK5P8zO" loading="lazy" alt="Lesser_Scaup_7764MF.jpg">
+                            <div class="meta-label">USA - 01 Jan 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1tb9IBHZ1s6OlM9pBdQ4R6BpdxSK5P8zO" target="_blank">Lesser_Scaup_7764MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1TCJuCqWT-n_lOBSsVPsdrZvRAhQi7wdk" loading="lazy" alt="Lesser_scaup_8220.jpg">
+                            <div class="meta-label">USA - 01 Jan 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1TCJuCqWT-n_lOBSsVPsdrZvRAhQi7wdk" target="_blank">Lesser_scaup_8220.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Common Eider</div>
+                        <div class="french-label">Eider à duvet</div>
+                        <div class="latin-label">(Somateria mollissima)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1JEt4SKlwzfGyxHQo5fC-TV8x5kv5hCRB" loading="lazy" alt="Common_Eider_964.jpg">
+                            <div class="meta-label">Canada - 24 May 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1JEt4SKlwzfGyxHQo5fC-TV8x5kv5hCRB" target="_blank">Common_Eider_964.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Harlequin Duck</div>
+                        <div class="french-label">Arlequin plongeur</div>
+                        <div class="latin-label">(Histrionicus histrionicus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1BY1cpLEQPsGjaS3Lky6KIZ6ky3pV7nxu" loading="lazy" alt="Harlequin_Duck_8803.jpg">
+                            <div class="meta-label">Canada - 20 Mar 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1BY1cpLEQPsGjaS3Lky6KIZ6ky3pV7nxu" target="_blank">Harlequin_Duck_8803.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Surf Scoter</div>
+                        <div class="french-label">Macreuse à front blanc</div>
+                        <div class="latin-label">(Melanitta perspicillata)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/142OSXxQaCFY2znRYp-X9Bi1G5VRzQjzG" loading="lazy" alt="Surf_Scoter_1954MF.jpg">
+                            <div class="meta-label">Canada - 03 May 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/142OSXxQaCFY2znRYp-X9Bi1G5VRzQjzG" target="_blank">Surf_Scoter_1954MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1fUhF3kVPXRxYt-haqtM1jKuBsuoMV00z" loading="lazy" alt="Surf_Scoter_4048.jpg">
+                            <div class="meta-label">Canada - 03 May 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1fUhF3kVPXRxYt-haqtM1jKuBsuoMV00z" target="_blank">Surf_Scoter_4048.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Kkbcr82GstXTsRnOxC7rZdHvYIW2UZnV" loading="lazy" alt="Surf_Scoter_8600.jpg">
+                            <div class="meta-label">Canada - 03 May 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Kkbcr82GstXTsRnOxC7rZdHvYIW2UZnV" target="_blank">Surf_Scoter_8600.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1X0Jl6bsOpsjpQ4c-bJ_g_WpD9CwcRT1p" loading="lazy" alt="Surf_Scoter_9119.jpg">
+                            <div class="meta-label">Canada - 03 May 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1X0Jl6bsOpsjpQ4c-bJ_g_WpD9CwcRT1p" target="_blank">Surf_Scoter_9119.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">White-winged Scoter</div>
+                        <div class="french-label">Macreuse à ailes blanches</div>
+                        <div class="latin-label">(Melanitta deglandi)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1gVnP24YZV2InAhNS5HnzyiXGw6JXjkcQ" loading="lazy" alt="White-winged_Scoter_1927MF.jpg">
+                            <div class="meta-label">Canada - 13 Nov 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1gVnP24YZV2InAhNS5HnzyiXGw6JXjkcQ" target="_blank">White-winged_Scoter_1927MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1y5cV8sgIU3K0UrVnkMPH5snWFGmmYZM0" loading="lazy" alt="White-winged_Scoter_3058.jpg">
+                            <div class="meta-label">Canada - 13 Nov 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1y5cV8sgIU3K0UrVnkMPH5snWFGmmYZM0" target="_blank">White-winged_Scoter_3058.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/10MLQfiehgHC-HJd42FaZtVfZF6tsgqdg" loading="lazy" alt="White-winged_Scoter_4046.jpg">
+                            <div class="meta-label">Canada - 13 Nov 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/10MLQfiehgHC-HJd42FaZtVfZF6tsgqdg" target="_blank">White-winged_Scoter_4046.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Black Scoter</div>
+                        <div class="french-label">Macreuse à bec jaune</div>
+                        <div class="latin-label">(Melanitta americana)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/13sgB1INnFhZ7RXT6dNWD6Fn-QMFeLwoX" loading="lazy" alt="Black_Scoter_4029.jpg">
+                            <div class="meta-label">USA - 26 Nov 2015</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/13sgB1INnFhZ7RXT6dNWD6Fn-QMFeLwoX" target="_blank">Black_Scoter_4029.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Long-tailed Duck</div>
+                        <div class="french-label">Harelde kakawi</div>
+                        <div class="latin-label">(Clangula hyemalis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1FBF56WQb7zwHKC6fQut1MRccirhVWQZK" loading="lazy" alt="Long-tailed_Duck_3089MF.jpg">
+                            <div class="meta-label">Canada - 06 Apr 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1FBF56WQb7zwHKC6fQut1MRccirhVWQZK" target="_blank">Long-tailed_Duck_3089MF.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Bufflehead</div>
+                        <div class="french-label">Petit Garrot</div>
+                        <div class="latin-label">(Bucephala albeola)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1f6SBzsFJDXV2Wz23gsFm4RD0VRp75vSR" loading="lazy" alt="Bufflehead_2195MF.jpg">
+                            <div class="meta-label">Canada - 09 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1f6SBzsFJDXV2Wz23gsFm4RD0VRp75vSR" target="_blank">Bufflehead_2195MF.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Common Goldeneye</div>
+                        <div class="french-label">Garrot à oeil d'or</div>
+                        <div class="latin-label">(Bucephala clangula)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1siHJvOAnBGxd646uuPpKImbo1_K4cTiR" loading="lazy" alt="Common_Goldeneye_3991.jpg">
+                            <div class="meta-label">Canada - 07 Apr 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1siHJvOAnBGxd646uuPpKImbo1_K4cTiR" target="_blank">Common_Goldeneye_3991.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Hooded Merganser</div>
+                        <div class="french-label">Harle couronné</div>
+                        <div class="latin-label">(Lophodytes cucullatus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1rNwZHA5-xMA-4bspSLnsl3jQ5EDhmKEL" loading="lazy" alt="Hooded_Merganser_2151.jpg">
+                            <div class="meta-label">Canada - 26 Nov 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1rNwZHA5-xMA-4bspSLnsl3jQ5EDhmKEL" target="_blank">Hooded_Merganser_2151.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1K4a88N7CSWdLmLvXqAkgXFdnsaCfk0TO" loading="lazy" alt="Hooded_Merganser_7286.jpg">
+                            <div class="meta-label">Canada - 26 Nov 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1K4a88N7CSWdLmLvXqAkgXFdnsaCfk0TO" target="_blank">Hooded_Merganser_7286.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Common Merganser</div>
+                        <div class="french-label">Grand Harle</div>
+                        <div class="latin-label">(Mergus merganser)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1TPqV11IOesZvV6k73Wr6uWicmYwH0hex" loading="lazy" alt="Common_merganser_0287.jpg">
+                            <div class="meta-label">Canada - 06 Apr 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1TPqV11IOesZvV6k73Wr6uWicmYwH0hex" target="_blank">Common_merganser_0287.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1EvlXOp-OqMscVlhfS3ax6W92reoHfYR6" loading="lazy" alt="Common_merganser_1631.jpg">
+                            <div class="meta-label">Canada - 06 Apr 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1EvlXOp-OqMscVlhfS3ax6W92reoHfYR6" target="_blank">Common_merganser_1631.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1LyNHT6EbQWh6ldyayd_jMmGFkCdA1hAC" loading="lazy" alt="Common_merganser_1780.jpg">
+                            <div class="meta-label">Canada - 06 Apr 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1LyNHT6EbQWh6ldyayd_jMmGFkCdA1hAC" target="_blank">Common_merganser_1780.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Red-breasted Merganser</div>
+                        <div class="french-label">Harle huppé</div>
+                        <div class="latin-label">(Mergus serrator)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1viiECjqaoumOrXYeibH6dSBC9s9oP_RN" loading="lazy" alt="Red-breasted_Merganser_0282.jpg">
+                            <div class="meta-label">Canada - 16 Feb 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1viiECjqaoumOrXYeibH6dSBC9s9oP_RN" target="_blank">Red-breasted_Merganser_0282.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/10dNpuCdPug0WNMWa8Q3FY66QRYQtUEMw" loading="lazy" alt="Red-breasted_Merganser_8100.jpg">
+                            <div class="meta-label">Canada - 16 Feb 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/10dNpuCdPug0WNMWa8Q3FY66QRYQtUEMw" target="_blank">Red-breasted_Merganser_8100.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1dhnhkR5MzlTSSTOB4g1fSmNFeJKKOYCE" loading="lazy" alt="Red-breasted_Merganser_8493.jpg">
+                            <div class="meta-label">Canada - 16 Feb 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1dhnhkR5MzlTSSTOB4g1fSmNFeJKKOYCE" target="_blank">Red-breasted_Merganser_8493.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1UnVA-u3KhueOOQTs81DXktIv9B92UmWs" loading="lazy" alt="Red-breasted_Merganser_8942.jpg">
+                            <div class="meta-label">Canada - 16 Feb 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1UnVA-u3KhueOOQTs81DXktIv9B92UmWs" target="_blank">Red-breasted_Merganser_8942.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/10JGRVLyohb1xvv0EX-Wl-7QtbqSUmTw0" loading="lazy" alt="Red-breasted_Merganser_8946.jpg">
+                            <div class="meta-label">Canada - 16 Feb 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/10JGRVLyohb1xvv0EX-Wl-7QtbqSUmTw0" target="_blank">Red-breasted_Merganser_8946.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1tSPHqXNNxFZt9YYeew9lRvnlNJqza-oD" loading="lazy" alt="Red-breasted_Merganser_8947.jpg">
+                            <div class="meta-label">Canada - 16 Feb 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1tSPHqXNNxFZt9YYeew9lRvnlNJqza-oD" target="_blank">Red-breasted_Merganser_8947.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1rHJRuOlYsLYYzu8Xbpe3dXgxP8V3nIfu" loading="lazy" alt="Red-breasted_merganser.jpg">
+                            <div class="meta-label">Canada - 16 Feb 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1rHJRuOlYsLYYzu8Xbpe3dXgxP8V3nIfu" target="_blank">Red-breasted_merganser.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Ruddy Duck</div>
+                        <div class="french-label">Érismature rousse</div>
+                        <div class="latin-label">(Oxyura jamaicensis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Edf-4T5wEGRYNEDrexzIgrSUIWAjQgx9" loading="lazy" alt="Ruddy_Duck_2036.jpg">
+                            <div class="meta-label">USA - 19 Oct 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Edf-4T5wEGRYNEDrexzIgrSUIWAjQgx9" target="_blank">Ruddy_Duck_2036.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1v6L5UewbSCVQd0h01wYneGBWXyf98JdP" loading="lazy" alt="Ruddy_Duck_7565.jpg">
+                            <div class="meta-label">USA - 19 Oct 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1v6L5UewbSCVQd0h01wYneGBWXyf98JdP" target="_blank">Ruddy_Duck_7565.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Andean Duck</div>
+                        <div class="french-label">Érismature des Andes</div>
+                        <div class="latin-label">(Oxyura ferruginea)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1TkBvJ8yK6-zOezMzPYckZg-xDsIGI-RQ" loading="lazy" alt="Andean_Duck_7065.jpg">
+                            <div class="meta-label">Colombia - 16 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1TkBvJ8yK6-zOezMzPYckZg-xDsIGI-RQ" target="_blank">Andean_Duck_7065.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div></div></body></html>

@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photo Index</title>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; background: #121212; color: white; margin: 0; padding: 20px; padding-top: 80px; }
+        .family-list { display: flex; flex-direction: column; gap: 60px; max-width: 1800px; margin: 0 auto; }
+        
+        .family-card { background: #1e1e1e; border-radius: 24px; padding: 40px; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .family-header { margin-bottom: 30px; border-bottom: 2px solid #555; padding-bottom: 20px; }
+        .family-name { font-size: 36px; font-weight: 800; color: #4a9eff; text-transform: uppercase; letter-spacing: 2px; }
+        .family-order-label { font-size: 18px; opacity: 0.6; color: #fff; margin-top: 5px; font-weight: 500; }
+        
+        .species-list { display: flex; flex-direction: column; gap: 30px; }
+        .species-card { background: #2a2a2a; border-radius: 16px; padding: 20px; border: 1px solid #444; }
+        .species-header { margin-bottom: 15px; border-bottom: 1px solid #444; padding-bottom: 10px; }
+        .label { font-size: 24px; font-weight: 700; color: #fff; }
+        .french-label { font-size: 18px; opacity: 0.8; color: #ddd; }
+        .latin-label { font-size: 16px; opacity: 0.7; font-style: italic; color: #bbb; }
+        
+        .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
+        .photo-card { background: #333; border-radius: 10px; overflow: hidden; padding: 10px; display: flex; flex-direction: column; align-items: center; transition: transform 0.2s, background 0.2s; }
+        .photo-card:hover { transform: scale(1.02); background: #3d3d3d; }
+        
+        img { max-width: 100%; height: auto; border-radius: 6px; object-fit: contain; }
+        .meta-label { font-size: 11px; opacity: 0.7; align-self: flex-start; margin-top: 8px; color: #fff; }
+        .filename { font-size: 9px; opacity: 0.4; margin-top: 2px; word-break: break-all; align-self: flex-start; }
+        .filename a { color: #4a9eff; text-decoration: none; transition: color 0.2s; }
+        .filename a:hover { text-decoration: underline; }
+        
+        /* Intro Section Styles */
+        .intro-section { max-width: 1200px; margin: 0 auto 80px; padding: 60px; background: #1e1e1e; border-radius: 32px; border: 1px solid #333; box-shadow: 0 20px 50px rgba(0,0,0,0.6); line-height: 1.8; }
+        .intro-title { font-size: 48px; font-weight: 900; margin-bottom: 40px; color: #4a9eff; line-height: 1.2; text-align: center; }
+        .intro-text { font-size: 20px; opacity: 0.9; margin-bottom: 30px; }
+        .intro-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 30px; margin-top: 50px; border-top: 1px solid #444; padding-top: 40px; }
+        .stat-item { text-align: center; }
+        .stat-value { font-size: 36px; font-weight: 800; color: #4a9eff; display: block; }
+        .stat-label { font-size: 14px; opacity: 0.6; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* Mode Selector Styles */
+        .mode-selector { position: fixed; top: 0; left: 0; right: 0; background: rgba(30, 30, 30, 0.95); backdrop-filter: blur(10px); padding: 15px 40px; border-bottom: 1px solid #333; z-index: 1000; display: flex; justify-content: flex-end; align-items: center; gap: 20px; }
+        .mode-button { background: #333; border: 1px solid #444; color: white; padding: 8px 20px; border-radius: 20px; cursor: pointer; font-weight: 600; transition: all 0.2s; }
+        .mode-button.active { background: #4a9eff; border-color: #4a9eff; }
+        .mode-label { font-size: 14px; opacity: 0.6; font-weight: 600; text-transform: uppercase; }
+
+        /* Restricted Mode Styles */
+        body.mode-public .filename { display: none; }
+        body.mode-public .photo-card:hover { transform: none; background: #333; }
+
+        /* Modal Styles */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; justify-content: center; align-items: center; }
+        .modal { background: #1e1e1e; padding: 40px; border-radius: 24px; border: 1px solid #333; width: 400px; box-shadow: 0 20px 50px rgba(0,0,0,0.8); }
+        .modal h2 { margin-top: 0; color: #4a9eff; }
+        .modal input { width: 100%; padding: 12px; margin: 20px 0; background: #2a2a2a; border: 1px solid #444; color: white; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        .modal-buttons { display: flex; justify-content: flex-end; gap: 15px; }
+        .modal-buttons button { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; }
+        .btn-cancel { background: #333; color: white; }
+        .btn-submit { background: #4a9eff; color: white; }
+    </style>
+</head>
+<body class="mode-public">
+    <div class="mode-selector">
+        <span class="mode-label">View Mode:</span>
+        <button id="btn-public" class="mode-button active" onclick="setMode('PUBLIC')">PUBLIC</button>
+        <button id="btn-user" class="mode-button" onclick="requestUserMode()">USER</button>
+    </div>
+
+    <div id="password-modal" class="modal-overlay">
+        <div class="modal">
+            <h2>Enter Password</h2>
+            <p>Please enter the password to activate USER mode.</p>
+            <input type="password" id="password-input" placeholder="Password">
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+                <button class="btn-submit" onclick="submitPassword()">Submit</button>
+            </div>
+        </div>
+    </div>
+
+    
+    <div class="family-list">
+        <div class="family-card">
+            <div class="family-header">
+                <div class="family-name">Rails, Gallinules, and Coots</div>
+                <div class="family-order-label">"Rallidae " / Gruiformes</div>
+            </div>
+            <div class="species-list">
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Virginia Rail</div>
+                        <div class="french-label">Râle de Virginie</div>
+                        <div class="latin-label">(Rallus limicola)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Q3BZC7LQ0Nu2mJ7M13q6bTZYBotFk1_Y" loading="lazy" alt="Virginia_Rail-2.jpg">
+                            <div class="meta-label">Canada - 08 May 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Q3BZC7LQ0Nu2mJ7M13q6bTZYBotFk1_Y" target="_blank">Virginia_Rail-2.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Oht0mffhm0Jyyb3KAZYxq4idDqiAJYQG" loading="lazy" alt="Virginia_Rail.jpg">
+                            <div class="meta-label">Canada - 08 May 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Oht0mffhm0Jyyb3KAZYxq4idDqiAJYQG" target="_blank">Virginia_Rail.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1sXvpmvoRaccBXzJxSBOCjXjo31_jzee2" loading="lazy" alt="Virginia_Rail_1089.jpg">
+                            <div class="meta-label">Canada - 08 May 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1sXvpmvoRaccBXzJxSBOCjXjo31_jzee2" target="_blank">Virginia_Rail_1089.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/16bGJI2p_60vmsarsTrpkjGnPz4n5oT5Z" loading="lazy" alt="Virginia_Rail_2890.jpg">
+                            <div class="meta-label">Canada - 08 May 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/16bGJI2p_60vmsarsTrpkjGnPz4n5oT5Z" target="_blank">Virginia_Rail_2890.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Y_Pd0XCKVldJG_fQZuxNdaDutofuepRh" loading="lazy" alt="Virginia_Rail_4216.jpg">
+                            <div class="meta-label">Canada - 08 May 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Y_Pd0XCKVldJG_fQZuxNdaDutofuepRh" target="_blank">Virginia_Rail_4216.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1tI17lUsqcUTTUIa77xZ_hgvVetIaKjFY" loading="lazy" alt="Virginia_Rail_4234.jpg">
+                            <div class="meta-label">Canada - 08 May 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1tI17lUsqcUTTUIa77xZ_hgvVetIaKjFY" target="_blank">Virginia_Rail_4234.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1afTOZrhy2BtNjOnpYWlh5XOxhMB63dMy" loading="lazy" alt="Virginia_Rail_4383A.jpg">
+                            <div class="meta-label">Canada - 08 May 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1afTOZrhy2BtNjOnpYWlh5XOxhMB63dMy" target="_blank">Virginia_Rail_4383A.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/12_dgew77RhfO8ju53uy6KemaQ1Z3G5M6" loading="lazy" alt="Virginia_Rail_4395.jpg">
+                            <div class="meta-label">Canada - 08 May 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/12_dgew77RhfO8ju53uy6KemaQ1Z3G5M6" target="_blank">Virginia_Rail_4395.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1jIj2-q9xonrH3zw1DDy7rK1SO9F-g1vD" loading="lazy" alt="Virginia_Rail_4753.jpg">
+                            <div class="meta-label">Canada - 08 May 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1jIj2-q9xonrH3zw1DDy7rK1SO9F-g1vD" target="_blank">Virginia_Rail_4753.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/18JlvIxM6xO_A2p463RAiPxOBzUIcfZU9" loading="lazy" alt="Virginia_Rail_5590MF.jpg">
+                            <div class="meta-label">Canada - 08 May 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/18JlvIxM6xO_A2p463RAiPxOBzUIcfZU9" target="_blank">Virginia_Rail_5590MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1KJEtDhnBK5AWjXaC-W3YjdNbvoRSctuu" loading="lazy" alt="Virginia_Rail_702.jpg">
+                            <div class="meta-label">Canada - 08 May 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1KJEtDhnBK5AWjXaC-W3YjdNbvoRSctuu" target="_blank">Virginia_Rail_702.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/13MogoXrJjiPoSjszYotW_vYnEDL6IfYN" loading="lazy" alt="Virginia_Rail_9295.jpg">
+                            <div class="meta-label">Canada - 08 May 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/13MogoXrJjiPoSjszYotW_vYnEDL6IfYN" target="_blank">Virginia_Rail_9295.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/109DfnmsQiTODRKbH3ptaWrsKQa0A7Jh2" loading="lazy" alt="Virginia_Rail_Copulation.jpg">
+                            <div class="meta-label">Canada - 08 May 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/109DfnmsQiTODRKbH3ptaWrsKQa0A7Jh2" target="_blank">Virginia_Rail_Copulation.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1K-E34rkzXLqFNNXwE0UnXJwDFCjXDsIc" loading="lazy" alt="Virginia_rail_4592.jpg">
+                            <div class="meta-label">Canada - 08 May 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1K-E34rkzXLqFNNXwE0UnXJwDFCjXDsIc" target="_blank">Virginia_rail_4592.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1cCAZlUGBPshBCvVnLQ16Y8bMbOMiI58V" loading="lazy" alt="Virginia_rail_4623.jpg">
+                            <div class="meta-label">Canada - 08 May 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1cCAZlUGBPshBCvVnLQ16Y8bMbOMiI58V" target="_blank">Virginia_rail_4623.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1CqnoQv2kgLuP2yd1Vb3-EP90VKkRCKm7" loading="lazy" alt="Virginia_rail_9074MF.jpg">
+                            <div class="meta-label">Canada - 08 May 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1CqnoQv2kgLuP2yd1Vb3-EP90VKkRCKm7" target="_blank">Virginia_rail_9074MF.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">White-throated Rail</div>
+                        <div class="french-label">Râle de Cuvier</div>
+                        <div class="latin-label">(Dryolimnas cuvieri)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1XXyv9WgquEKbGyIiuo06NILr1gzucJQy" loading="lazy" alt="White-throated_Rail_-_Rale_de_Cuvier_9225.jpg">
+                            <div class="meta-label">MG - 17 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1XXyv9WgquEKbGyIiuo06NILr1gzucJQy" target="_blank">White-throated_Rail_-_Rale_de_Cuvier_9225.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1caHXaPQt5BbYup5JdN0VddtrlkD3EFy6" loading="lazy" alt="White-throated_Rail_-_Rale_de_Cuvier_9442.jpg">
+                            <div class="meta-label">MG - 17 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1caHXaPQt5BbYup5JdN0VddtrlkD3EFy6" target="_blank">White-throated_Rail_-_Rale_de_Cuvier_9442.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1oPK5yu11jv96QypaGLXRHb99kCAJVtlr" loading="lazy" alt="White-throated_Rail_-_Rale_de_Cuvier_9474.jpg">
+                            <div class="meta-label">MG - 17 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1oPK5yu11jv96QypaGLXRHb99kCAJVtlr" target="_blank">White-throated_Rail_-_Rale_de_Cuvier_9474.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Uniform Crake</div>
+                        <div class="french-label">Râle concolore</div>
+                        <div class="latin-label">(Amaurolimnas concolor)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1cvq6_n12KNIMcrFcS2QD40xEIaH_I5Mh" loading="lazy" alt="Uniform_Crake_6373.jpg">
+                            <div class="meta-label">CR - 09 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1cvq6_n12KNIMcrFcS2QD40xEIaH_I5Mh" target="_blank">Uniform_Crake_6373.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Russet-naped Wood-Rail</div>
+                        <div class="french-label">Râle à ventre blanc</div>
+                        <div class="latin-label">(Aramides albiventris)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1X2sgwUke7ir9Dnjw5WjPGX2B37v-MS6m" loading="lazy" alt="Russet-naped_Wood-Rail_5040.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1X2sgwUke7ir9Dnjw5WjPGX2B37v-MS6m" target="_blank">Russet-naped_Wood-Rail_5040.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Gray-cowled Wood-Rail</div>
+                        <div class="french-label">Râle de Cayenne</div>
+                        <div class="latin-label">(Aramides cajaneus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1gRzFDnhEEYOrUHlAPKHkkB7BhAWyUVXh" loading="lazy" alt="Gray-cowled_Wood-Rail_2570.jpg">
+                            <div class="meta-label">Panama - 10 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1gRzFDnhEEYOrUHlAPKHkkB7BhAWyUVXh" target="_blank">Gray-cowled_Wood-Rail_2570.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Tasmanian Nativehen</div>
+                        <div class="french-label">Gallinule de Tasmanie</div>
+                        <div class="latin-label">(Tribonyx mortierii)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/11NVWKjgivoxjq2ZuD656cSDj-IZgkcKF" loading="lazy" alt="Tasmanian_Nativehen_3865MF.jpg">
+                            <div class="meta-label">Australia - 18 Nov 2025</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/11NVWKjgivoxjq2ZuD656cSDj-IZgkcKF" target="_blank">Tasmanian_Nativehen_3865MF.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Sora</div>
+                        <div class="french-label">Marouette de Caroline</div>
+                        <div class="latin-label">(Porzana carolina)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/16IuF9NXSuzZbPXC5JlHQImRiR1bE3EKl" loading="lazy" alt="Sora.jpg">
+                            <div class="meta-label">Canada - 24 May 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/16IuF9NXSuzZbPXC5JlHQImRiR1bE3EKl" target="_blank">Sora.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1rXzPQVppm5aZBAWszeHClQrTKUBRDy-Z" loading="lazy" alt="Sora_20364.jpg">
+                            <div class="meta-label">Canada - 24 May 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1rXzPQVppm5aZBAWszeHClQrTKUBRDy-Z" target="_blank">Sora_20364.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1ckQyw_fMmZs2QLR38qeVlPOFhwNxlkAs" loading="lazy" alt="Sora_3650.jpg">
+                            <div class="meta-label">Canada - 24 May 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1ckQyw_fMmZs2QLR38qeVlPOFhwNxlkAs" target="_blank">Sora_3650.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1CaHEwVs2iUXczrJ9WGTx3sMPEANUoLsQ" loading="lazy" alt="Sora_3831.jpg">
+                            <div class="meta-label">Canada - 24 May 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1CaHEwVs2iUXczrJ9WGTx3sMPEANUoLsQ" target="_blank">Sora_3831.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1rtnF2g6AXIbyzpb6GYB8JMaDNnAyEXPt" loading="lazy" alt="Sora_6738.jpg">
+                            <div class="meta-label">Canada - 24 May 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1rtnF2g6AXIbyzpb6GYB8JMaDNnAyEXPt" target="_blank">Sora_6738.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1FFGAgi1Ocvqutgx3VZkidJPQejXZBcEH" loading="lazy" alt="Sora_Pair_Mating_3144.jpg">
+                            <div class="meta-label">Canada - 24 May 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1FFGAgi1Ocvqutgx3VZkidJPQejXZBcEH" target="_blank">Sora_Pair_Mating_3144.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1p77raaFXfbHCV1ooyUEKfziEo7ls8N_7" loading="lazy" alt="Sora_Pair_Mating_3145.jpg">
+                            <div class="meta-label">Canada - 24 May 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1p77raaFXfbHCV1ooyUEKfziEo7ls8N_7" target="_blank">Sora_Pair_Mating_3145.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1jnpMFX5Vlq-SK82OqIw07ra2dgViHVRz" loading="lazy" alt="Sora_Pair_Mating_3146.jpg">
+                            <div class="meta-label">Canada - 24 May 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1jnpMFX5Vlq-SK82OqIw07ra2dgViHVRz" target="_blank">Sora_Pair_Mating_3146.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1szrHceLvQ24z0yTwq0i5TM238U-4CfgN" loading="lazy" alt="Sora_Pair_Mating_3147.jpg">
+                            <div class="meta-label">Canada - 24 May 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1szrHceLvQ24z0yTwq0i5TM238U-4CfgN" target="_blank">Sora_Pair_Mating_3147.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Nm1dYGnex0PMLmUYkAikBe_lhbhdsrp7" loading="lazy" alt="Sora_Pair_Mating_3148.jpg">
+                            <div class="meta-label">Canada - 24 May 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Nm1dYGnex0PMLmUYkAikBe_lhbhdsrp7" target="_blank">Sora_Pair_Mating_3148.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Rcxm4zNxdBLsouGQgcwHlSWRUZmaqaKy" loading="lazy" alt="Sora_Pair_Mating_3149.jpg">
+                            <div class="meta-label">Canada - 24 May 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Rcxm4zNxdBLsouGQgcwHlSWRUZmaqaKy" target="_blank">Sora_Pair_Mating_3149.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1wrN2mL6aiIXYdAHjrgPYtU_gVjRxPmNd" loading="lazy" alt="Sora_Pair_Mating_3150.jpg">
+                            <div class="meta-label">Canada - 24 May 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1wrN2mL6aiIXYdAHjrgPYtU_gVjRxPmNd" target="_blank">Sora_Pair_Mating_3150.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/13kzwhxaZWaiN_GDm12zKzaD_-OQEnBnM" loading="lazy" alt="Sora_Pair_Mating_3151.jpg">
+                            <div class="meta-label">Canada - 24 May 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/13kzwhxaZWaiN_GDm12zKzaD_-OQEnBnM" target="_blank">Sora_Pair_Mating_3151.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1RH74tKCHe_NfZYcH3QnJL6Evkb3bIz46" loading="lazy" alt="Sora_Pair_Mating_3157.jpg">
+                            <div class="meta-label">Canada - 24 May 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1RH74tKCHe_NfZYcH3QnJL6Evkb3bIz46" target="_blank">Sora_Pair_Mating_3157.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1_5czGq6njlQ-kg1Z8jLTkme16IegYY3a" loading="lazy" alt="Sora_Pair_Mating_3158.jpg">
+                            <div class="meta-label">Canada - 24 May 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1_5czGq6njlQ-kg1Z8jLTkme16IegYY3a" target="_blank">Sora_Pair_Mating_3158.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/163M7gs9uZ-Z26Jfr4WoLxDctCggIA-GP" loading="lazy" alt="Sora_Pair_Mating_3163.jpg">
+                            <div class="meta-label">Canada - 24 May 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/163M7gs9uZ-Z26Jfr4WoLxDctCggIA-GP" target="_blank">Sora_Pair_Mating_3163.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1gDXsuh_WQtM2a1lhi599pQAQD-f1BLrE" loading="lazy" alt="Sora_Pair_Mating_3164.jpg">
+                            <div class="meta-label">Canada - 24 May 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1gDXsuh_WQtM2a1lhi599pQAQD-f1BLrE" target="_blank">Sora_Pair_Mating_3164.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1rMYnJx5cGtdhNUvbDadRNPtGuSleezk8" loading="lazy" alt="Sora_Pair_Mating_3165.jpg">
+                            <div class="meta-label">Canada - 24 May 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1rMYnJx5cGtdhNUvbDadRNPtGuSleezk8" target="_blank">Sora_Pair_Mating_3165.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Australian Crake</div>
+                        <div class="french-label">Marouette d'Australie</div>
+                        <div class="latin-label">(Porzana fluminea)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1vSQbMmU3wpot60psBqKLuH5EZZMm-qqm" loading="lazy" alt="Australian_Crake_4885MF.jpg">
+                            <div class="meta-label">Australia - 03 Nov 2025</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1vSQbMmU3wpot60psBqKLuH5EZZMm-qqm" target="_blank">Australian_Crake_4885MF.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Eurasian Moorhen</div>
+                        <div class="french-label">Gallinule poule-d'eau</div>
+                        <div class="latin-label">(Gallinula chloropus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1mIBp8m4LTW4Hr8_vbWQvGRSP2urOO4ho" loading="lazy" alt="Eurasian_Moorhen_0041.jpg">
+                            <div class="meta-label">South Africa - 06 Oct 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1mIBp8m4LTW4Hr8_vbWQvGRSP2urOO4ho" target="_blank">Eurasian_Moorhen_0041.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1IBedkbQdH5FVDkjY85XqBb0wmvPjgvxA" loading="lazy" alt="Eurasian_Moorhen_0050.jpg">
+                            <div class="meta-label">South Africa - 06 Oct 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1IBedkbQdH5FVDkjY85XqBb0wmvPjgvxA" target="_blank">Eurasian_Moorhen_0050.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1oHP606yQ7QSF5PyyMMkXxIXIGH94Ir-5" loading="lazy" alt="Eurasian_Moorhen_9611.jpg">
+                            <div class="meta-label">South Africa - 06 Oct 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1oHP606yQ7QSF5PyyMMkXxIXIGH94Ir-5" target="_blank">Eurasian_Moorhen_9611.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Common Gallinule</div>
+                        <div class="french-label">Gallinule d'Amérique</div>
+                        <div class="latin-label">(Gallinula galeata)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1QGOX-SIJ2SNSCNk53XRE5cvwehDCEZL8" loading="lazy" alt="Common_Gallinule_1426.jpg">
+                            <div class="meta-label">USA - 17 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1QGOX-SIJ2SNSCNk53XRE5cvwehDCEZL8" target="_blank">Common_Gallinule_1426.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1v6QNjZFm50N3fqMXQb4r-MiFLr2byX88" loading="lazy" alt="Common_Gallinule_1878.jpg">
+                            <div class="meta-label">USA - 17 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1v6QNjZFm50N3fqMXQb4r-MiFLr2byX88" target="_blank">Common_Gallinule_1878.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1_gu_P_lWr6BhDgs5ZB_4i8SXh4PFvhQX" loading="lazy" alt="Common_Gallinule_1948.jpg">
+                            <div class="meta-label">USA - 17 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1_gu_P_lWr6BhDgs5ZB_4i8SXh4PFvhQX" target="_blank">Common_Gallinule_1948.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1KFVpJFKSskTp6bCL8iH8VQ8K9WPfrac2" loading="lazy" alt="Common_Gallinule_21057.jpg">
+                            <div class="meta-label">USA - 17 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1KFVpJFKSskTp6bCL8iH8VQ8K9WPfrac2" target="_blank">Common_Gallinule_21057.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/10du1sRnGxtwbEfNVAqAYD1Kz6lcRSio3" loading="lazy" alt="Common_Gallinule_21388.jpg">
+                            <div class="meta-label">USA - 17 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/10du1sRnGxtwbEfNVAqAYD1Kz6lcRSio3" target="_blank">Common_Gallinule_21388.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1O97QF3M4MvaWmZ-MGkFrAaJVAPvgnAsZ" loading="lazy" alt="Common_Gallinule_3902.jpg">
+                            <div class="meta-label">USA - 17 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1O97QF3M4MvaWmZ-MGkFrAaJVAPvgnAsZ" target="_blank">Common_Gallinule_3902.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1v0BHxDNnnpwYkXcgXL_1wkMyFG8opBTl" loading="lazy" alt="Common_Gallinule_6922MF.jpg">
+                            <div class="meta-label">USA - 17 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1v0BHxDNnnpwYkXcgXL_1wkMyFG8opBTl" target="_blank">Common_Gallinule_6922MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1YgOipn0FTBeDB6zIUdMd2iYXFltJU1n4" loading="lazy" alt="Common_Gallinule_7207MF.jpg">
+                            <div class="meta-label">USA - 17 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1YgOipn0FTBeDB6zIUdMd2iYXFltJU1n4" target="_blank">Common_Gallinule_7207MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1naiKQewkrxqz9Y9V6LMhyz0ho-IqxjHO" loading="lazy" alt="Common_Gallinule_7229.jpg">
+                            <div class="meta-label">USA - 17 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1naiKQewkrxqz9Y9V6LMhyz0ho-IqxjHO" target="_blank">Common_Gallinule_7229.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1j1E14XtcU6_QBqfLJTcXOdwXA7vf3R4O" loading="lazy" alt="Common_Gallinule_9479MF.jpg">
+                            <div class="meta-label">USA - 17 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1j1E14XtcU6_QBqfLJTcXOdwXA7vf3R4O" target="_blank">Common_Gallinule_9479MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/11Fup_yzMwsVoC4b4UyXm3TJPCvhsTkCp" loading="lazy" alt="Common_Gallinule_9835.jpg">
+                            <div class="meta-label">USA - 17 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/11Fup_yzMwsVoC4b4UyXm3TJPCvhsTkCp" target="_blank">Common_Gallinule_9835.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1mxogU7NFI550BXv6gWyzto60bJkmG_nv" loading="lazy" alt="Common_gallinule.jpg">
+                            <div class="meta-label">USA - 17 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1mxogU7NFI550BXv6gWyzto60bJkmG_nv" target="_blank">Common_gallinule.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Dusky Moorhen</div>
+                        <div class="french-label">Gallinule sombre</div>
+                        <div class="latin-label">(Gallinula tenebrosa)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1pjapMUlG4Mo901TNsBFK-vCbrsIThpI6" loading="lazy" alt="Dusky_Moorhen_8123.jpg">
+                            <div class="meta-label">Australia - 07 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1pjapMUlG4Mo901TNsBFK-vCbrsIThpI6" target="_blank">Dusky_Moorhen_8123.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Ii2Z24zBGlZmA0SrAQmi_UeTpi8H4Biv" loading="lazy" alt="Dusky_Moorhen_8909.jpg">
+                            <div class="meta-label">Australia - 07 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Ii2Z24zBGlZmA0SrAQmi_UeTpi8H4Biv" target="_blank">Dusky_Moorhen_8909.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Hawaiian Coot</div>
+                        <div class="french-label">Foulque des Hawaï</div>
+                        <div class="latin-label">(Fulica alai)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1LVguOELZR2uEKyKyFl53BHyM6kCaeeYI" loading="lazy" alt="Hawaiian_Coot_0438.jpg">
+                            <div class="meta-label">USA - 30 Oct 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1LVguOELZR2uEKyKyFl53BHyM6kCaeeYI" target="_blank">Hawaiian_Coot_0438.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">American Coot</div>
+                        <div class="french-label">Foulque d'Amérique</div>
+                        <div class="latin-label">(Fulica americana)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1pa30AOVzZYaUVJ0YJxZk61MXeMrm4IVp" loading="lazy" alt="American_Coot_1815.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1pa30AOVzZYaUVJ0YJxZk61MXeMrm4IVp" target="_blank">American_Coot_1815.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1mdg949ZjlzJIWtJtOb8Yk1X2HDO4k-FX" loading="lazy" alt="American_Coot_3444.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1mdg949ZjlzJIWtJtOb8Yk1X2HDO4k-FX" target="_blank">American_Coot_3444.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1M74-I7K_Wm5iKrOWwqHlLwK5D6ryu1-i" loading="lazy" alt="American_Coot_7331.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1M74-I7K_Wm5iKrOWwqHlLwK5D6ryu1-i" target="_blank">American_Coot_7331.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Purple Gallinule</div>
+                        <div class="french-label">Talève violacée</div>
+                        <div class="latin-label">(Porphyrio martinica)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1ya746wLrVnIf1RK4Cn26qaOq95wZgV-n" loading="lazy" alt="Purple_Gallinule_20557.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1ya746wLrVnIf1RK4Cn26qaOq95wZgV-n" target="_blank">Purple_Gallinule_20557.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/19pGaBcA_qnaBGLfnKZqJt_zCRvosqYQW" loading="lazy" alt="Purple_Gallinule_2104.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/19pGaBcA_qnaBGLfnKZqJt_zCRvosqYQW" target="_blank">Purple_Gallinule_2104.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1aeMmu3lECw6P2SeQ00xkaS3OwPnvPCv9" loading="lazy" alt="Purple_Gallinule_21456.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1aeMmu3lECw6P2SeQ00xkaS3OwPnvPCv9" target="_blank">Purple_Gallinule_21456.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1N54EbwKUOr9L9xbkWNJFAGtgL0UbYr81" loading="lazy" alt="Purple_Gallinule_2289.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1N54EbwKUOr9L9xbkWNJFAGtgL0UbYr81" target="_blank">Purple_Gallinule_2289.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1WjXYm1E6wMOQzMAhLaDhNV5LRA8DYfXE" loading="lazy" alt="Purple_Gallinule_2632MF.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1WjXYm1E6wMOQzMAhLaDhNV5LRA8DYfXE" target="_blank">Purple_Gallinule_2632MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1cOgcKezjd_l-8ZiziQljQg_JFQUs-pJQ" loading="lazy" alt="Purple_Gallinule_4327.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1cOgcKezjd_l-8ZiziQljQg_JFQUs-pJQ" target="_blank">Purple_Gallinule_4327.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1xUCwIXKqQASTAwiVEukOdZsk7b1YCKf4" loading="lazy" alt="Purple_Gallinule_6658.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1xUCwIXKqQASTAwiVEukOdZsk7b1YCKf4" target="_blank">Purple_Gallinule_6658.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1q70vZlPGCrdvL5meJxS_Cg-LqU6TkUzL" loading="lazy" alt="Purple_Gallinule_9653MF.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1q70vZlPGCrdvL5meJxS_Cg-LqU6TkUzL" target="_blank">Purple_Gallinule_9653MF.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Australasian Swamphen</div>
+                        <div class="french-label">Talève australe</div>
+                        <div class="latin-label">(Porphyrio melanotus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1nN5fQ2EYYZOO026Wzjpiie6YNYGWp8Qn" loading="lazy" alt="Australasian_Swamphen_8154.jpg">
+                            <div class="meta-label">Australia - 11 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1nN5fQ2EYYZOO026Wzjpiie6YNYGWp8Qn" target="_blank">Australasian_Swamphen_8154.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Gray-headed Swamphen</div>
+                        <div class="french-label">Talève à tête grise</div>
+                        <div class="latin-label">(Porphyrio poliocephalus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1p1fOinW_z7JOsmO5wip8aDiZy6RgUDMa" loading="lazy" alt="Gray-headed_Swamphen_1144.jpg">
+                            <div class="meta-label">USA - 20 Nov 2015</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1p1fOinW_z7JOsmO5wip8aDiZy6RgUDMa" target="_blank">Gray-headed_Swamphen_1144.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/18bIgx0mVju0iQB-whL2NvwzN0HjeJDgD" loading="lazy" alt="Gray-headed_Swamphen_20396.jpg">
+                            <div class="meta-label">USA - 20 Nov 2015</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/18bIgx0mVju0iQB-whL2NvwzN0HjeJDgD" target="_blank">Gray-headed_Swamphen_20396.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/12J7TF6ItNeiRFuVxk8htYosFGSDPTXRF" loading="lazy" alt="Gray-headed_Swamphen_21446.jpg">
+                            <div class="meta-label">USA - 20 Nov 2015</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/12J7TF6ItNeiRFuVxk8htYosFGSDPTXRF" target="_blank">Gray-headed_Swamphen_21446.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1SU8yOkVQYYwgSk7sKAaj5S1OzkbGJK7C" loading="lazy" alt="Gray-headed_Swamphen_3133.jpg">
+                            <div class="meta-label">USA - 20 Nov 2015</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1SU8yOkVQYYwgSk7sKAaj5S1OzkbGJK7C" target="_blank">Gray-headed_Swamphen_3133.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1OgAyr4k_t5BFXSBl2g5PqSwYHVZW7V8K" loading="lazy" alt="Gray-headed_Swamphen_4400.jpg">
+                            <div class="meta-label">USA - 20 Nov 2015</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1OgAyr4k_t5BFXSBl2g5PqSwYHVZW7V8K" target="_blank">Gray-headed_Swamphen_4400.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1tdzU9-Cf9AVMhLt53buDe9cIkXCiLVXf" loading="lazy" alt="Gray-headed_Swamphen_6623.jpg">
+                            <div class="meta-label">USA - 20 Nov 2015</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1tdzU9-Cf9AVMhLt53buDe9cIkXCiLVXf" target="_blank">Gray-headed_Swamphen_6623.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Black Crake</div>
+                        <div class="french-label">Marouette à bec jaune</div>
+                        <div class="latin-label">(Zapornia flavirostra)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="Photos/Black_Crake_%28immature%29_2099.jpg" loading="lazy" alt="Black_Crake_(immature)_2099.jpg">
+                            <div class="meta-label">South Africa - 26 Sep 2014</div>
+                            <div class="filename"><a href="Photos/Black_Crake_%28immature%29_2099.jpg" target="_blank">Black_Crake_(immature)_2099.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1ikEMql6I0yNaeKYsVbYwL9Zi5w2eCURZ" loading="lazy" alt="Black_Crake_8948.jpg">
+                            <div class="meta-label">South Africa - 26 Sep 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1ikEMql6I0yNaeKYsVbYwL9Zi5w2eCURZ" target="_blank">Black_Crake_8948.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Yellow-breasted Crake</div>
+                        <div class="french-label">Râle à sourcils blancs</div>
+                        <div class="latin-label">(Laterallus flaviventer)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1mZqtn4JSXYOMP4xJqmKUT7Ek_d8s6Zq9" loading="lazy" alt="Yellow-breasted_Crake_22390.jpg">
+                            <div class="meta-label">Colombia - 03 Apr 2025</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1mZqtn4JSXYOMP4xJqmKUT7Ek_d8s6Zq9" target="_blank">Yellow-breasted_Crake_22390.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1pJq5sKvfM9Uae_Or4qgq-fkfC5GxRq9L" loading="lazy" alt="Yellow-breasted_Crake_22390DR.jpg">
+                            <div class="meta-label">Colombia - 03 Apr 2025</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1pJq5sKvfM9Uae_Or4qgq-fkfC5GxRq9L" target="_blank">Yellow-breasted_Crake_22390DR.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1nKDbh4v0mvy0MtMBdDVzrxFmy_wrK6_A" loading="lazy" alt="Yellow-breasted_Crake_22420.jpg">
+                            <div class="meta-label">Colombia - 03 Apr 2025</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1nKDbh4v0mvy0MtMBdDVzrxFmy_wrK6_A" target="_blank">Yellow-breasted_Crake_22420.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1kBzjRcH47CLmN7mud4E35pWNZQyopzzI" loading="lazy" alt="Yellow-breasted_Crake_2410MF.jpg">
+                            <div class="meta-label">Colombia - 03 Apr 2025</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1kBzjRcH47CLmN7mud4E35pWNZQyopzzI" target="_blank">Yellow-breasted_Crake_2410MF.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">White-throated Crake</div>
+                        <div class="french-label">Râle à menton blanc</div>
+                        <div class="latin-label">(Laterallus albigularis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1rPxuEhBYB1Lsn-bq70YZfitwF479hCHi" loading="lazy" alt="White-throated_Crake_6871.jpg">
+                            <div class="meta-label">Panama - 23 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1rPxuEhBYB1Lsn-bq70YZfitwF479hCHi" target="_blank">White-throated_Crake_6871.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="family-card">
+            <div class="family-header">
+                <div class="family-name">Limpkin</div>
+                <div class="family-order-label">Aramidae / Gruiformes</div>
+            </div>
+            <div class="species-list">
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Limpkin</div>
+                        <div class="french-label">Courlan brun</div>
+                        <div class="latin-label">(Aramus guarauna)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1crCPuyouO58DBxZKL2pRXG9m85DAtiSt" loading="lazy" alt="Limpkin_20511.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1crCPuyouO58DBxZKL2pRXG9m85DAtiSt" target="_blank">Limpkin_20511.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1153FCLHVa4Yh1WibPmttyGNsABqR_Jo0" loading="lazy" alt="Limpkin_21899.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1153FCLHVa4Yh1WibPmttyGNsABqR_Jo0" target="_blank">Limpkin_21899.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1pNWGury2dbclvr1ZqIrlJJaUFnyntEBF" loading="lazy" alt="Limpkin_2434MF.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1pNWGury2dbclvr1ZqIrlJJaUFnyntEBF" target="_blank">Limpkin_2434MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1vDpReU3R_oCqDAmkln27WzToZfr6g3wO" loading="lazy" alt="Limpkin_2699.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1vDpReU3R_oCqDAmkln27WzToZfr6g3wO" target="_blank">Limpkin_2699.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1hW0b8sYrfUJ4mRwqN36_FpbWrdYJcfwh" loading="lazy" alt="Limpkin_2716.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1hW0b8sYrfUJ4mRwqN36_FpbWrdYJcfwh" target="_blank">Limpkin_2716.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Uw4A91xIAAmkyzqFKGFdb43XAYA9GZuS" loading="lazy" alt="Limpkin_301.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Uw4A91xIAAmkyzqFKGFdb43XAYA9GZuS" target="_blank">Limpkin_301.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1ezBjxjOB1PuyMiHicR0LuZAy42DW3g3z" loading="lazy" alt="Limpkin_3748.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1ezBjxjOB1PuyMiHicR0LuZAy42DW3g3z" target="_blank">Limpkin_3748.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1KmWV3Z1vjbLm_jjfwvJhD9IiRlxBJSxn" loading="lazy" alt="Limpkin_3789.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1KmWV3Z1vjbLm_jjfwvJhD9IiRlxBJSxn" target="_blank">Limpkin_3789.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1lFJf--Q2xfD3JNkjT3o8nw8XRUkFuzWP" loading="lazy" alt="Limpkin_3790.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1lFJf--Q2xfD3JNkjT3o8nw8XRUkFuzWP" target="_blank">Limpkin_3790.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1UFH7iYL_K1vqCsOG9iETjf9XiZfqNAf3" loading="lazy" alt="Limpkin_3879.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1UFH7iYL_K1vqCsOG9iETjf9XiZfqNAf3" target="_blank">Limpkin_3879.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1nTwM1LShKFvYpQf7fKlvqhqn2-Rmu_Fu" loading="lazy" alt="Limpkin_7382MF.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1nTwM1LShKFvYpQf7fKlvqhqn2-Rmu_Fu" target="_blank">Limpkin_7382MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/18NqOGx27QuWFrY1HHwBNNmuGd3K-S7aQ" loading="lazy" alt="Limpkin_8128MF.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/18NqOGx27QuWFrY1HHwBNNmuGd3K-S7aQ" target="_blank">Limpkin_8128MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1hGwx42nF0TlXCdmQMWT414lrN7Xh0mw0" loading="lazy" alt="Limpkin_9979.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1hGwx42nF0TlXCdmQMWT414lrN7Xh0mw0" target="_blank">Limpkin_9979.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="family-card">
+            <div class="family-header">
+                <div class="family-name">Cranes</div>
+                <div class="family-order-label">Gruidae / Gruiformes</div>
+            </div>
+            <div class="species-list">
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Gray Crowned-Crane</div>
+                        <div class="french-label">Grue royale</div>
+                        <div class="latin-label">(Balearica regulorum)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1ZTBK2fJFo-4j6IxbomEMGjcnLULnZ1d8" loading="lazy" alt="Gray_Crowned-crane_272.jpg">
+                            <div class="meta-label">Tanzania - 15 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1ZTBK2fJFo-4j6IxbomEMGjcnLULnZ1d8" target="_blank">Gray_Crowned-crane_272.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1ZLDQT7YwmJMj4Pps-3vPP34HBJvk5KJh" loading="lazy" alt="Gray_Crowned-crane_273.jpg">
+                            <div class="meta-label">Tanzania - 15 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1ZLDQT7YwmJMj4Pps-3vPP34HBJvk5KJh" target="_blank">Gray_Crowned-crane_273.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Sandhill Crane</div>
+                        <div class="french-label">Grue du Canada</div>
+                        <div class="latin-label">(Antigone canadensis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1vntar2SnvMSVtPN4Bpmxu91yePy_84SK" loading="lazy" alt="Sandhill_Crane_0781.jpg">
+                            <div class="meta-label">USA - 17 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1vntar2SnvMSVtPN4Bpmxu91yePy_84SK" target="_blank">Sandhill_Crane_0781.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1abM8AP-W3pYvng55p_e1t7hz8sYgqhW4" loading="lazy" alt="Sandhill_Crane_1516.jpg">
+                            <div class="meta-label">USA - 17 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1abM8AP-W3pYvng55p_e1t7hz8sYgqhW4" target="_blank">Sandhill_Crane_1516.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/13nFtBC4guQ5PkmlE0wsaHKAvOXaHdlh6" loading="lazy" alt="Sandhill_Crane_20456.jpg">
+                            <div class="meta-label">USA - 17 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/13nFtBC4guQ5PkmlE0wsaHKAvOXaHdlh6" target="_blank">Sandhill_Crane_20456.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1QxniVxju8W4ykHgDRyxxHQXV7B-u467c" loading="lazy" alt="Sandhill_Crane_2643.jpg">
+                            <div class="meta-label">USA - 17 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1QxniVxju8W4ykHgDRyxxHQXV7B-u467c" target="_blank">Sandhill_Crane_2643.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/101GEiFBGNOXMs1Nme3AVhGvoI861HUo6" loading="lazy" alt="Sandhill_Crane_2873.jpg">
+                            <div class="meta-label">USA - 17 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/101GEiFBGNOXMs1Nme3AVhGvoI861HUo6" target="_blank">Sandhill_Crane_2873.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1fomu26m7uNl21vyUM506ctH-QpAWQlwa" loading="lazy" alt="Sandhill_Crane_3844.jpg">
+                            <div class="meta-label">USA - 17 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1fomu26m7uNl21vyUM506ctH-QpAWQlwa" target="_blank">Sandhill_Crane_3844.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1SDjtlUEy0KwCovxF2jMg9_xf88FMRlar" loading="lazy" alt="Sandhill_Crane_4053.jpg">
+                            <div class="meta-label">USA - 17 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1SDjtlUEy0KwCovxF2jMg9_xf88FMRlar" target="_blank">Sandhill_Crane_4053.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1njyZL8hlBHM_GVMIZ5RPeZ_Ns1N_csFW" loading="lazy" alt="Sandhill_Crane_4053A.jpg">
+                            <div class="meta-label">USA - 17 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1njyZL8hlBHM_GVMIZ5RPeZ_Ns1N_csFW" target="_blank">Sandhill_Crane_4053A.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1EhhXurgELe-FBizIeKz0fX-JM3QlDP3U" loading="lazy" alt="Sandhill_Crane_5841MF.jpg">
+                            <div class="meta-label">USA - 17 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1EhhXurgELe-FBizIeKz0fX-JM3QlDP3U" target="_blank">Sandhill_Crane_5841MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/14kOJbA5KtixVjIqYuM_5MM95as0PWtMI" loading="lazy" alt="Sandhill_Crane_7240.jpg">
+                            <div class="meta-label">USA - 17 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/14kOJbA5KtixVjIqYuM_5MM95as0PWtMI" target="_blank">Sandhill_Crane_7240.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1qrEkvFvJ_EVuokdcG1qeCF-J6Zh77VQd" loading="lazy" alt="Sandhill_Crane_7699.jpg">
+                            <div class="meta-label">USA - 17 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1qrEkvFvJ_EVuokdcG1qeCF-J6Zh77VQd" target="_blank">Sandhill_Crane_7699.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1tHi49BZQI4A4fkuvES97mKljZlzS6zy9" loading="lazy" alt="Sandhill_Crane_7937.jpg">
+                            <div class="meta-label">USA - 17 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1tHi49BZQI4A4fkuvES97mKljZlzS6zy9" target="_blank">Sandhill_Crane_7937.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1sjjCi3lgeBuh_e6KDhCqrA9bPr3n4ETS" loading="lazy" alt="Sandhill_Crane_9948.jpg">
+                            <div class="meta-label">USA - 17 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1sjjCi3lgeBuh_e6KDhCqrA9bPr3n4ETS" target="_blank">Sandhill_Crane_9948.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Wattled Crane</div>
+                        <div class="french-label">Grue caronculée</div>
+                        <div class="latin-label">(Grus carunculatus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/17gIT021yY-WOpFU4PMi9yC87IcJ6kWn7" loading="lazy" alt="Wattled_Crane_0007.jpg">
+                            <div class="meta-label">BW - 13 Oct 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/17gIT021yY-WOpFU4PMi9yC87IcJ6kWn7" target="_blank">Wattled_Crane_0007.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Blue Crane</div>
+                        <div class="french-label">Grue de paradis</div>
+                        <div class="latin-label">(Grus paradiseus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/13v4DxzyKwVLnPNaqmbtchX664W2n336n" loading="lazy" alt="Blue_Crane_140.jpg">
+                            <div class="meta-label">NA - 04 Jun 2007</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/13v4DxzyKwVLnPNaqmbtchX664W2n336n" target="_blank">Blue_Crane_140.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div></div></body></html>

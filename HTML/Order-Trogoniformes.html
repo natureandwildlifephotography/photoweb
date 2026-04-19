@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photo Index</title>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; background: #121212; color: white; margin: 0; padding: 20px; padding-top: 80px; }
+        .family-list { display: flex; flex-direction: column; gap: 60px; max-width: 1800px; margin: 0 auto; }
+        
+        .family-card { background: #1e1e1e; border-radius: 24px; padding: 40px; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .family-header { margin-bottom: 30px; border-bottom: 2px solid #555; padding-bottom: 20px; }
+        .family-name { font-size: 36px; font-weight: 800; color: #4a9eff; text-transform: uppercase; letter-spacing: 2px; }
+        .family-order-label { font-size: 18px; opacity: 0.6; color: #fff; margin-top: 5px; font-weight: 500; }
+        
+        .species-list { display: flex; flex-direction: column; gap: 30px; }
+        .species-card { background: #2a2a2a; border-radius: 16px; padding: 20px; border: 1px solid #444; }
+        .species-header { margin-bottom: 15px; border-bottom: 1px solid #444; padding-bottom: 10px; }
+        .label { font-size: 24px; font-weight: 700; color: #fff; }
+        .french-label { font-size: 18px; opacity: 0.8; color: #ddd; }
+        .latin-label { font-size: 16px; opacity: 0.7; font-style: italic; color: #bbb; }
+        
+        .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
+        .photo-card { background: #333; border-radius: 10px; overflow: hidden; padding: 10px; display: flex; flex-direction: column; align-items: center; transition: transform 0.2s, background 0.2s; }
+        .photo-card:hover { transform: scale(1.02); background: #3d3d3d; }
+        
+        img { max-width: 100%; height: auto; border-radius: 6px; object-fit: contain; }
+        .meta-label { font-size: 11px; opacity: 0.7; align-self: flex-start; margin-top: 8px; color: #fff; }
+        .filename { font-size: 9px; opacity: 0.4; margin-top: 2px; word-break: break-all; align-self: flex-start; }
+        .filename a { color: #4a9eff; text-decoration: none; transition: color 0.2s; }
+        .filename a:hover { text-decoration: underline; }
+        
+        /* Intro Section Styles */
+        .intro-section { max-width: 1200px; margin: 0 auto 80px; padding: 60px; background: #1e1e1e; border-radius: 32px; border: 1px solid #333; box-shadow: 0 20px 50px rgba(0,0,0,0.6); line-height: 1.8; }
+        .intro-title { font-size: 48px; font-weight: 900; margin-bottom: 40px; color: #4a9eff; line-height: 1.2; text-align: center; }
+        .intro-text { font-size: 20px; opacity: 0.9; margin-bottom: 30px; }
+        .intro-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 30px; margin-top: 50px; border-top: 1px solid #444; padding-top: 40px; }
+        .stat-item { text-align: center; }
+        .stat-value { font-size: 36px; font-weight: 800; color: #4a9eff; display: block; }
+        .stat-label { font-size: 14px; opacity: 0.6; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* Mode Selector Styles */
+        .mode-selector { position: fixed; top: 0; left: 0; right: 0; background: rgba(30, 30, 30, 0.95); backdrop-filter: blur(10px); padding: 15px 40px; border-bottom: 1px solid #333; z-index: 1000; display: flex; justify-content: flex-end; align-items: center; gap: 20px; }
+        .mode-button { background: #333; border: 1px solid #444; color: white; padding: 8px 20px; border-radius: 20px; cursor: pointer; font-weight: 600; transition: all 0.2s; }
+        .mode-button.active { background: #4a9eff; border-color: #4a9eff; }
+        .mode-label { font-size: 14px; opacity: 0.6; font-weight: 600; text-transform: uppercase; }
+
+        /* Restricted Mode Styles */
+        body.mode-public .filename { display: none; }
+        body.mode-public .photo-card:hover { transform: none; background: #333; }
+
+        /* Modal Styles */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; justify-content: center; align-items: center; }
+        .modal { background: #1e1e1e; padding: 40px; border-radius: 24px; border: 1px solid #333; width: 400px; box-shadow: 0 20px 50px rgba(0,0,0,0.8); }
+        .modal h2 { margin-top: 0; color: #4a9eff; }
+        .modal input { width: 100%; padding: 12px; margin: 20px 0; background: #2a2a2a; border: 1px solid #444; color: white; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        .modal-buttons { display: flex; justify-content: flex-end; gap: 15px; }
+        .modal-buttons button { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; }
+        .btn-cancel { background: #333; color: white; }
+        .btn-submit { background: #4a9eff; color: white; }
+    </style>
+</head>
+<body class="mode-public">
+    <div class="mode-selector">
+        <span class="mode-label">View Mode:</span>
+        <button id="btn-public" class="mode-button active" onclick="setMode('PUBLIC')">PUBLIC</button>
+        <button id="btn-user" class="mode-button" onclick="requestUserMode()">USER</button>
+    </div>
+
+    <div id="password-modal" class="modal-overlay">
+        <div class="modal">
+            <h2>Enter Password</h2>
+            <p>Please enter the password to activate USER mode.</p>
+            <input type="password" id="password-input" placeholder="Password">
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+                <button class="btn-submit" onclick="submitPassword()">Submit</button>
+            </div>
+        </div>
+    </div>
+
+    
+    <div class="family-list">
+        <div class="family-card">
+            <div class="family-header">
+                <div class="family-name">Trogons</div>
+                <div class="family-order-label">Trogonidae / Trogoniformes</div>
+            </div>
+            <div class="species-list">
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Resplendent Quetzal</div>
+                        <div class="french-label">Quetzal resplendissant</div>
+                        <div class="latin-label">(Pharomachrus mocinno)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Equ_vL-4HGKJ7jCdqKA-_nwawp0p98lh" loading="lazy" alt="Resplendent_Quetzal.jpg">
+                            <div class="meta-label">CR - 04 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Equ_vL-4HGKJ7jCdqKA-_nwawp0p98lh" target="_blank">Resplendent_Quetzal.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/18SbJuW6CQu867Ax-UNOVZoFiQcRMCg4E" loading="lazy" alt="Resplendent_Quetzal_1809MF.jpg">
+                            <div class="meta-label">CR - 04 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/18SbJuW6CQu867Ax-UNOVZoFiQcRMCg4E" target="_blank">Resplendent_Quetzal_1809MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/11JRLwirzUpwmBRv6BQMUOSYlD8n0FRTy" loading="lazy" alt="Resplendent_Quetzal_2858.jpg">
+                            <div class="meta-label">CR - 04 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/11JRLwirzUpwmBRv6BQMUOSYlD8n0FRTy" target="_blank">Resplendent_Quetzal_2858.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1ESKPwB_hJwSJTw-99kYo-fw4YNoCMfhp" loading="lazy" alt="Resplendent_Quetzal_2944.jpg">
+                            <div class="meta-label">CR - 04 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1ESKPwB_hJwSJTw-99kYo-fw4YNoCMfhp" target="_blank">Resplendent_Quetzal_2944.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="Photos/Resplendent_Quetzal_3055%2A%2A%2A%2A%2A-Edit-Edit.tif" loading="lazy" alt="Resplendent_Quetzal_3055*****-Edit-Edit.tif">
+                            <div class="meta-label">CR - 04 Jun 2022</div>
+                            <div class="filename"><a href="Photos/Resplendent_Quetzal_3055%2A%2A%2A%2A%2A-Edit-Edit.tif" target="_blank">Resplendent_Quetzal_3055*****-Edit-Edit.tif</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1my9U5KKYThr5xDIWynwSHlon_fXVYtxT" loading="lazy" alt="Resplendent_Quetzal_3156.jpg">
+                            <div class="meta-label">CR - 04 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1my9U5KKYThr5xDIWynwSHlon_fXVYtxT" target="_blank">Resplendent_Quetzal_3156.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="Photos/Resplendent_Quetzal_3253%2A%2A%2A%2A%2A.jpg" loading="lazy" alt="Resplendent_Quetzal_3253*****.jpg">
+                            <div class="meta-label">CR - 04 Jun 2022</div>
+                            <div class="filename"><a href="Photos/Resplendent_Quetzal_3253%2A%2A%2A%2A%2A.jpg" target="_blank">Resplendent_Quetzal_3253*****.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/13XUf0dhJut9deYDRyDg7UD63d77GuRCp" loading="lazy" alt="Resplendent_Quetzal_3280.jpg">
+                            <div class="meta-label">CR - 04 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/13XUf0dhJut9deYDRyDg7UD63d77GuRCp" target="_blank">Resplendent_Quetzal_3280.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="Photos/Resplendent_Quetzal_3293%2A%2A%2A%2A%2A.jpg" loading="lazy" alt="Resplendent_Quetzal_3293*****.jpg">
+                            <div class="meta-label">CR - 04 Jun 2022</div>
+                            <div class="filename"><a href="Photos/Resplendent_Quetzal_3293%2A%2A%2A%2A%2A.jpg" target="_blank">Resplendent_Quetzal_3293*****.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1dpuO8HJlkbLvaqtWyBW7Yo09gz4vcQ0s" loading="lazy" alt="Resplendent_Quetzal_3293.jpg">
+                            <div class="meta-label">CR - 04 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1dpuO8HJlkbLvaqtWyBW7Yo09gz4vcQ0s" target="_blank">Resplendent_Quetzal_3293.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1erNXGW8yGbWSQz3h_HPPwUYt1d_1ZgWB" loading="lazy" alt="Resplendent_Quetzal_6114.jpg">
+                            <div class="meta-label">CR - 04 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1erNXGW8yGbWSQz3h_HPPwUYt1d_1ZgWB" target="_blank">Resplendent_Quetzal_6114.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1xu4tKhh_m-DERwhd5YRog7u41Ht2q_fm" loading="lazy" alt="Resplendent_Quetzal_6233.jpg">
+                            <div class="meta-label">CR - 04 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1xu4tKhh_m-DERwhd5YRog7u41Ht2q_fm" target="_blank">Resplendent_Quetzal_6233.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1l9SEg2Fyl-0FEaMCnYNdSvVQE9iLhgmW" loading="lazy" alt="Resplendent_Quetzal_MF5557.jpg">
+                            <div class="meta-label">CR - 04 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1l9SEg2Fyl-0FEaMCnYNdSvVQE9iLhgmW" target="_blank">Resplendent_Quetzal_MF5557.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Slaty-tailed Trogon</div>
+                        <div class="french-label">Trogon de Masséna</div>
+                        <div class="latin-label">(Trogon massena)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1tHxerIym-mhue2eMCKQ7eUOnXFAmVeCC" loading="lazy" alt="Slaty-tailed_Trogon_5542.jpg">
+                            <div class="meta-label">Belize - 30 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1tHxerIym-mhue2eMCKQ7eUOnXFAmVeCC" target="_blank">Slaty-tailed_Trogon_5542.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1V0Czhx9TebhJ_0wkDWJ3slOfxy1Oia93" loading="lazy" alt="Slaty-tailed_Trogon_9664.jpg">
+                            <div class="meta-label">Belize - 30 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1V0Czhx9TebhJ_0wkDWJ3slOfxy1Oia93" target="_blank">Slaty-tailed_Trogon_9664.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1PlYWkgjJUlLktbWuS12z06GMJZFvvgS-" loading="lazy" alt="Slaty-tailed_Trogon_9955.jpg">
+                            <div class="meta-label">Belize - 30 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1PlYWkgjJUlLktbWuS12z06GMJZFvvgS-" target="_blank">Slaty-tailed_Trogon_9955.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1vg9GC6iWB3xzwaz66vqBhsVacxzpV3KJ" loading="lazy" alt="Slaty-tailed_Trogon_MF3865.jpg">
+                            <div class="meta-label">Belize - 30 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1vg9GC6iWB3xzwaz66vqBhsVacxzpV3KJ" target="_blank">Slaty-tailed_Trogon_MF3865.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1d8DRWrzEE34_biHu_3zlVbOFLCuNMeoD" loading="lazy" alt="Slaty-tailed_trogon_469.jpg">
+                            <div class="meta-label">Belize - 30 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1d8DRWrzEE34_biHu_3zlVbOFLCuNMeoD" target="_blank">Slaty-tailed_trogon_469.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Black-tailed Trogon</div>
+                        <div class="french-label">Trogon à queue noire</div>
+                        <div class="latin-label">(Trogon melanurus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1wF6pSPcoVLkIvd_CbcjRaWWM8En0HVgK" loading="lazy" alt="Black-tailed_Trogon_2394.jpg">
+                            <div class="meta-label">Panama - 17 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1wF6pSPcoVLkIvd_CbcjRaWWM8En0HVgK" target="_blank">Black-tailed_Trogon_2394.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1PvDXmf6T1Jwab2RVjCQL09_1qyaMfwU2" loading="lazy" alt="Black-tailed_Trogon_9884.jpg">
+                            <div class="meta-label">Panama - 17 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1PvDXmf6T1Jwab2RVjCQL09_1qyaMfwU2" target="_blank">Black-tailed_Trogon_9884.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">White-tailed Trogon</div>
+                        <div class="french-label">Trogon de Sclater</div>
+                        <div class="latin-label">(Trogon chionurus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Zo3Cn8fcRKj7o5vcBljVgMZsc9uYYp2i" loading="lazy" alt="White-tailed_Trogon_4637.jpg">
+                            <div class="meta-label">Panama - 17 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Zo3Cn8fcRKj7o5vcBljVgMZsc9uYYp2i" target="_blank">White-tailed_Trogon_4637.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Gartered Violaceous Trogon</div>
+                        <div class="french-label">Trogon pattu</div>
+                        <div class="latin-label">(Trogon caligatus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/11PKUXTHDKdjW-hTGR-NW8SMXpndjtKRw" loading="lazy" alt="Gartered_Violaceous_Trogon_5571.jpg">
+                            <div class="meta-label">Panama - 19 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/11PKUXTHDKdjW-hTGR-NW8SMXpndjtKRw" target="_blank">Gartered_Violaceous_Trogon_5571.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/19xuNh3_CKNXfm_u8QGPo-6XOLZKDYS-j" loading="lazy" alt="Gartered_Violaceous_Trogon_7458.jpg">
+                            <div class="meta-label">Panama - 19 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/19xuNh3_CKNXfm_u8QGPo-6XOLZKDYS-j" target="_blank">Gartered_Violaceous_Trogon_7458.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1mFasZK6nu_zVHuG4pRnnPMxdw3kVTNVF" loading="lazy" alt="Gartered_Violaceous_Trogon_9000.jpg">
+                            <div class="meta-label">Panama - 19 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1mFasZK6nu_zVHuG4pRnnPMxdw3kVTNVF" target="_blank">Gartered_Violaceous_Trogon_9000.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Graceful Black-throated Trogon</div>
+                        <div class="french-label">Trogon de Cabanis</div>
+                        <div class="latin-label">(Trogon tenellus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1dcIf1odys9_MYGovbWX--49l9o-0ghZy" loading="lazy" alt="Graceful_Black-throated_Trogon.jpg">
+                            <div class="meta-label">Panama - 02 Apr 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1dcIf1odys9_MYGovbWX--49l9o-0ghZy" target="_blank">Graceful_Black-throated_Trogon.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1FsVffgO4qdwe1bVgg97FFmZ33aJMadNP" loading="lazy" alt="Graceful_Black-throated_Trogon_2627.jpg">
+                            <div class="meta-label">Panama - 02 Apr 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1FsVffgO4qdwe1bVgg97FFmZ33aJMadNP" target="_blank">Graceful_Black-throated_Trogon_2627.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1bdF6nq0_dcSugGtxAdy6z8tJJJxu2t9b" loading="lazy" alt="Graceful_Black-throated_Trogon_5732.jpg">
+                            <div class="meta-label">Panama - 02 Apr 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1bdF6nq0_dcSugGtxAdy6z8tJJJxu2t9b" target="_blank">Graceful_Black-throated_Trogon_5732.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Collared Trogon</div>
+                        <div class="french-label">Trogon rosalba</div>
+                        <div class="latin-label">(Trogon collaris)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1HJ21MS1vF-g3RP7BexQleszloQCkI9Y2" loading="lazy" alt="Collared_Trogon-2.jpg">
+                            <div class="meta-label">Belize - 30 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1HJ21MS1vF-g3RP7BexQleszloQCkI9Y2" target="_blank">Collared_Trogon-2.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1bJdCFTMv0R-v-4IQn5QKPTy_JgfsAIok" loading="lazy" alt="Collared_Trogon-3.jpg">
+                            <div class="meta-label">Belize - 30 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1bJdCFTMv0R-v-4IQn5QKPTy_JgfsAIok" target="_blank">Collared_Trogon-3.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1IYGhNgBp2cmGKtB4Pl4TumcbU_aAWzTf" loading="lazy" alt="Collared_trogon.jpg">
+                            <div class="meta-label">Belize - 30 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1IYGhNgBp2cmGKtB4Pl4TumcbU_aAWzTf" target="_blank">Collared_trogon.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Masked Trogon</div>
+                        <div class="french-label">Trogon masqué</div>
+                        <div class="latin-label">(Trogon personatus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1hqizi7ZOtaCw6kvo4iPOw7hxdxVCJgVU" loading="lazy" alt="Masked_Trogon_3754.jpg">
+                            <div class="meta-label">Ecuador - 02 Jul 2004</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1hqizi7ZOtaCw6kvo4iPOw7hxdxVCJgVU" target="_blank">Masked_Trogon_3754.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1YimIOMNTTrGkuvDB9FUODAACkqmtTZ4F" loading="lazy" alt="Masked_Trogon_4217.jpg">
+                            <div class="meta-label">Ecuador - 02 Jul 2004</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1YimIOMNTTrGkuvDB9FUODAACkqmtTZ4F" target="_blank">Masked_Trogon_4217.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div></div></body></html>

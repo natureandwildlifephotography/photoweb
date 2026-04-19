@@ -1,0 +1,1417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photo Index</title>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; background: #121212; color: white; margin: 0; padding: 20px; padding-top: 80px; }
+        .family-list { display: flex; flex-direction: column; gap: 60px; max-width: 1800px; margin: 0 auto; }
+        
+        .family-card { background: #1e1e1e; border-radius: 24px; padding: 40px; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .family-header { margin-bottom: 30px; border-bottom: 2px solid #555; padding-bottom: 20px; }
+        .family-name { font-size: 36px; font-weight: 800; color: #4a9eff; text-transform: uppercase; letter-spacing: 2px; }
+        .family-order-label { font-size: 18px; opacity: 0.6; color: #fff; margin-top: 5px; font-weight: 500; }
+        
+        .species-list { display: flex; flex-direction: column; gap: 30px; }
+        .species-card { background: #2a2a2a; border-radius: 16px; padding: 20px; border: 1px solid #444; }
+        .species-header { margin-bottom: 15px; border-bottom: 1px solid #444; padding-bottom: 10px; }
+        .label { font-size: 24px; font-weight: 700; color: #fff; }
+        .french-label { font-size: 18px; opacity: 0.8; color: #ddd; }
+        .latin-label { font-size: 16px; opacity: 0.7; font-style: italic; color: #bbb; }
+        
+        .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
+        .photo-card { background: #333; border-radius: 10px; overflow: hidden; padding: 10px; display: flex; flex-direction: column; align-items: center; transition: transform 0.2s, background 0.2s; }
+        .photo-card:hover { transform: scale(1.02); background: #3d3d3d; }
+        
+        img { max-width: 100%; height: auto; border-radius: 6px; object-fit: contain; }
+        .meta-label { font-size: 11px; opacity: 0.7; align-self: flex-start; margin-top: 8px; color: #fff; }
+        .filename { font-size: 9px; opacity: 0.4; margin-top: 2px; word-break: break-all; align-self: flex-start; }
+        .filename a { color: #4a9eff; text-decoration: none; transition: color 0.2s; }
+        .filename a:hover { text-decoration: underline; }
+        
+        /* Intro Section Styles */
+        .intro-section { max-width: 1200px; margin: 0 auto 80px; padding: 60px; background: #1e1e1e; border-radius: 32px; border: 1px solid #333; box-shadow: 0 20px 50px rgba(0,0,0,0.6); line-height: 1.8; }
+        .intro-title { font-size: 48px; font-weight: 900; margin-bottom: 40px; color: #4a9eff; line-height: 1.2; text-align: center; }
+        .intro-text { font-size: 20px; opacity: 0.9; margin-bottom: 30px; }
+        .intro-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 30px; margin-top: 50px; border-top: 1px solid #444; padding-top: 40px; }
+        .stat-item { text-align: center; }
+        .stat-value { font-size: 36px; font-weight: 800; color: #4a9eff; display: block; }
+        .stat-label { font-size: 14px; opacity: 0.6; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* Mode Selector Styles */
+        .mode-selector { position: fixed; top: 0; left: 0; right: 0; background: rgba(30, 30, 30, 0.95); backdrop-filter: blur(10px); padding: 15px 40px; border-bottom: 1px solid #333; z-index: 1000; display: flex; justify-content: flex-end; align-items: center; gap: 20px; }
+        .mode-button { background: #333; border: 1px solid #444; color: white; padding: 8px 20px; border-radius: 20px; cursor: pointer; font-weight: 600; transition: all 0.2s; }
+        .mode-button.active { background: #4a9eff; border-color: #4a9eff; }
+        .mode-label { font-size: 14px; opacity: 0.6; font-weight: 600; text-transform: uppercase; }
+
+        /* Restricted Mode Styles */
+        body.mode-public .filename { display: none; }
+        body.mode-public .photo-card:hover { transform: none; background: #333; }
+
+        /* Modal Styles */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; justify-content: center; align-items: center; }
+        .modal { background: #1e1e1e; padding: 40px; border-radius: 24px; border: 1px solid #333; width: 400px; box-shadow: 0 20px 50px rgba(0,0,0,0.8); }
+        .modal h2 { margin-top: 0; color: #4a9eff; }
+        .modal input { width: 100%; padding: 12px; margin: 20px 0; background: #2a2a2a; border: 1px solid #444; color: white; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        .modal-buttons { display: flex; justify-content: flex-end; gap: 15px; }
+        .modal-buttons button { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; }
+        .btn-cancel { background: #333; color: white; }
+        .btn-submit { background: #4a9eff; color: white; }
+    </style>
+</head>
+<body class="mode-public">
+    <div class="mode-selector">
+        <span class="mode-label">View Mode:</span>
+        <button id="btn-public" class="mode-button active" onclick="setMode('PUBLIC')">PUBLIC</button>
+        <button id="btn-user" class="mode-button" onclick="requestUserMode()">USER</button>
+    </div>
+
+    <div id="password-modal" class="modal-overlay">
+        <div class="modal">
+            <h2>Enter Password</h2>
+            <p>Please enter the password to activate USER mode.</p>
+            <input type="password" id="password-input" placeholder="Password">
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+                <button class="btn-submit" onclick="submitPassword()">Submit</button>
+            </div>
+        </div>
+    </div>
+
+    
+    <div class="family-list">
+        <div class="family-card">
+            <div class="family-header">
+                <div class="family-name">Secretarybird</div>
+                <div class="family-order-label">Sagittariidae / Accipitriformes</div>
+            </div>
+            <div class="species-list">
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Secretarybird</div>
+                        <div class="french-label">Messager sagittaire</div>
+                        <div class="latin-label">(Sagittarius serpentarius)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1VpMVK77LbsFyjdhB2WrNkv34HeRdXBG7" loading="lazy" alt="Secretarybird_202.jpg">
+                            <div class="meta-label">Tanzania - 12 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1VpMVK77LbsFyjdhB2WrNkv34HeRdXBG7" target="_blank">Secretarybird_202.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1iixq6EEhFf13BxLvofJyhbdgcTsTJhwb" loading="lazy" alt="Secretarybird_208.jpg">
+                            <div class="meta-label">Tanzania - 12 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1iixq6EEhFf13BxLvofJyhbdgcTsTJhwb" target="_blank">Secretarybird_208.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1eEzhHbra0WIuLjZ-ybWwk-admHe8pHfL" loading="lazy" alt="Secretarybird_241.jpg">
+                            <div class="meta-label">Tanzania - 12 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1eEzhHbra0WIuLjZ-ybWwk-admHe8pHfL" target="_blank">Secretarybird_241.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1GZ7dUa1rfJpV4KgnvnX2I00z78utrCAZ" loading="lazy" alt="Secretarybird_277.jpg">
+                            <div class="meta-label">Tanzania - 12 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1GZ7dUa1rfJpV4KgnvnX2I00z78utrCAZ" target="_blank">Secretarybird_277.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1TbpbtHU_NTbHhb527LsjK3wsvpHunonK" loading="lazy" alt="Secretarybird_3211.jpg">
+                            <div class="meta-label">Tanzania - 12 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1TbpbtHU_NTbHhb527LsjK3wsvpHunonK" target="_blank">Secretarybird_3211.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="family-card">
+            <div class="family-header">
+                <div class="family-name">Osprey</div>
+                <div class="family-order-label">Pandionidae / Accipitriformes</div>
+            </div>
+            <div class="species-list">
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Osprey</div>
+                        <div class="french-label">Balbuzard pêcheur</div>
+                        <div class="latin-label">(Pandion haliaetus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1QmFf0mQCXltzvHP9K81-YRx9Ee0wrN0V" loading="lazy" alt="Osprey_0249.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1QmFf0mQCXltzvHP9K81-YRx9Ee0wrN0V" target="_blank">Osprey_0249.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1muJyeG00P6kWAHe2qWzrIqijuSL6LZli" loading="lazy" alt="Osprey_0776MF.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1muJyeG00P6kWAHe2qWzrIqijuSL6LZli" target="_blank">Osprey_0776MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/18v_kLPvHwI1Lieix9cB3VAbw6VvrVmWi" loading="lazy" alt="Osprey_1684.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/18v_kLPvHwI1Lieix9cB3VAbw6VvrVmWi" target="_blank">Osprey_1684.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1AQOyHsC6uZmvArO-_PTqMN3v3du4QtKA" loading="lazy" alt="Osprey_20507.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1AQOyHsC6uZmvArO-_PTqMN3v3du4QtKA" target="_blank">Osprey_20507.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1OH7Xw3fOnoGSBNKr61xSKExATuRHityB" loading="lazy" alt="Osprey_2052.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1OH7Xw3fOnoGSBNKr61xSKExATuRHityB" target="_blank">Osprey_2052.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1uQs1AbckMSohCAZpXwWcpEnFRS-rLMKQ" loading="lazy" alt="Osprey_219.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1uQs1AbckMSohCAZpXwWcpEnFRS-rLMKQ" target="_blank">Osprey_219.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1zdXKzp0L4ZnlpQ8TB_iYmqayLHRv1SBb" loading="lazy" alt="Osprey_2389.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1zdXKzp0L4ZnlpQ8TB_iYmqayLHRv1SBb" target="_blank">Osprey_2389.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/104fEviLLJ4phF81RT6AaYAHve93hMY5O" loading="lazy" alt="Osprey_2407.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/104fEviLLJ4phF81RT6AaYAHve93hMY5O" target="_blank">Osprey_2407.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/15k_9S7wGEjiqS_4eGSz36nEKC3bpW_6Z" loading="lazy" alt="Osprey_3039.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/15k_9S7wGEjiqS_4eGSz36nEKC3bpW_6Z" target="_blank">Osprey_3039.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/10QGdbKxipwFhUE1ToPRnefz_c-3KaMWw" loading="lazy" alt="Osprey_4527.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/10QGdbKxipwFhUE1ToPRnefz_c-3KaMWw" target="_blank">Osprey_4527.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1l2o06Q9oRMCFMNv21HhNfzsPJFyEN2AG" loading="lazy" alt="Osprey_4952MF.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1l2o06Q9oRMCFMNv21HhNfzsPJFyEN2AG" target="_blank">Osprey_4952MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1R8zkGmJ1CC0fUHVyhn63ovPTbEpCG66H" loading="lazy" alt="Osprey_5450.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1R8zkGmJ1CC0fUHVyhn63ovPTbEpCG66H" target="_blank">Osprey_5450.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1t77yE02LlKe7xyb4NdEKBuOtKyeEOXtG" loading="lazy" alt="Osprey_5474.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1t77yE02LlKe7xyb4NdEKBuOtKyeEOXtG" target="_blank">Osprey_5474.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1rfx9ab56K4HPXX43V8DBkqxYw1j3LLqL" loading="lazy" alt="Osprey_5601MF.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1rfx9ab56K4HPXX43V8DBkqxYw1j3LLqL" target="_blank">Osprey_5601MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1eFKsI87wFqEjDeJENPmj8VQv85u70XAr" loading="lazy" alt="Osprey_6370.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1eFKsI87wFqEjDeJENPmj8VQv85u70XAr" target="_blank">Osprey_6370.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/18TdLY1QN4wFvUxXN6NV24QYWKcECWnDj" loading="lazy" alt="Osprey_7359.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/18TdLY1QN4wFvUxXN6NV24QYWKcECWnDj" target="_blank">Osprey_7359.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1q-cWXab-dBR1ATiAA2GCIvpHfqMVn3ew" loading="lazy" alt="Osprey_8528MF.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1q-cWXab-dBR1ATiAA2GCIvpHfqMVn3ew" target="_blank">Osprey_8528MF.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="family-card">
+            <div class="family-header">
+                <div class="family-name">Hawks, Eagles, and Kites</div>
+                <div class="family-order-label">"Accipitridae " / Accipitriformes</div>
+            </div>
+            <div class="species-list">
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Pearl Kite</div>
+                        <div class="french-label">Élanion perle</div>
+                        <div class="latin-label">(Gampsonyx swainsonii)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/12zBXhKBnb6G9AltRCeA4IZIt13Up2nok" loading="lazy" alt="Pearl_Kite_1833.jpg">
+                            <div class="meta-label">Panama - 05 Apr 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/12zBXhKBnb6G9AltRCeA4IZIt13Up2nok" target="_blank">Pearl_Kite_1833.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">White-tailed Kite</div>
+                        <div class="french-label">Élanion à queue blanche</div>
+                        <div class="latin-label">(Elanus leucurus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/165Hvon-kbdETkF8vXiN-6PtbYi5d4jZh" loading="lazy" alt="White-tailed_Kite.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/165Hvon-kbdETkF8vXiN-6PtbYi5d4jZh" target="_blank">White-tailed_Kite.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1XzKMoHQcWEsPC24mmr-kh1Uxdq0IO1TF" loading="lazy" alt="White-tailed_Kite_6790.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1XzKMoHQcWEsPC24mmr-kh1Uxdq0IO1TF" target="_blank">White-tailed_Kite_6790.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1cB0XS6oTtg16gt9NfjKduh1C5YtQC80Z" loading="lazy" alt="White-tailed_Kite_7513.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1cB0XS6oTtg16gt9NfjKduh1C5YtQC80Z" target="_blank">White-tailed_Kite_7513.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Black-winged Kite</div>
+                        <div class="french-label">Élanion blanc</div>
+                        <div class="latin-label">(Elanus caeruleus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/10yimraEXcD_wA29il-NMDPCpeytfz7oq" loading="lazy" alt="Black-winged_Kite_8890.jpg">
+                            <div class="meta-label">SZ - 30 Sep 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/10yimraEXcD_wA29il-NMDPCpeytfz7oq" target="_blank">Black-winged_Kite_8890.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Black-shouldered Kite</div>
+                        <div class="french-label">Élanion d'Australie</div>
+                        <div class="latin-label">(Elanus axillaris)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1pslha3Hu0j5l36DanHTyPJU4W0eKveBY" loading="lazy" alt="Black-shouldered_Kite_0113.jpg">
+                            <div class="meta-label">Australia - 18 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1pslha3Hu0j5l36DanHTyPJU4W0eKveBY" target="_blank">Black-shouldered_Kite_0113.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Madagascar Harrier-Hawk</div>
+                        <div class="french-label">Gymnogène de Madagascar</div>
+                        <div class="latin-label">(Polyboroides radiatus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/18pWAipZ7IxZ-j1J6tBK6Mndo9MlsAiN-" loading="lazy" alt="Madagascar_Harrier-Hawk_-_Gymnogene_de_Madagascar_5474.jpg">
+                            <div class="meta-label">MG - 07 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/18pWAipZ7IxZ-j1J6tBK6Mndo9MlsAiN-" target="_blank">Madagascar_Harrier-Hawk_-_Gymnogene_de_Madagascar_5474.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1tqGVkWqxPPCjZhzErzreO-c0dApmTJ_D" loading="lazy" alt="Madagascar_Harrier-Hawk_-_Gymnogene_de_Madagascar_7516.jpg">
+                            <div class="meta-label">MG - 07 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1tqGVkWqxPPCjZhzErzreO-c0dApmTJ_D" target="_blank">Madagascar_Harrier-Hawk_-_Gymnogene_de_Madagascar_7516.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1aWFJEcFl1INF27UfmxIubJY5NLNTsUFh" loading="lazy" alt="Madagascar_Harrier-Hawk_-_Gymnogene_de_Madagascar_7540.jpg">
+                            <div class="meta-label">MG - 07 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1aWFJEcFl1INF27UfmxIubJY5NLNTsUFh" target="_blank">Madagascar_Harrier-Hawk_-_Gymnogene_de_Madagascar_7540.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1WdfSiRy_KucbW853aHgBIotT6R6D8esL" loading="lazy" alt="Madagascar_Harrier-Hawk_-_Gymnogene_de_Madagascar_9906MF.jpg">
+                            <div class="meta-label">MG - 07 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1WdfSiRy_KucbW853aHgBIotT6R6D8esL" target="_blank">Madagascar_Harrier-Hawk_-_Gymnogene_de_Madagascar_9906MF.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Hook-billed Kite</div>
+                        <div class="french-label">Bec-en-croc de Temminck</div>
+                        <div class="latin-label">(Chondrohierax uncinatus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1fLEsgAiAei8_YwiI40Gayri22yRgEmRZ" loading="lazy" alt="Hook-billed_Kite_21737.jpg">
+                            <div class="meta-label">Colombia - 19 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1fLEsgAiAei8_YwiI40Gayri22yRgEmRZ" target="_blank">Hook-billed_Kite_21737.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Dog3PklAmxsqalJui58Huq5Hw2zm2zyV" loading="lazy" alt="Hook-billed_Kite_4786.jpg">
+                            <div class="meta-label">Colombia - 19 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Dog3PklAmxsqalJui58Huq5Hw2zm2zyV" target="_blank">Hook-billed_Kite_4786.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Swallow-tailed Kite</div>
+                        <div class="french-label">Naucler à queue fourchue</div>
+                        <div class="latin-label">(Elanoides forficatus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/10OYIpPJ_3tcJC9ik6I_ulLBIlKXBRDKm" loading="lazy" alt="Swallow-tailed_Kite_2087.jpg">
+                            <div class="meta-label">Panama - 03 Apr 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/10OYIpPJ_3tcJC9ik6I_ulLBIlKXBRDKm" target="_blank">Swallow-tailed_Kite_2087.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1NtfJ6YqkpQdRfBWrT0hX0ifWzcN5qbos" loading="lazy" alt="Swallow-tailed_Kite_4947.jpg">
+                            <div class="meta-label">Panama - 03 Apr 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1NtfJ6YqkpQdRfBWrT0hX0ifWzcN5qbos" target="_blank">Swallow-tailed_Kite_4947.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1JW93MdYMcIKvGY73WX8w1P7bYHcJRLGE" loading="lazy" alt="Swallow-tailed_Kite_5393.jpg">
+                            <div class="meta-label">Panama - 03 Apr 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1JW93MdYMcIKvGY73WX8w1P7bYHcJRLGE" target="_blank">Swallow-tailed_Kite_5393.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1KUAu37m4bvub0A3iSi8p3uRGpSP506xe" loading="lazy" alt="Swallow-tailed_Kite_5397.jpg">
+                            <div class="meta-label">Panama - 03 Apr 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1KUAu37m4bvub0A3iSi8p3uRGpSP506xe" target="_blank">Swallow-tailed_Kite_5397.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1ju7bjnb6ykhQS1-xMnxEImIToCEg7zRs" loading="lazy" alt="Swallow-tailed_Kite_5414.jpg">
+                            <div class="meta-label">Panama - 03 Apr 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1ju7bjnb6ykhQS1-xMnxEImIToCEg7zRs" target="_blank">Swallow-tailed_Kite_5414.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1ho1QSZzVMRIPy2w2jyJ9E92pziTlrN-l" loading="lazy" alt="Swallow-tailed_Kite_5513.jpg">
+                            <div class="meta-label">Panama - 03 Apr 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1ho1QSZzVMRIPy2w2jyJ9E92pziTlrN-l" target="_blank">Swallow-tailed_Kite_5513.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/13n57ARFGQF6HhQsVv55DGN5ZtP88jArF" loading="lazy" alt="Swallow-tailed_Kite_5514.jpg">
+                            <div class="meta-label">Panama - 03 Apr 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/13n57ARFGQF6HhQsVv55DGN5ZtP88jArF" target="_blank">Swallow-tailed_Kite_5514.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1R7A_zapmTJSNznx4h9cMMFfZBYCRiq3z" loading="lazy" alt="Swallow-tailed_Kite_7670.jpg">
+                            <div class="meta-label">Panama - 03 Apr 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1R7A_zapmTJSNznx4h9cMMFfZBYCRiq3z" target="_blank">Swallow-tailed_Kite_7670.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1EZSTXFk3Aq-woqDNI1a80i0afJMsQqb_" loading="lazy" alt="Swallow-tailed_Kite_8566MF.jpg">
+                            <div class="meta-label">Panama - 03 Apr 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1EZSTXFk3Aq-woqDNI1a80i0afJMsQqb_" target="_blank">Swallow-tailed_Kite_8566MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1BsKcGFOpZxhJ5xfECU5MY1-yw99JZ7f0" loading="lazy" alt="Swallow-tailed_Kite_8673MF.jpg">
+                            <div class="meta-label">Panama - 03 Apr 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1BsKcGFOpZxhJ5xfECU5MY1-yw99JZ7f0" target="_blank">Swallow-tailed_Kite_8673MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1dpTaoASpWJcXrjA0xc4xuhEUvZZVzdJh" loading="lazy" alt="Swallow-tailed_Kite_8714MF.jpg">
+                            <div class="meta-label">Panama - 03 Apr 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1dpTaoASpWJcXrjA0xc4xuhEUvZZVzdJh" target="_blank">Swallow-tailed_Kite_8714MF.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Lappet-faced Vulture</div>
+                        <div class="french-label">Vautour oricou</div>
+                        <div class="latin-label">(Torgos tracheliotos)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1pFw8r1vKVzk2I_Iy3Y2OoPBTjoqs66zB" loading="lazy" alt="Lappet-faced_Vulture_223.jpg">
+                            <div class="meta-label">Tanzania - 12 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1pFw8r1vKVzk2I_Iy3Y2OoPBTjoqs66zB" target="_blank">Lappet-faced_Vulture_223.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/18h0eZGGYmhdqhrcrPWmscsJmT11vorKN" loading="lazy" alt="Lappet-faced_Vulture_8025.jpg">
+                            <div class="meta-label">Tanzania - 12 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/18h0eZGGYmhdqhrcrPWmscsJmT11vorKN" target="_blank">Lappet-faced_Vulture_8025.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Hooded Vulture</div>
+                        <div class="french-label">Vautour charognard</div>
+                        <div class="latin-label">(Necrosyrtes monachus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1eTTG70sWTN8bKThQZmDQLEwtfUy6x8gW" loading="lazy" alt="Hooded_Vulture.jpg">
+                            <div class="meta-label">Tanzania - 12 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1eTTG70sWTN8bKThQZmDQLEwtfUy6x8gW" target="_blank">Hooded_Vulture.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1LYdgJ4xtOImH75fV0427h_OzFbv5hxc1" loading="lazy" alt="Hooded_Vulture_7715.jpg">
+                            <div class="meta-label">Tanzania - 12 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1LYdgJ4xtOImH75fV0427h_OzFbv5hxc1" target="_blank">Hooded_Vulture_7715.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1O_lEoV0SpRgsv49_RrOAu71E2WZidGc_" loading="lazy" alt="Hooded_Vulture_8049.jpg">
+                            <div class="meta-label">Tanzania - 12 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1O_lEoV0SpRgsv49_RrOAu71E2WZidGc_" target="_blank">Hooded_Vulture_8049.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Bateleur</div>
+                        <div class="french-label">Bateleur des savanes</div>
+                        <div class="latin-label">(Terathopius ecaudatus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Uq0l1NF7-qSrjHRfCyIfDu3DI87br7WR" loading="lazy" alt="Bateleur.jpg">
+                            <div class="meta-label">Tanzania - 16 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Uq0l1NF7-qSrjHRfCyIfDu3DI87br7WR" target="_blank">Bateleur.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1FmHTUggbrzuOLkl5-PAgGGceAe_Gk8Mq" loading="lazy" alt="Bateleur_278.jpg">
+                            <div class="meta-label">Tanzania - 16 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1FmHTUggbrzuOLkl5-PAgGGceAe_Gk8Mq" target="_blank">Bateleur_278.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Martial Eagle</div>
+                        <div class="french-label">Aigle martial</div>
+                        <div class="latin-label">(Polemaetus bellicosus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1LIaEUYGlo8VQgC0BtWxlowgStGGbpBOD" loading="lazy" alt="Martial_Eagle_9395.jpg">
+                            <div class="meta-label">NA - 20 Jun 2007</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1LIaEUYGlo8VQgC0BtWxlowgStGGbpBOD" target="_blank">Martial_Eagle_9395.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Wahlberg's Eagle</div>
+                        <div class="french-label">Aigle de Wahlberg</div>
+                        <div class="latin-label">(Hieraaetus wahlbergi)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="Photos/Wahlberg%27s_Eagle_1870.jpg" loading="lazy" alt="Wahlberg's_Eagle_1870.jpg">
+                            <div class="meta-label">South Africa - 28 Sep 2014</div>
+                            <div class="filename"><a href="Photos/Wahlberg%27s_Eagle_1870.jpg" target="_blank">Wahlberg's_Eagle_1870.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Tawny Eagle</div>
+                        <div class="french-label">Aigle ravisseur</div>
+                        <div class="latin-label">(Aquila rapax)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1CYZwF24O87-QLTeo4VLmq9XNjAopmq3y" loading="lazy" alt="Tawny_Eagle_8023.jpg">
+                            <div class="meta-label">BW - 09 Oct 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1CYZwF24O87-QLTeo4VLmq9XNjAopmq3y" target="_blank">Tawny_Eagle_8023.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1kGam6I-RffRBx7xucYgevS5aqukQDLKI" loading="lazy" alt="Tawny_Eagle_8156.jpg">
+                            <div class="meta-label">BW - 09 Oct 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1kGam6I-RffRBx7xucYgevS5aqukQDLKI" target="_blank">Tawny_Eagle_8156.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Wedge-tailed Eagle</div>
+                        <div class="french-label">Aigle d'Australie</div>
+                        <div class="latin-label">(Aquila audax)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1fRUkCATab06yugsWd3XAUqKlnTpZojOM" loading="lazy" alt="Wedge-tailed_Eagle_1316.jpg">
+                            <div class="meta-label">Australia - 21 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1fRUkCATab06yugsWd3XAUqKlnTpZojOM" target="_blank">Wedge-tailed_Eagle_1316.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Crested Eagle</div>
+                        <div class="french-label">Harpie huppée</div>
+                        <div class="latin-label">(Morphnus guianensis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1AklQ70-jDzbaGjJNVUHrJbQ1VUKWfmvB" loading="lazy" alt="Crested_Eagle_1995.jpg">
+                            <div class="meta-label">Panama - 06 Apr 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1AklQ70-jDzbaGjJNVUHrJbQ1VUKWfmvB" target="_blank">Crested_Eagle_1995.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1UMti8vBtNJGWLtvohZbq5wIFGjuaZWTt" loading="lazy" alt="Crested_Eagle_2115.jpg">
+                            <div class="meta-label">Panama - 06 Apr 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1UMti8vBtNJGWLtvohZbq5wIFGjuaZWTt" target="_blank">Crested_Eagle_2115.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Gabar Goshawk</div>
+                        <div class="french-label">Autour gabar</div>
+                        <div class="latin-label">(Micronisus gabar)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1nEv87Q_Hs7z9EpnblTc9HsAJDnrRaHX4" loading="lazy" alt="Gabar_Goshawk_342.jpg">
+                            <div class="meta-label">NA - 04 Jun 2007</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1nEv87Q_Hs7z9EpnblTc9HsAJDnrRaHX4" target="_blank">Gabar_Goshawk_342.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Pale Chanting-Goshawk</div>
+                        <div class="french-label">Autour chanteur</div>
+                        <div class="latin-label">(Melierax canorus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1cvKyX7w25V97NCrcQiP2g8sTcD9jWq_V" loading="lazy" alt="Pale_Chanting-goshawk_155.jpg">
+                            <div class="meta-label">NA - 01 Jun 2007</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1cvKyX7w25V97NCrcQiP2g8sTcD9jWq_V" target="_blank">Pale_Chanting-goshawk_155.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1tN_45UOmJS8Yac7vM77E4POYm4Pg0zG8" loading="lazy" alt="Pale_Chanting-goshawk_348.jpg">
+                            <div class="meta-label">NA - 01 Jun 2007</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1tN_45UOmJS8Yac7vM77E4POYm4Pg0zG8" target="_blank">Pale_Chanting-goshawk_348.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1fXuhJ116IsRyrK05pvU5SMXQvcL7ACM3" loading="lazy" alt="Pale_Chanting-goshawk_85.jpg">
+                            <div class="meta-label">NA - 01 Jun 2007</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1fXuhJ116IsRyrK05pvU5SMXQvcL7ACM3" target="_blank">Pale_Chanting-goshawk_85.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Little Sparrowhawk</div>
+                        <div class="french-label">Épervier minule</div>
+                        <div class="latin-label">(Tachyspiza minulla)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1qA37yzCoqeacVe6nkNO6s0oC24_An6Fu" loading="lazy" alt="Little_sparrowhawk_220.jpg">
+                            <div class="meta-label">Tanzania - 16 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1qA37yzCoqeacVe6nkNO6s0oC24_An6Fu" target="_blank">Little_sparrowhawk_220.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Shikra</div>
+                        <div class="french-label">Épervier shikra</div>
+                        <div class="latin-label">(Tachyspiza badia)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="Photos/Shikra_%28Little_Banded_Goshawk%29_197.jpg" loading="lazy" alt="Shikra_(Little_Banded_Goshawk)_197.jpg">
+                            <div class="meta-label">NA - 04 Jun 2007</div>
+                            <div class="filename"><a href="Photos/Shikra_%28Little_Banded_Goshawk%29_197.jpg" target="_blank">Shikra_(Little_Banded_Goshawk)_197.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Frances's Sparrowhawk</div>
+                        <div class="french-label">Épervier de Frances</div>
+                        <div class="latin-label">(Tachyspiza francesiae)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="Photos/Frances%27s_Sparrowhawk_-_Epervier_de_Frances_5117.jpg" loading="lazy" alt="Frances's_Sparrowhawk_-_Epervier_de_Frances_5117.jpg">
+                            <div class="meta-label">MG - 06 Nov 2024</div>
+                            <div class="filename"><a href="Photos/Frances%27s_Sparrowhawk_-_Epervier_de_Frances_5117.jpg" target="_blank">Frances's_Sparrowhawk_-_Epervier_de_Frances_5117.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Cooper's Hawk</div>
+                        <div class="french-label">Épervier de Cooper</div>
+                        <div class="latin-label">(Astur cooperii)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="Photos/Cooper%27s_Hawk.jpg" loading="lazy" alt="Cooper's_Hawk.jpg">
+                            <div class="meta-label">Canada - 12 Apr 2010</div>
+                            <div class="filename"><a href="Photos/Cooper%27s_Hawk.jpg" target="_blank">Cooper's_Hawk.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="Photos/Cooper%27s_Hawk_2472.jpg" loading="lazy" alt="Cooper's_Hawk_2472.jpg">
+                            <div class="meta-label">Canada - 12 Apr 2010</div>
+                            <div class="filename"><a href="Photos/Cooper%27s_Hawk_2472.jpg" target="_blank">Cooper's_Hawk_2472.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="Photos/Cooper%27s_Hawk_8902.jpg" loading="lazy" alt="Cooper's_Hawk_8902.jpg">
+                            <div class="meta-label">Canada - 12 Apr 2010</div>
+                            <div class="filename"><a href="Photos/Cooper%27s_Hawk_8902.jpg" target="_blank">Cooper's_Hawk_8902.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">African Marsh Harrier</div>
+                        <div class="french-label">Busard grenouillard</div>
+                        <div class="latin-label">(Circus ranivorus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="Photos/African_Marsh_Harrier_7438.jpg" loading="lazy" alt="African_Marsh_Harrier_7438.jpg">
+                            <div class="meta-label">South Africa - 01 Oct 2014</div>
+                            <div class="filename"><a href="Photos/African_Marsh_Harrier_7438.jpg" target="_blank">African_Marsh_Harrier_7438.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Swamp Harrier</div>
+                        <div class="french-label">Busard de Gould</div>
+                        <div class="latin-label">(Circus approximans)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Z1hZcZLIVbCeNeYLPfWQoxEdV7OCdKAH" loading="lazy" alt="Swamp_Harrier_2249.jpg">
+                            <div class="meta-label">Australia - 22 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Z1hZcZLIVbCeNeYLPfWQoxEdV7OCdKAH" target="_blank">Swamp_Harrier_2249.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Long-winged Harrier</div>
+                        <div class="french-label">Busard de Buffon</div>
+                        <div class="latin-label">(Circus buffoni)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1T_7lfGO6msDv9X40LQ4TuXeO54_3gaKb" loading="lazy" alt="Long-winged_Harrier_5597.jpg">
+                            <div class="meta-label">TT - 11 Apr 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1T_7lfGO6msDv9X40LQ4TuXeO54_3gaKb" target="_blank">Long-winged_Harrier_5597.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Northern Harrier</div>
+                        <div class="french-label">Busard des marais</div>
+                        <div class="latin-label">(Circus hudsonius)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1T3JwdcjKbrNr5Ox_Kops2POaX9Syg5gz" loading="lazy" alt="Northern_Harrier_0096.jpg">
+                            <div class="meta-label">USA - 15 Oct 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1T3JwdcjKbrNr5Ox_Kops2POaX9Syg5gz" target="_blank">Northern_Harrier_0096.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1dmKJxsbaNfJCL8eJwFbjXppkgkNkGqLn" loading="lazy" alt="Northern_Harrier_0570.jpg">
+                            <div class="meta-label">USA - 15 Oct 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1dmKJxsbaNfJCL8eJwFbjXppkgkNkGqLn" target="_blank">Northern_Harrier_0570.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1zrDx6H0hNksBrv-rAjLGkgpbP3bg3mC_" loading="lazy" alt="Northern_Harrier_1997.jpg">
+                            <div class="meta-label">USA - 15 Oct 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1zrDx6H0hNksBrv-rAjLGkgpbP3bg3mC_" target="_blank">Northern_Harrier_1997.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1_O3lt8O3Do1YqrubktHGz94wOu2N6KTk" loading="lazy" alt="Northern_Harrier_20927.jpg">
+                            <div class="meta-label">USA - 15 Oct 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1_O3lt8O3Do1YqrubktHGz94wOu2N6KTk" target="_blank">Northern_Harrier_20927.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1sq4hhUPRsP3RhIvi-efd4ugEcnVuJMbq" loading="lazy" alt="Northern_Harrier_4539.jpg">
+                            <div class="meta-label">USA - 15 Oct 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1sq4hhUPRsP3RhIvi-efd4ugEcnVuJMbq" target="_blank">Northern_Harrier_4539.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Tiny Hawk</div>
+                        <div class="french-label">Épervier nain</div>
+                        <div class="latin-label">(Microspizias superciliosus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/19CvvccW9yl3tJ1sICIMLJrVDa4Tuu7At" loading="lazy" alt="Tiny_Hawk_1432.jpg">
+                            <div class="meta-label">Panama - 04 Apr 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/19CvvccW9yl3tJ1sICIMLJrVDa4Tuu7At" target="_blank">Tiny_Hawk_1432.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Lqp9WpFzo5FVm1rMjieeNEGmC-dHNon6" loading="lazy" alt="Tiny_Hawk_5725.jpg">
+                            <div class="meta-label">Panama - 04 Apr 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Lqp9WpFzo5FVm1rMjieeNEGmC-dHNon6" target="_blank">Tiny_Hawk_5725.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Black Kite</div>
+                        <div class="french-label">Milan noir</div>
+                        <div class="latin-label">(Milvus migrans)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1hqaxWteFGEOXR-x14E-3KNXMJJ47-kql" loading="lazy" alt="Black_Kite_-_Milan_noir_8495.jpg">
+                            <div class="meta-label">South Africa - 25 Sep 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1hqaxWteFGEOXR-x14E-3KNXMJJ47-kql" target="_blank">Black_Kite_-_Milan_noir_8495.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1ggsSNXxGrkvF5JdXNpExbxDSd6s9dPPj" loading="lazy" alt="Black_Kite_-_Milan_noir_9152MF.jpg">
+                            <div class="meta-label">South Africa - 25 Sep 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1ggsSNXxGrkvF5JdXNpExbxDSd6s9dPPj" target="_blank">Black_Kite_-_Milan_noir_9152MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1fuppr0In1sYev-ujvAk2TqlCn8qpbQ-L" loading="lazy" alt="Black_Kite_-_Milan_noir_9158MF.jpg">
+                            <div class="meta-label">South Africa - 25 Sep 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1fuppr0In1sYev-ujvAk2TqlCn8qpbQ-L" target="_blank">Black_Kite_-_Milan_noir_9158MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1mClDfsD_9jDYihELwwiwB7AIhBkXuMZj" loading="lazy" alt="Black_Kite_1805.jpg">
+                            <div class="meta-label">South Africa - 25 Sep 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1mClDfsD_9jDYihELwwiwB7AIhBkXuMZj" target="_blank">Black_Kite_1805.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1eipSD9LffeSoK367Tczjw85b5gIiKTHv" loading="lazy" alt="Black_Kite_3594.jpg">
+                            <div class="meta-label">South Africa - 25 Sep 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1eipSD9LffeSoK367Tczjw85b5gIiKTHv" target="_blank">Black_Kite_3594.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/12rZXmtIOhhefmqOnRzLBHIVSWfofpQre" loading="lazy" alt="Black_Kite_9114.jpg">
+                            <div class="meta-label">South Africa - 25 Sep 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/12rZXmtIOhhefmqOnRzLBHIVSWfofpQre" target="_blank">Black_Kite_9114.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Whistling Kite</div>
+                        <div class="french-label">Milan siffleur</div>
+                        <div class="latin-label">(Haliastur sphenurus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1eT2Gt0fZ9nGef79aCVH0mHtGTtuwlCdT" loading="lazy" alt="Whistling_Kite_1618.jpg">
+                            <div class="meta-label">Australia - 27 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1eT2Gt0fZ9nGef79aCVH0mHtGTtuwlCdT" target="_blank">Whistling_Kite_1618.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Bald Eagle</div>
+                        <div class="french-label">Pygargue à tête blanche</div>
+                        <div class="latin-label">(Haliaeetus leucocephalus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/12ZdV6gGUGdJdS-W7FHcs8inhn8uTaMhq" loading="lazy" alt="Bald_Eagle_0765.jpg">
+                            <div class="meta-label">USA - 17 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/12ZdV6gGUGdJdS-W7FHcs8inhn8uTaMhq" target="_blank">Bald_Eagle_0765.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/120_ufxTGbGPj7-9ga2zGa1dP7GYm2Rji" loading="lazy" alt="Bald_Eagle_2014-003.jpg">
+                            <div class="meta-label">USA - 17 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/120_ufxTGbGPj7-9ga2zGa1dP7GYm2Rji" target="_blank">Bald_Eagle_2014-003.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1sGJX8plXqJo-MbnSAgpGucF8ytrZGux8" loading="lazy" alt="Bald_Eagle_21110.jpg">
+                            <div class="meta-label">USA - 17 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1sGJX8plXqJo-MbnSAgpGucF8ytrZGux8" target="_blank">Bald_Eagle_21110.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1j8EN-phLHzvUR25fC2HEZfAiwB6X0jxD" loading="lazy" alt="Bald_Eagle_2654.jpg">
+                            <div class="meta-label">USA - 17 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1j8EN-phLHzvUR25fC2HEZfAiwB6X0jxD" target="_blank">Bald_Eagle_2654.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1uTb8olY4Vz8d62PpAQHI9QclX6Zxy_2j" loading="lazy" alt="Bald_Eagle_6702.jpg">
+                            <div class="meta-label">USA - 17 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1uTb8olY4Vz8d62PpAQHI9QclX6Zxy_2j" target="_blank">Bald_Eagle_6702.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1R-WzFJXjimQlBOzNs-4zmHkhOx5dq00e" loading="lazy" alt="Bald_eagle_7646.jpg">
+                            <div class="meta-label">USA - 17 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1R-WzFJXjimQlBOzNs-4zmHkhOx5dq00e" target="_blank">Bald_eagle_7646.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">African Fish-Eagle</div>
+                        <div class="french-label">Pygargue vocifer</div>
+                        <div class="latin-label">(Icthyophaga vocifer)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="Photos/African_Fish-Eagle_6468.jpg" loading="lazy" alt="African_Fish-Eagle_6468.jpg">
+                            <div class="meta-label">South Africa - 25 Sep 2014</div>
+                            <div class="filename"><a href="Photos/African_Fish-Eagle_6468.jpg" target="_blank">African_Fish-Eagle_6468.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">White-bellied Sea-Eagle</div>
+                        <div class="french-label">Pygargue blagre</div>
+                        <div class="latin-label">(Icthyophaga leucogaster)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1labmG-vadZvN9L_bp-Kb4foBwvKdUCpd" loading="lazy" alt="White-bellied_Sea-Eagle_4847MF.jpg">
+                            <div class="meta-label">Australia - 15 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1labmG-vadZvN9L_bp-Kb4foBwvKdUCpd" target="_blank">White-bellied_Sea-Eagle_4847MF.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Mississippi Kite</div>
+                        <div class="french-label">Milan du Mississippi</div>
+                        <div class="latin-label">(Ictinia mississippiensis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1bn_xrJslIfGEiy-5YY93vKGi5i5MUHId" loading="lazy" alt="Mississippi_Kite_1514.jpg">
+                            <div class="meta-label">Panama - 02 Apr 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1bn_xrJslIfGEiy-5YY93vKGi5i5MUHId" target="_blank">Mississippi_Kite_1514.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1dK7AevTLc-7oupHCBxxNUi9YEOPtG4HL" loading="lazy" alt="Mississippi_Kite_1515.jpg">
+                            <div class="meta-label">Panama - 02 Apr 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1dK7AevTLc-7oupHCBxxNUi9YEOPtG4HL" target="_blank">Mississippi_Kite_1515.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/11JZxlsnUes6_zEfus4EsuHy8POyNn_yr" loading="lazy" alt="Mississippi_Kite_1520.jpg">
+                            <div class="meta-label">Panama - 02 Apr 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/11JZxlsnUes6_zEfus4EsuHy8POyNn_yr" target="_blank">Mississippi_Kite_1520.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Plumbeous Kite</div>
+                        <div class="french-label">Milan bleuâtre</div>
+                        <div class="latin-label">(Ictinia plumbea)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1QwZyNat2Ggi__HG2eTVjHElUi9vVzTRU" loading="lazy" alt="Plumbeous_Kite_0909.jpg">
+                            <div class="meta-label">Panama - 03 Apr 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1QwZyNat2Ggi__HG2eTVjHElUi9vVzTRU" target="_blank">Plumbeous_Kite_0909.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1GvqTJwnaJN7xXCBrDBOwtrajH8ZOPbcZ" loading="lazy" alt="Plumbeous_Kite_8677.jpg">
+                            <div class="meta-label">Panama - 03 Apr 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1GvqTJwnaJN7xXCBrDBOwtrajH8ZOPbcZ" target="_blank">Plumbeous_Kite_8677.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Black-collared Hawk</div>
+                        <div class="french-label">Buse à tête blanche</div>
+                        <div class="latin-label">(Busarellus nigricollis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1iIh5e-e5IubzyzvvXgZnTOS4SJMlBCqE" loading="lazy" alt="Black-collared_Hawk_332.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1iIh5e-e5IubzyzvvXgZnTOS4SJMlBCqE" target="_blank">Black-collared_Hawk_332.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1QyAcqIXCwNJpCU0dFn1mTfMuDkWykS1A" loading="lazy" alt="Black-collared_Hawk_7329.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1QyAcqIXCwNJpCU0dFn1mTfMuDkWykS1A" target="_blank">Black-collared_Hawk_7329.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Snail Kite</div>
+                        <div class="french-label">Milan des marais</div>
+                        <div class="latin-label">(Rostrhamus sociabilis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1kdHYgO713xq44WWIQC-yahx3tUiK2jpQ" loading="lazy" alt="Snail_Kite_103.jpg">
+                            <div class="meta-label">Belize - 27 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1kdHYgO713xq44WWIQC-yahx3tUiK2jpQ" target="_blank">Snail_Kite_103.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1xvAiEZ5l5oDnpSCJ3NrGE0ofV5fzFzCk" loading="lazy" alt="Snail_Kite_2138MF.jpg">
+                            <div class="meta-label">Belize - 27 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1xvAiEZ5l5oDnpSCJ3NrGE0ofV5fzFzCk" target="_blank">Snail_Kite_2138MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Ku4fmss0pjX-bP0-7P0jm2NLUHiA8dgJ" loading="lazy" alt="Snail_Kite_22041.jpg">
+                            <div class="meta-label">Belize - 27 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Ku4fmss0pjX-bP0-7P0jm2NLUHiA8dgJ" target="_blank">Snail_Kite_22041.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1xqGV1N8P764sUTiE_tdFUoWAruN4K-ld" loading="lazy" alt="Snail_Kite_279.jpg">
+                            <div class="meta-label">Belize - 27 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1xqGV1N8P764sUTiE_tdFUoWAruN4K-ld" target="_blank">Snail_Kite_279.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1DAsjJtdkh1GhVTick83omgXjv20tNXZ5" loading="lazy" alt="Snail_Kite_6677.jpg">
+                            <div class="meta-label">Belize - 27 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1DAsjJtdkh1GhVTick83omgXjv20tNXZ5" target="_blank">Snail_Kite_6677.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Common Black Hawk</div>
+                        <div class="french-label">Buse noire</div>
+                        <div class="latin-label">(Buteogallus anthracinus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1L6whprPSKxn9Q80K8n-RVYrsUFbXKkQu" loading="lazy" alt="Common_Black_Hawk_1535.jpg">
+                            <div class="meta-label">Colombia - 29 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1L6whprPSKxn9Q80K8n-RVYrsUFbXKkQu" target="_blank">Common_Black_Hawk_1535.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1p8s2bfqtdH8AUPZDORsYOTOLcwVmvqBj" loading="lazy" alt="Common_Black_Hawk_2734MF.jpg">
+                            <div class="meta-label">Colombia - 29 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1p8s2bfqtdH8AUPZDORsYOTOLcwVmvqBj" target="_blank">Common_Black_Hawk_2734MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1uWrlubhGAd8FP9z7WuKbqdaZsTAVyBbv" loading="lazy" alt="Common_Black_Hawk_6363.jpg">
+                            <div class="meta-label">Colombia - 29 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1uWrlubhGAd8FP9z7WuKbqdaZsTAVyBbv" target="_blank">Common_Black_Hawk_6363.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/14LCbB8818y42K8l2kzOjlrtDkwhpjDAC" loading="lazy" alt="Common_Black_Hawk_8116.jpg">
+                            <div class="meta-label">Colombia - 29 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/14LCbB8818y42K8l2kzOjlrtDkwhpjDAC" target="_blank">Common_Black_Hawk_8116.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Savanna Hawk</div>
+                        <div class="french-label">Buse roussâtre</div>
+                        <div class="latin-label">(Buteogallus meridionalis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1PFZxwoPynp9nMjTvypDNZiA3kOLE8reS" loading="lazy" alt="Savanna_Hawk.jpg">
+                            <div class="meta-label">Panama - 14 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1PFZxwoPynp9nMjTvypDNZiA3kOLE8reS" target="_blank">Savanna_Hawk.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1xmU1gOBWOcqhsN6fgi_esrdCKGxNDFXw" loading="lazy" alt="Savanna_Hawk_2077MF.jpg">
+                            <div class="meta-label">Panama - 14 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1xmU1gOBWOcqhsN6fgi_esrdCKGxNDFXw" target="_blank">Savanna_Hawk_2077MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1CuGwbJCSB59orVwOUPAEWK-lWAbpuXFg" loading="lazy" alt="Savanna_Hawk_2082MF.jpg">
+                            <div class="meta-label">Panama - 14 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1CuGwbJCSB59orVwOUPAEWK-lWAbpuXFg" target="_blank">Savanna_Hawk_2082MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1yPSR4R1eB97CTFQUBE4WN6PFovmKOvYF" loading="lazy" alt="Savanna_Hawk_21723.jpg">
+                            <div class="meta-label">Panama - 14 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1yPSR4R1eB97CTFQUBE4WN6PFovmKOvYF" target="_blank">Savanna_Hawk_21723.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Great Black Hawk</div>
+                        <div class="french-label">Buse urubu</div>
+                        <div class="latin-label">(Buteogallus urubitinga)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1PKt16sTrGtv4CfC212hQ5kBrPq3kkR02" loading="lazy" alt="Great_Black_Hawk_090.jpg">
+                            <div class="meta-label">Belize - 27 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1PKt16sTrGtv4CfC212hQ5kBrPq3kkR02" target="_blank">Great_Black_Hawk_090.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1xkxYCo8xg9QOa1fcyDmx8SzfEEDL-RGB" loading="lazy" alt="Great_Black_Hawk_6728.jpg">
+                            <div class="meta-label">Belize - 27 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1xkxYCo8xg9QOa1fcyDmx8SzfEEDL-RGB" target="_blank">Great_Black_Hawk_6728.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Roadside Hawk</div>
+                        <div class="french-label">Buse à gros bec</div>
+                        <div class="latin-label">(Rupornis magnirostris)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/185_LDu7TED6kES9ZhgPNwKTZyMp5s40N" loading="lazy" alt="Roadside_Hawk_1025.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/185_LDu7TED6kES9ZhgPNwKTZyMp5s40N" target="_blank">Roadside_Hawk_1025.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Ny4kppNA70wzeOoloyVzzjmzM4rdgcut" loading="lazy" alt="Roadside_Hawk_20951.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Ny4kppNA70wzeOoloyVzzjmzM4rdgcut" target="_blank">Roadside_Hawk_20951.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1MukCMro8zHDAzxY6yKBlh1USwC9wRb3I" loading="lazy" alt="Roadside_Hawk_548.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1MukCMro8zHDAzxY6yKBlh1USwC9wRb3I" target="_blank">Roadside_Hawk_548.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1JOfBjdUBJ-ohj-qAFV-kjRi9nAULrwGm" loading="lazy" alt="Roadside_Hawk_6064.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1JOfBjdUBJ-ohj-qAFV-kjRi9nAULrwGm" target="_blank">Roadside_Hawk_6064.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Harris's Hawk</div>
+                        <div class="french-label">Buse de Harris</div>
+                        <div class="latin-label">(Parabuteo unicinctus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="Photos/Harris%27s_Hawk_6347.jpg" loading="lazy" alt="Harris's_Hawk_6347.jpg">
+                            <div class="meta-label">CR - 09 Jun 2022</div>
+                            <div class="filename"><a href="Photos/Harris%27s_Hawk_6347.jpg" target="_blank">Harris's_Hawk_6347.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">White-rumped Hawk</div>
+                        <div class="french-label">Buse cul-blanc</div>
+                        <div class="latin-label">(Parabuteo leucorrhous)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1avY3bgush0VSnKeJgNyXrOsxtgnLFUvy" loading="lazy" alt="White-rumped_Hawk_23659.jpg">
+                            <div class="meta-label">Colombia - 06 Apr 2025</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1avY3bgush0VSnKeJgNyXrOsxtgnLFUvy" target="_blank">White-rumped_Hawk_23659.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Black-chested Buzzard-Eagle</div>
+                        <div class="french-label">Buse aguia</div>
+                        <div class="latin-label">(Geranoaetus melanoleucus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/12xu2K_rd7WC4EVmaHp6TDtsF6UHLoFU6" loading="lazy" alt="Black-chested_Buzzard-Eagle.jpg">
+                            <div class="meta-label">Ecuador - 03 Apr 2019</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/12xu2K_rd7WC4EVmaHp6TDtsF6UHLoFU6" target="_blank">Black-chested_Buzzard-Eagle.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/15Q1SJQeEiLMCfHh4h_F62V0AVk4XTrLK" loading="lazy" alt="Black-chested_Buzzard-Eagle_3419.jpg">
+                            <div class="meta-label">Ecuador - 03 Apr 2019</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/15Q1SJQeEiLMCfHh4h_F62V0AVk4XTrLK" target="_blank">Black-chested_Buzzard-Eagle_3419.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">White Hawk</div>
+                        <div class="french-label">Buse blanche</div>
+                        <div class="latin-label">(Pseudastur albicollis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1TXrIcKie17JXL8LuhyJqOiBrEHro27iE" loading="lazy" alt="White_Hawk_393.jpg">
+                            <div class="meta-label">Belize - 29 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1TXrIcKie17JXL8LuhyJqOiBrEHro27iE" target="_blank">White_Hawk_393.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1jc2YbLXjpewhTIwCRLXdN4FcuWfwVUe7" loading="lazy" alt="White_Hawk_6126.jpg">
+                            <div class="meta-label">Belize - 29 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1jc2YbLXjpewhTIwCRLXdN4FcuWfwVUe7" target="_blank">White_Hawk_6126.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Gray Hawk</div>
+                        <div class="french-label">Buse grise</div>
+                        <div class="latin-label">(Buteo plagiatus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1F_TWyy2XswoGUq5NHVWL80wOgJUKEPl7" loading="lazy" alt="Gray_Hawk_2428MF.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1F_TWyy2XswoGUq5NHVWL80wOgJUKEPl7" target="_blank">Gray_Hawk_2428MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1uQE1gQEf4NslbApGeWnpIbk8SQVgnSpL" loading="lazy" alt="Gray_Hawk_7970.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1uQE1gQEf4NslbApGeWnpIbk8SQVgnSpL" target="_blank">Gray_Hawk_7970.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1wxAvhCwN_5386u6TCV1R4eD_Chi4m1nb" loading="lazy" alt="Gray_Hawk_MF5531.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1wxAvhCwN_5386u6TCV1R4eD_Chi4m1nb" target="_blank">Gray_Hawk_MF5531.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1yEAY6qVlsmNu0IQGZ8hewt-ct9N5ytPa" loading="lazy" alt="Gray_Hawk_MF6283.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1yEAY6qVlsmNu0IQGZ8hewt-ct9N5ytPa" target="_blank">Gray_Hawk_MF6283.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Gray-lined Hawk</div>
+                        <div class="french-label">Buse cendrée</div>
+                        <div class="latin-label">(Buteo nitidus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1uDaQXmhqZveZ1sSt2yniYocKFXuwB9dp" loading="lazy" alt="Gray-lined_Hawk_1605.jpg">
+                            <div class="meta-label">Panama - 13 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1uDaQXmhqZveZ1sSt2yniYocKFXuwB9dp" target="_blank">Gray-lined_Hawk_1605.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1dF8PncU8z7m_xfdWu2U_BB4W9P_u9r2X" loading="lazy" alt="Gray-lined_Hawk_2094.jpg">
+                            <div class="meta-label">Panama - 13 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1dF8PncU8z7m_xfdWu2U_BB4W9P_u9r2X" target="_blank">Gray-lined_Hawk_2094.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1v5FBo7gE4FlKEuEZq-F-y5cNv5I8B27A" loading="lazy" alt="Gray-lined_hawk_4899.jpg">
+                            <div class="meta-label">Panama - 13 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1v5FBo7gE4FlKEuEZq-F-y5cNv5I8B27A" target="_blank">Gray-lined_hawk_4899.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Broad-winged Hawk</div>
+                        <div class="french-label">Petite Buse</div>
+                        <div class="latin-label">(Buteo platypterus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1vG8vAaiGDGLCJdyyqK1ie7vqR6GuNltv" loading="lazy" alt="Broad-winged_Hawk_1216.jpg">
+                            <div class="meta-label">Canada - 20 Apr 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1vG8vAaiGDGLCJdyyqK1ie7vqR6GuNltv" target="_blank">Broad-winged_Hawk_1216.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Unvi8JmgsJ2kNo5ezFKcuGsDwPBZ-n9-" loading="lazy" alt="Broad-winged_Hawk_2774MF.jpg">
+                            <div class="meta-label">Canada - 20 Apr 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Unvi8JmgsJ2kNo5ezFKcuGsDwPBZ-n9-" target="_blank">Broad-winged_Hawk_2774MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1FHBz0CvYd1tghgXJjUhPPE3ecvPaaIrC" loading="lazy" alt="Broad-winged_Hawk_7004.jpg">
+                            <div class="meta-label">Canada - 20 Apr 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1FHBz0CvYd1tghgXJjUhPPE3ecvPaaIrC" target="_blank">Broad-winged_Hawk_7004.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Red-shouldered Hawk</div>
+                        <div class="french-label">Buse à épaulettes</div>
+                        <div class="latin-label">(Buteo lineatus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="Photos/Red-shouldered_Hawk_%28young_on_nest%29_8544MF.jpg" loading="lazy" alt="Red-shouldered_Hawk_(young_on_nest)_8544MF.jpg">
+                            <div class="meta-label">USA - 17 Dec 2012</div>
+                            <div class="filename"><a href="Photos/Red-shouldered_Hawk_%28young_on_nest%29_8544MF.jpg" target="_blank">Red-shouldered_Hawk_(young_on_nest)_8544MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1xnU7QPs5X9u7Y3wwl3gk3CPoW8lbntqO" loading="lazy" alt="Red-shouldered_Hawk_0753.jpg">
+                            <div class="meta-label">USA - 17 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1xnU7QPs5X9u7Y3wwl3gk3CPoW8lbntqO" target="_blank">Red-shouldered_Hawk_0753.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1x4EMYaJOQ9dWUZOHe5RDClF70iffQkiI" loading="lazy" alt="Red-shouldered_Hawk_20501.jpg">
+                            <div class="meta-label">USA - 17 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1x4EMYaJOQ9dWUZOHe5RDClF70iffQkiI" target="_blank">Red-shouldered_Hawk_20501.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1n0YucCIn_8tswN3-cg3D__NZQuXoCOvm" loading="lazy" alt="Red-shouldered_Hawk_221043.jpg">
+                            <div class="meta-label">USA - 17 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1n0YucCIn_8tswN3-cg3D__NZQuXoCOvm" target="_blank">Red-shouldered_Hawk_221043.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1j9Kd5fWmzzWNTiMgn_RXzn3ZAX0Aar5l" loading="lazy" alt="Red-shouldered_Hawk_3085.jpg">
+                            <div class="meta-label">USA - 17 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1j9Kd5fWmzzWNTiMgn_RXzn3ZAX0Aar5l" target="_blank">Red-shouldered_Hawk_3085.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1yPmsk9TXN5BnqR-51EJKgkHpZMWalXJw" loading="lazy" alt="Red-shouldered_Hawk_4111.jpg">
+                            <div class="meta-label">USA - 17 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1yPmsk9TXN5BnqR-51EJKgkHpZMWalXJw" target="_blank">Red-shouldered_Hawk_4111.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1yFyz6G-cfVx2DOwJGPGILiBmiHKU11g2" loading="lazy" alt="Red-shouldered_Hawk_4258.jpg">
+                            <div class="meta-label">USA - 17 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1yFyz6G-cfVx2DOwJGPGILiBmiHKU11g2" target="_blank">Red-shouldered_Hawk_4258.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1lgO8adJziO9Z_yCSnHPppKSsqj1bWbqG" loading="lazy" alt="Red-shouldered_Hawk_5776.jpg">
+                            <div class="meta-label">USA - 17 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1lgO8adJziO9Z_yCSnHPppKSsqj1bWbqG" target="_blank">Red-shouldered_Hawk_5776.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1mYzdx9yEGLfeszYYMZCrRB6H0Tlu1OfF" loading="lazy" alt="Red-shouldered_Hawk_5784.jpg">
+                            <div class="meta-label">USA - 17 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1mYzdx9yEGLfeszYYMZCrRB6H0Tlu1OfF" target="_blank">Red-shouldered_Hawk_5784.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1kwOKfi5NPoTW-gkdBLbKIWorakxyTWT1" loading="lazy" alt="Red-shouldered_Hawk_6044.jpg">
+                            <div class="meta-label">USA - 17 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1kwOKfi5NPoTW-gkdBLbKIWorakxyTWT1" target="_blank">Red-shouldered_Hawk_6044.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1DAsyA_oDYQq6hgPModpFVDjXYIuoAb90" loading="lazy" alt="Red-shouldered_Hawk_7238.jpg">
+                            <div class="meta-label">USA - 17 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1DAsyA_oDYQq6hgPModpFVDjXYIuoAb90" target="_blank">Red-shouldered_Hawk_7238.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1OnEjWZquyJdDHJR_pv583s__TwyCUlcW" loading="lazy" alt="Red-shouldered_Hawk_Immature_8595MF.jpg">
+                            <div class="meta-label">USA - 17 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1OnEjWZquyJdDHJR_pv583s__TwyCUlcW" target="_blank">Red-shouldered_Hawk_Immature_8595MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1QYd3alDkgX7DGOYfu9zw0bCXaFK2ilP9" loading="lazy" alt="Red-shouldered_hawk_9585.jpg">
+                            <div class="meta-label">USA - 17 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1QYd3alDkgX7DGOYfu9zw0bCXaFK2ilP9" target="_blank">Red-shouldered_hawk_9585.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Short-tailed Hawk</div>
+                        <div class="french-label">Buse à queue courte</div>
+                        <div class="latin-label">(Buteo brachyurus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1-UqqXdnnZYGeW5D5m_pNV_KHhCQTxYGc" loading="lazy" alt="Short-tailed_Hawk_22777.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1-UqqXdnnZYGeW5D5m_pNV_KHhCQTxYGc" target="_blank">Short-tailed_Hawk_22777.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1o1VxNAAE-6P5I1uFl0amKt1TsE0HvWyx" loading="lazy" alt="Short-tailed_Hawk_4552.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1o1VxNAAE-6P5I1uFl0amKt1TsE0HvWyx" target="_blank">Short-tailed_Hawk_4552.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1D4xmHOSkqDxlCOD_q7l0Bd5CKDNZCdSo" loading="lazy" alt="Short-tailed_Hawk_7651.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1D4xmHOSkqDxlCOD_q7l0Bd5CKDNZCdSo" target="_blank">Short-tailed_Hawk_7651.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Galapagos Hawk</div>
+                        <div class="french-label">Buse des Galapagos</div>
+                        <div class="latin-label">(Buteo galapagoensis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1M084Ce8gLetmhSVdcK4mjqoLeqM60AMt" loading="lazy" alt="Galapagos_Hawk.jpg">
+                            <div class="meta-label">Ecuador - 06 Jul 2004</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1M084Ce8gLetmhSVdcK4mjqoLeqM60AMt" target="_blank">Galapagos_Hawk.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Red-tailed Hawk</div>
+                        <div class="french-label">Buse à queue rousse</div>
+                        <div class="latin-label">(Buteo jamaicensis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1XfPNnqz3PJ4XXjTot04KnLDytABAr79I" loading="lazy" alt="Red-tailed_Hawk_1920MF.jpg">
+                            <div class="meta-label">Belize - 30 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1XfPNnqz3PJ4XXjTot04KnLDytABAr79I" target="_blank">Red-tailed_Hawk_1920MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1ENBW3jj06P7thcWe441PWmtHk9ZLH1R3" loading="lazy" alt="Red-tailed_Hawk_5208MF.jpg">
+                            <div class="meta-label">Belize - 30 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1ENBW3jj06P7thcWe441PWmtHk9ZLH1R3" target="_blank">Red-tailed_Hawk_5208MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1g3247cKPcVXQbJIGGuSyC9ZZFC6qISTx" loading="lazy" alt="Red-tailed_Hawk_9036.jpg">
+                            <div class="meta-label">Belize - 30 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1g3247cKPcVXQbJIGGuSyC9ZZFC6qISTx" target="_blank">Red-tailed_Hawk_9036.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Rough-legged Hawk</div>
+                        <div class="french-label">Buse pattue</div>
+                        <div class="latin-label">(Buteo lagopus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1n-jZoLm1blBsGVSBFtgEdaPtpwEFJ-BA" loading="lazy" alt="Rough-legged_Hawk.jpg">
+                            <div class="meta-label">Canada - 23 Jan 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1n-jZoLm1blBsGVSBFtgEdaPtpwEFJ-BA" target="_blank">Rough-legged_Hawk.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1bIECuC_wPyIL1SHj3BEfcBNhKUSxRY4P" loading="lazy" alt="Rough-legged_Hawk_26659.jpg">
+                            <div class="meta-label">Canada - 23 Jan 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1bIECuC_wPyIL1SHj3BEfcBNhKUSxRY4P" target="_blank">Rough-legged_Hawk_26659.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Augur Buzzard</div>
+                        <div class="french-label">Buse augure</div>
+                        <div class="latin-label">(Buteo augur)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1v2RT1N0xkKD_XafGU3KQKiOEsCfaJg0u" loading="lazy" alt="Augur_Buzzard_285.jpg">
+                            <div class="meta-label">Tanzania - 16 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1v2RT1N0xkKD_XafGU3KQKiOEsCfaJg0u" target="_blank">Augur_Buzzard_285.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Jackal Buzzard</div>
+                        <div class="french-label">Buse rounoir</div>
+                        <div class="latin-label">(Buteo rufofuscus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1kQDinueTCmG5yXWGnjgyOrgvJUHFCdUT" loading="lazy" alt="Jackal_Buzzard_2761.jpg">
+                            <div class="meta-label">South Africa - 01 Oct 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1kQDinueTCmG5yXWGnjgyOrgvJUHFCdUT" target="_blank">Jackal_Buzzard_2761.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Madagascar Buzzard</div>
+                        <div class="french-label">Buse de Madagascar</div>
+                        <div class="latin-label">(Buteo brachypterus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1rp5_9o05hdDLQzujiwkbKtxGsT_FWpQi" loading="lazy" alt="Madagascar_Buzzard_7641.jpg">
+                            <div class="meta-label">MG - 06 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1rp5_9o05hdDLQzujiwkbKtxGsT_FWpQi" target="_blank">Madagascar_Buzzard_7641.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div></div></body></html>

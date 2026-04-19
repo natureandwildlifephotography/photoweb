@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photo Index</title>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; background: #121212; color: white; margin: 0; padding: 20px; padding-top: 80px; }
+        .family-list { display: flex; flex-direction: column; gap: 60px; max-width: 1800px; margin: 0 auto; }
+        
+        .family-card { background: #1e1e1e; border-radius: 24px; padding: 40px; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .family-header { margin-bottom: 30px; border-bottom: 2px solid #555; padding-bottom: 20px; }
+        .family-name { font-size: 36px; font-weight: 800; color: #4a9eff; text-transform: uppercase; letter-spacing: 2px; }
+        .family-order-label { font-size: 18px; opacity: 0.6; color: #fff; margin-top: 5px; font-weight: 500; }
+        
+        .species-list { display: flex; flex-direction: column; gap: 30px; }
+        .species-card { background: #2a2a2a; border-radius: 16px; padding: 20px; border: 1px solid #444; }
+        .species-header { margin-bottom: 15px; border-bottom: 1px solid #444; padding-bottom: 10px; }
+        .label { font-size: 24px; font-weight: 700; color: #fff; }
+        .french-label { font-size: 18px; opacity: 0.8; color: #ddd; }
+        .latin-label { font-size: 16px; opacity: 0.7; font-style: italic; color: #bbb; }
+        
+        .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
+        .photo-card { background: #333; border-radius: 10px; overflow: hidden; padding: 10px; display: flex; flex-direction: column; align-items: center; transition: transform 0.2s, background 0.2s; }
+        .photo-card:hover { transform: scale(1.02); background: #3d3d3d; }
+        
+        img { max-width: 100%; height: auto; border-radius: 6px; object-fit: contain; }
+        .meta-label { font-size: 11px; opacity: 0.7; align-self: flex-start; margin-top: 8px; color: #fff; }
+        .filename { font-size: 9px; opacity: 0.4; margin-top: 2px; word-break: break-all; align-self: flex-start; }
+        .filename a { color: #4a9eff; text-decoration: none; transition: color 0.2s; }
+        .filename a:hover { text-decoration: underline; }
+        
+        /* Intro Section Styles */
+        .intro-section { max-width: 1200px; margin: 0 auto 80px; padding: 60px; background: #1e1e1e; border-radius: 32px; border: 1px solid #333; box-shadow: 0 20px 50px rgba(0,0,0,0.6); line-height: 1.8; }
+        .intro-title { font-size: 48px; font-weight: 900; margin-bottom: 40px; color: #4a9eff; line-height: 1.2; text-align: center; }
+        .intro-text { font-size: 20px; opacity: 0.9; margin-bottom: 30px; }
+        .intro-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 30px; margin-top: 50px; border-top: 1px solid #444; padding-top: 40px; }
+        .stat-item { text-align: center; }
+        .stat-value { font-size: 36px; font-weight: 800; color: #4a9eff; display: block; }
+        .stat-label { font-size: 14px; opacity: 0.6; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* Mode Selector Styles */
+        .mode-selector { position: fixed; top: 0; left: 0; right: 0; background: rgba(30, 30, 30, 0.95); backdrop-filter: blur(10px); padding: 15px 40px; border-bottom: 1px solid #333; z-index: 1000; display: flex; justify-content: flex-end; align-items: center; gap: 20px; }
+        .mode-button { background: #333; border: 1px solid #444; color: white; padding: 8px 20px; border-radius: 20px; cursor: pointer; font-weight: 600; transition: all 0.2s; }
+        .mode-button.active { background: #4a9eff; border-color: #4a9eff; }
+        .mode-label { font-size: 14px; opacity: 0.6; font-weight: 600; text-transform: uppercase; }
+
+        /* Restricted Mode Styles */
+        body.mode-public .filename { display: none; }
+        body.mode-public .photo-card:hover { transform: none; background: #333; }
+
+        /* Modal Styles */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; justify-content: center; align-items: center; }
+        .modal { background: #1e1e1e; padding: 40px; border-radius: 24px; border: 1px solid #333; width: 400px; box-shadow: 0 20px 50px rgba(0,0,0,0.8); }
+        .modal h2 { margin-top: 0; color: #4a9eff; }
+        .modal input { width: 100%; padding: 12px; margin: 20px 0; background: #2a2a2a; border: 1px solid #444; color: white; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        .modal-buttons { display: flex; justify-content: flex-end; gap: 15px; }
+        .modal-buttons button { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; }
+        .btn-cancel { background: #333; color: white; }
+        .btn-submit { background: #4a9eff; color: white; }
+    </style>
+</head>
+<body class="mode-public">
+    <div class="mode-selector">
+        <span class="mode-label">View Mode:</span>
+        <button id="btn-public" class="mode-button active" onclick="setMode('PUBLIC')">PUBLIC</button>
+        <button id="btn-user" class="mode-button" onclick="requestUserMode()">USER</button>
+    </div>
+
+    <div id="password-modal" class="modal-overlay">
+        <div class="modal">
+            <h2>Enter Password</h2>
+            <p>Please enter the password to activate USER mode.</p>
+            <input type="password" id="password-input" placeholder="Password">
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+                <button class="btn-submit" onclick="submitPassword()">Submit</button>
+            </div>
+        </div>
+    </div>
+
+    
+    <div class="family-list">
+        <div class="family-card">
+            <div class="family-header">
+                <div class="family-name">Cuckoos</div>
+                <div class="family-order-label">Cuculidae / Cuculiformes</div>
+            </div>
+            <div class="species-list">
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Greater Ani</div>
+                        <div class="french-label">Ani des palétuviers</div>
+                        <div class="latin-label">(Crotophaga major)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1ULPkyjFTyA9vYH2w85CgD6NUvNMZDTSs" loading="lazy" alt="Greater_Ani_1796.jpg">
+                            <div class="meta-label">Panama - 19 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1ULPkyjFTyA9vYH2w85CgD6NUvNMZDTSs" target="_blank">Greater_Ani_1796.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1OnhPm6OLJRHHZQPVEFiWtGAq9awh_kfZ" loading="lazy" alt="Greater_Ani_6959.jpg">
+                            <div class="meta-label">Panama - 19 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1OnhPm6OLJRHHZQPVEFiWtGAq9awh_kfZ" target="_blank">Greater_Ani_6959.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1IDg8PCt6wphw1vYKq11xN_ywZLTqI3zG" loading="lazy" alt="Greater_Ani_8862.jpg">
+                            <div class="meta-label">Panama - 19 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1IDg8PCt6wphw1vYKq11xN_ywZLTqI3zG" target="_blank">Greater_Ani_8862.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Smooth-billed Ani</div>
+                        <div class="french-label">Ani à bec lisse</div>
+                        <div class="latin-label">(Crotophaga ani)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/12RhafNp-V3pGCSftwF_0kAt8K211m6WU" loading="lazy" alt="Smooth-billed_Ani_21656.jpg">
+                            <div class="meta-label">Colombia - 16 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/12RhafNp-V3pGCSftwF_0kAt8K211m6WU" target="_blank">Smooth-billed_Ani_21656.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/11i5_zt4ViehCVuvX7YbGrH7tob6J8Of_" loading="lazy" alt="Smooth-billed_Ani_6437.jpg">
+                            <div class="meta-label">Colombia - 16 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/11i5_zt4ViehCVuvX7YbGrH7tob6J8Of_" target="_blank">Smooth-billed_Ani_6437.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Groove-billed Ani</div>
+                        <div class="french-label">Ani à bec cannelé</div>
+                        <div class="latin-label">(Crotophaga sulcirostris)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1ZLEi42GfOBqnKwpytrZBl3_GOghqD5Pt" loading="lazy" alt="Groove-billed_Ani_284.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1ZLEi42GfOBqnKwpytrZBl3_GOghqD5Pt" target="_blank">Groove-billed_Ani_284.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Pheasant Cuckoo</div>
+                        <div class="french-label">Géocoucou faisan</div>
+                        <div class="latin-label">(Dromococcyx phasianellus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1ruzCTCDbsh2KYv8bunRZRgCgBsM7IerK" loading="lazy" alt="Pheasant_Cuckoo_0006.jpg">
+                            <div class="meta-label">Panama - 01 Apr 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1ruzCTCDbsh2KYv8bunRZRgCgBsM7IerK" target="_blank">Pheasant_Cuckoo_0006.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1gpmi5cJsFSYl5ryf0szXefB-BUb7G2Ir" loading="lazy" alt="Pheasant_Cuckoo_9990.jpg">
+                            <div class="meta-label">Panama - 01 Apr 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1gpmi5cJsFSYl5ryf0szXefB-BUb7G2Ir" target="_blank">Pheasant_Cuckoo_9990.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Lesser Ground-Cuckoo</div>
+                        <div class="french-label">Géocoucou de Lesson</div>
+                        <div class="latin-label">(Morococcyx erythropygus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1EjetGOuS440FQg7hdyXjNXc_lDYe0pNx" loading="lazy" alt="Lesser_Ground-Cuckoo_9154.jpg">
+                            <div class="meta-label">CR - 16 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1EjetGOuS440FQg7hdyXjNXc_lDYe0pNx" target="_blank">Lesser_Ground-Cuckoo_9154.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1FanR0UJDCMKPGMCj9hea43He9W1lwqcI" loading="lazy" alt="Lesser_Ground-Cuckoo_MF6360.jpg">
+                            <div class="meta-label">CR - 16 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1FanR0UJDCMKPGMCj9hea43He9W1lwqcI" target="_blank">Lesser_Ground-Cuckoo_MF6360.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Crested Coua</div>
+                        <div class="french-label">Coua huppé</div>
+                        <div class="latin-label">(Coua cristata)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1zctrkdcdEvZ9NtRcBqwRGTEswWpBYQDY" loading="lazy" alt="Crested_Coua_-_Coua_huppe_0004.jpg">
+                            <div class="meta-label">MG - 13 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1zctrkdcdEvZ9NtRcBqwRGTEswWpBYQDY" target="_blank">Crested_Coua_-_Coua_huppe_0004.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1HI43MJKYEPZNGlKnIMOl9Y3cqKqFxd7M" loading="lazy" alt="Crested_Coua_-_Coua_huppe_9995.jpg">
+                            <div class="meta-label">MG - 13 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1HI43MJKYEPZNGlKnIMOl9Y3cqKqFxd7M" target="_blank">Crested_Coua_-_Coua_huppe_9995.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Verreaux's Coua</div>
+                        <div class="french-label">Coua de Verreaux</div>
+                        <div class="latin-label">(Coua verreauxi)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="Photos/Verreaux%27s_Coua.jpg" loading="lazy" alt="Verreaux's_Coua.jpg">
+                            <div class="meta-label">MG - 14 Nov 2024</div>
+                            <div class="filename"><a href="Photos/Verreaux%27s_Coua.jpg" target="_blank">Verreaux's_Coua.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="Photos/Verreaux%27s_Coua_7791.jpg" loading="lazy" alt="Verreaux's_Coua_7791.jpg">
+                            <div class="meta-label">MG - 14 Nov 2024</div>
+                            <div class="filename"><a href="Photos/Verreaux%27s_Coua_7791.jpg" target="_blank">Verreaux's_Coua_7791.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Blue Coua</div>
+                        <div class="french-label">Coua bleu</div>
+                        <div class="latin-label">(Coua caerulea)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1BH1xbBy_b7kMGP56AJT4yjMM9MQ55b-W" loading="lazy" alt="Blue_Coua_-_Coua_bleu_8849MF.jpg">
+                            <div class="meta-label">MG - 06 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1BH1xbBy_b7kMGP56AJT4yjMM9MQ55b-W" target="_blank">Blue_Coua_-_Coua_bleu_8849MF.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Olive-capped Coua</div>
+                        <div class="french-label">Coua à tête olive</div>
+                        <div class="latin-label">(Coua olivaceiceps)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1t9LV3OlIHuTqN4_vmwCNwPW4UUQIOnGz" loading="lazy" alt="Olive-capped_Coua_-_Coua_a_tete_olive_9615MF.jpg">
+                            <div class="meta-label">MG - 13 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1t9LV3OlIHuTqN4_vmwCNwPW4UUQIOnGz" target="_blank">Olive-capped_Coua_-_Coua_a_tete_olive_9615MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1ahDJrfxminXrc1rFziNSqr0TpaNK5lql" loading="lazy" alt="Olive-capped_Coua_6971.jpg">
+                            <div class="meta-label">MG - 13 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1ahDJrfxminXrc1rFziNSqr0TpaNK5lql" target="_blank">Olive-capped_Coua_6971.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1V8CeL2PZ_ep7FwQb68bMgVyryfhuTXxQ" loading="lazy" alt="Olive-capped_Coua_8796.jpg">
+                            <div class="meta-label">MG - 13 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1V8CeL2PZ_ep7FwQb68bMgVyryfhuTXxQ" target="_blank">Olive-capped_Coua_8796.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1BFq3qU9k4RJKR-N9CgRfNpKElChYx4-l" loading="lazy" alt="Olive-capped_Coua_8820.jpg">
+                            <div class="meta-label">MG - 13 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1BFq3qU9k4RJKR-N9CgRfNpKElChYx4-l" target="_blank">Olive-capped_Coua_8820.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Red-fronted Coua</div>
+                        <div class="french-label">Coua de Reynaud</div>
+                        <div class="latin-label">(Coua reynaudii)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/19aCyww8bZ9JXkK29thqElO6z_-omLIIL" loading="lazy" alt="Red-fronted_Coua_-_Coua_de_Reynaud_5632.jpg">
+                            <div class="meta-label">MG - 06 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/19aCyww8bZ9JXkK29thqElO6z_-omLIIL" target="_blank">Red-fronted_Coua_-_Coua_de_Reynaud_5632.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Coquerel's Coua</div>
+                        <div class="french-label">Coua de Coquerel</div>
+                        <div class="latin-label">(Coua coquereli)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="Photos/Coquerel%27s_Coua_-_Coua_de_Coquerel_6383.jpg" loading="lazy" alt="Coquerel's_Coua_-_Coua_de_Coquerel_6383.jpg">
+                            <div class="meta-label">MG - 12 Nov 2024</div>
+                            <div class="filename"><a href="Photos/Coquerel%27s_Coua_-_Coua_de_Coquerel_6383.jpg" target="_blank">Coquerel's_Coua_-_Coua_de_Coquerel_6383.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Running Coua</div>
+                        <div class="french-label">Coua coureur</div>
+                        <div class="latin-label">(Coua cursor)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1iNq8ORJq4CMuCWzGHorm-3lWu1HhrmQ7" loading="lazy" alt="Running_Coua_-_Coua_coureur_6895.jpg">
+                            <div class="meta-label">MG - 13 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1iNq8ORJq4CMuCWzGHorm-3lWu1HhrmQ7" target="_blank">Running_Coua_-_Coua_coureur_6895.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Giant Coua</div>
+                        <div class="french-label">Coua géant</div>
+                        <div class="latin-label">(Coua gigas)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1rgWUSCY0r3yOjQ31mW0hdrhz4cAXkvhQ" loading="lazy" alt="Giant_Coua_-_Coua_geant_6295.jpg">
+                            <div class="meta-label">MG - 12 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1rgWUSCY0r3yOjQ31mW0hdrhz4cAXkvhQ" target="_blank">Giant_Coua_-_Coua_geant_6295.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1SLr0wwEjhavs9_eKnZ1WzZ5Jhi5it_tL" loading="lazy" alt="Giant_Coua_-_Coua_geant_6302.jpg">
+                            <div class="meta-label">MG - 12 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1SLr0wwEjhavs9_eKnZ1WzZ5Jhi5it_tL" target="_blank">Giant_Coua_-_Coua_geant_6302.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Red-breasted Coua</div>
+                        <div class="french-label">Coua de Serrès</div>
+                        <div class="latin-label">(Coua serriana)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1gC8XsaMq6P_ggBnAPgmnD-sy3hWiGWC5" loading="lazy" alt="Red-breasted_Coua_-_Coua_de_Serres_5615.jpg">
+                            <div class="meta-label">MG - 07 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1gC8XsaMq6P_ggBnAPgmnD-sy3hWiGWC5" target="_blank">Red-breasted_Coua_-_Coua_de_Serres_5615.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Coppery-tailed Coucal</div>
+                        <div class="french-label">Coucal des papyrus</div>
+                        <div class="latin-label">(Centropus cupreicaudus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1DST8Rmt45CE5ZiSY3IkUF405sa6eL9xy" loading="lazy" alt="Coppery-tailed_Coucal_6450.jpg">
+                            <div class="meta-label">BW - 08 Oct 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1DST8Rmt45CE5ZiSY3IkUF405sa6eL9xy" target="_blank">Coppery-tailed_Coucal_6450.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">White-browed Coucal</div>
+                        <div class="french-label">Coucal à sourcils blancs</div>
+                        <div class="latin-label">(Centropus superciliosus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1TvPm3tFSxtZQzmw5KMm3i55qN3ZG6Tdr" loading="lazy" alt="White-browed_Coucal_262.jpg">
+                            <div class="meta-label">Tanzania - 16 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1TvPm3tFSxtZQzmw5KMm3i55qN3ZG6Tdr" target="_blank">White-browed_Coucal_262.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Malagasy Coucal</div>
+                        <div class="french-label">Coucal toulou</div>
+                        <div class="latin-label">(Centropus toulou)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Cw5zTXohdfcJ2wxN0rp9Omor8toUuKw6" loading="lazy" alt="Malagasy_Coucal_-_Coucal_toulou_9453MF.jpg">
+                            <div class="meta-label">MG - 07 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Cw5zTXohdfcJ2wxN0rp9Omor8toUuKw6" target="_blank">Malagasy_Coucal_-_Coucal_toulou_9453MF.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Common Squirrel-Cuckoo</div>
+                        <div class="french-label">Piaye écureuil</div>
+                        <div class="latin-label">(Piaya cayana)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Ru49Qg7bg23QnrmhdEDKKWqjNgX8blLb" loading="lazy" alt="Common_Squirrel-Cuckoo-2.jpg">
+                            <div class="meta-label">Belize - 29 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Ru49Qg7bg23QnrmhdEDKKWqjNgX8blLb" target="_blank">Common_Squirrel-Cuckoo-2.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1IZ3c7tlpr0iBd8Pb-i8NmUyWLavB5M-s" loading="lazy" alt="Common_Squirrel-Cuckoo.jpg">
+                            <div class="meta-label">Belize - 29 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1IZ3c7tlpr0iBd8Pb-i8NmUyWLavB5M-s" target="_blank">Common_Squirrel-Cuckoo.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Vp0Wb0FJ8N49xM6gBFv2y9oqzYMAKAIf" loading="lazy" alt="Common_Squirrel-Cuckoo_2.jpg">
+                            <div class="meta-label">Belize - 29 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Vp0Wb0FJ8N49xM6gBFv2y9oqzYMAKAIf" target="_blank">Common_Squirrel-Cuckoo_2.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1stD8Dsl1E0r3hYE-Sbu12Vulujrzsdlp" loading="lazy" alt="Common_Squirrel-Cuckoo_426.jpg">
+                            <div class="meta-label">Belize - 29 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1stD8Dsl1E0r3hYE-Sbu12Vulujrzsdlp" target="_blank">Common_Squirrel-Cuckoo_426.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1XTpVHpdWZyrN0XCfiDu38HY0xRsqSDYY" loading="lazy" alt="Common_Squirrel-Cuckoo_5859.jpg">
+                            <div class="meta-label">Belize - 29 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1XTpVHpdWZyrN0XCfiDu38HY0xRsqSDYY" target="_blank">Common_Squirrel-Cuckoo_5859.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1nnV6AROP4vCYS749EXUjIxkGtKdCVgiO" loading="lazy" alt="Common_Squirrel-Cuckoo_6708.jpg">
+                            <div class="meta-label">Belize - 29 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1nnV6AROP4vCYS749EXUjIxkGtKdCVgiO" target="_blank">Common_Squirrel-Cuckoo_6708.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1oc92qzPG-e3R4ALHTXz40i-R1xLQ8Jdc" loading="lazy" alt="Common_Squirrel-Cuckoo_MF3920.jpg">
+                            <div class="meta-label">Belize - 29 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1oc92qzPG-e3R4ALHTXz40i-R1xLQ8Jdc" target="_blank">Common_Squirrel-Cuckoo_MF3920.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1TxZUAZzuhCBlskxb8DtYXr8mAiyJsjMW" loading="lazy" alt="Common_Squirrel-Cuckoo_MF4957.jpg">
+                            <div class="meta-label">Belize - 29 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1TxZUAZzuhCBlskxb8DtYXr8mAiyJsjMW" target="_blank">Common_Squirrel-Cuckoo_MF4957.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Yellow-billed Cuckoo</div>
+                        <div class="french-label">Coulicou à bec jaune</div>
+                        <div class="latin-label">(Coccyzus americanus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1CNFyP9qOUxlJVS_GSJE5hMnIXikgMgE_" loading="lazy" alt="Yellow-billed_Cuckoo_6362.jpg">
+                            <div class="meta-label">Canada - 12 May 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1CNFyP9qOUxlJVS_GSJE5hMnIXikgMgE_" target="_blank">Yellow-billed_Cuckoo_6362.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1TkIY-EShoqRgkHteLSpyi5N8t-krboPP" loading="lazy" alt="Yellow-billed_Cuckoo_7027.jpg">
+                            <div class="meta-label">Canada - 12 May 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1TkIY-EShoqRgkHteLSpyi5N8t-krboPP" target="_blank">Yellow-billed_Cuckoo_7027.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Mangrove Cuckoo</div>
+                        <div class="french-label">Coulicou manioc</div>
+                        <div class="latin-label">(Coccyzus minor)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1uJ09B2PgR--VGKxAtGcWZwPNsXIoX5wx" loading="lazy" alt="Mangrove_Cuckoo-Mangrove_Cuckoo_5984.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1uJ09B2PgR--VGKxAtGcWZwPNsXIoX5wx" target="_blank">Mangrove_Cuckoo-Mangrove_Cuckoo_5984.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Shining Bronze-Cuckoo</div>
+                        <div class="french-label">Coucou éclatant</div>
+                        <div class="latin-label">(Chalcites lucidus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1ivwczJrXsNJS4kMG8wq4Da9YZiimFgII" loading="lazy" alt="Shining_Bronze-Cuckoo_2583MF.jpg">
+                            <div class="meta-label">Australia - 10 Nov 2025</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1ivwczJrXsNJS4kMG8wq4Da9YZiimFgII" target="_blank">Shining_Bronze-Cuckoo_2583MF.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Pallid Cuckoo</div>
+                        <div class="french-label">Coucou pâle</div>
+                        <div class="latin-label">(Heteroscenes pallidus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/14k8_EGgNgGG-fbpjrncjeghqmLT-W10C" loading="lazy" alt="Pallid_Cuckoo_0124.jpg">
+                            <div class="meta-label">Australia - 19 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/14k8_EGgNgGG-fbpjrncjeghqmLT-W10C" target="_blank">Pallid_Cuckoo_0124.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Fan-tailed Cuckoo</div>
+                        <div class="french-label">Coucou à éventail</div>
+                        <div class="latin-label">(Cacomantis flabelliformis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1PaUJERbtBuVY30v6cW-nfw_RylRqHTNB" loading="lazy" alt="Fan-tailed_Cuckoo_3214MF.jpg">
+                            <div class="meta-label">Australia - 13 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1PaUJERbtBuVY30v6cW-nfw_RylRqHTNB" target="_blank">Fan-tailed_Cuckoo_3214MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1OnxXkRkFh1lod60v29fO_LT3iMcYF3w6" loading="lazy" alt="Fan-tailed_Cuckoo_3695MF.jpg">
+                            <div class="meta-label">Australia - 13 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1OnxXkRkFh1lod60v29fO_LT3iMcYF3w6" target="_blank">Fan-tailed_Cuckoo_3695MF.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Madagascar Cuckoo</div>
+                        <div class="french-label">Coucou de Madagascar</div>
+                        <div class="latin-label">(Cuculus rochii)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1UBfvgjKn2Kdg7eMXMhL0uJxcpa6lRFeD" loading="lazy" alt="Madagascar_Cuckoo.jpg">
+                            <div class="meta-label">MG - 07 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1UBfvgjKn2Kdg7eMXMhL0uJxcpa6lRFeD" target="_blank">Madagascar_Cuckoo.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1D3MoWIVpH8q0YkK7yOnlQR4anG_MH_yW" loading="lazy" alt="Madagascar_Cuckoo_-_Coucou_de_Madagascar_5402.jpg">
+                            <div class="meta-label">MG - 07 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1D3MoWIVpH8q0YkK7yOnlQR4anG_MH_yW" target="_blank">Madagascar_Cuckoo_-_Coucou_de_Madagascar_5402.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1TeQ82EBI_-eKejepICxpilfokz9sk9gE" loading="lazy" alt="Madagascar_Cuckoo_Ry.jpg">
+                            <div class="meta-label">MG - 07 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1TeQ82EBI_-eKejepICxpilfokz9sk9gE" target="_blank">Madagascar_Cuckoo_Ry.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div></div></body></html>

@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photo Index</title>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; background: #121212; color: white; margin: 0; padding: 20px; padding-top: 80px; }
+        .family-list { display: flex; flex-direction: column; gap: 60px; max-width: 1800px; margin: 0 auto; }
+        
+        .family-card { background: #1e1e1e; border-radius: 24px; padding: 40px; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .family-header { margin-bottom: 30px; border-bottom: 2px solid #555; padding-bottom: 20px; }
+        .family-name { font-size: 36px; font-weight: 800; color: #4a9eff; text-transform: uppercase; letter-spacing: 2px; }
+        .family-order-label { font-size: 18px; opacity: 0.6; color: #fff; margin-top: 5px; font-weight: 500; }
+        
+        .species-list { display: flex; flex-direction: column; gap: 30px; }
+        .species-card { background: #2a2a2a; border-radius: 16px; padding: 20px; border: 1px solid #444; }
+        .species-header { margin-bottom: 15px; border-bottom: 1px solid #444; padding-bottom: 10px; }
+        .label { font-size: 24px; font-weight: 700; color: #fff; }
+        .french-label { font-size: 18px; opacity: 0.8; color: #ddd; }
+        .latin-label { font-size: 16px; opacity: 0.7; font-style: italic; color: #bbb; }
+        
+        .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
+        .photo-card { background: #333; border-radius: 10px; overflow: hidden; padding: 10px; display: flex; flex-direction: column; align-items: center; transition: transform 0.2s, background 0.2s; }
+        .photo-card:hover { transform: scale(1.02); background: #3d3d3d; }
+        
+        img { max-width: 100%; height: auto; border-radius: 6px; object-fit: contain; }
+        .meta-label { font-size: 11px; opacity: 0.7; align-self: flex-start; margin-top: 8px; color: #fff; }
+        .filename { font-size: 9px; opacity: 0.4; margin-top: 2px; word-break: break-all; align-self: flex-start; }
+        .filename a { color: #4a9eff; text-decoration: none; transition: color 0.2s; }
+        .filename a:hover { text-decoration: underline; }
+        
+        /* Intro Section Styles */
+        .intro-section { max-width: 1200px; margin: 0 auto 80px; padding: 60px; background: #1e1e1e; border-radius: 32px; border: 1px solid #333; box-shadow: 0 20px 50px rgba(0,0,0,0.6); line-height: 1.8; }
+        .intro-title { font-size: 48px; font-weight: 900; margin-bottom: 40px; color: #4a9eff; line-height: 1.2; text-align: center; }
+        .intro-text { font-size: 20px; opacity: 0.9; margin-bottom: 30px; }
+        .intro-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 30px; margin-top: 50px; border-top: 1px solid #444; padding-top: 40px; }
+        .stat-item { text-align: center; }
+        .stat-value { font-size: 36px; font-weight: 800; color: #4a9eff; display: block; }
+        .stat-label { font-size: 14px; opacity: 0.6; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* Mode Selector Styles */
+        .mode-selector { position: fixed; top: 0; left: 0; right: 0; background: rgba(30, 30, 30, 0.95); backdrop-filter: blur(10px); padding: 15px 40px; border-bottom: 1px solid #333; z-index: 1000; display: flex; justify-content: flex-end; align-items: center; gap: 20px; }
+        .mode-button { background: #333; border: 1px solid #444; color: white; padding: 8px 20px; border-radius: 20px; cursor: pointer; font-weight: 600; transition: all 0.2s; }
+        .mode-button.active { background: #4a9eff; border-color: #4a9eff; }
+        .mode-label { font-size: 14px; opacity: 0.6; font-weight: 600; text-transform: uppercase; }
+
+        /* Restricted Mode Styles */
+        body.mode-public .filename { display: none; }
+        body.mode-public .photo-card:hover { transform: none; background: #333; }
+
+        /* Modal Styles */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; justify-content: center; align-items: center; }
+        .modal { background: #1e1e1e; padding: 40px; border-radius: 24px; border: 1px solid #333; width: 400px; box-shadow: 0 20px 50px rgba(0,0,0,0.8); }
+        .modal h2 { margin-top: 0; color: #4a9eff; }
+        .modal input { width: 100%; padding: 12px; margin: 20px 0; background: #2a2a2a; border: 1px solid #444; color: white; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        .modal-buttons { display: flex; justify-content: flex-end; gap: 15px; }
+        .modal-buttons button { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; }
+        .btn-cancel { background: #333; color: white; }
+        .btn-submit { background: #4a9eff; color: white; }
+    </style>
+</head>
+<body class="mode-public">
+    <div class="mode-selector">
+        <span class="mode-label">View Mode:</span>
+        <button id="btn-public" class="mode-button active" onclick="setMode('PUBLIC')">PUBLIC</button>
+        <button id="btn-user" class="mode-button" onclick="requestUserMode()">USER</button>
+    </div>
+
+    <div id="password-modal" class="modal-overlay">
+        <div class="modal">
+            <h2>Enter Password</h2>
+            <p>Please enter the password to activate USER mode.</p>
+            <input type="password" id="password-input" placeholder="Password">
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+                <button class="btn-submit" onclick="submitPassword()">Submit</button>
+            </div>
+        </div>
+    </div>
+
+    
+    <div class="family-list">
+        <div class="family-card">
+            <div class="family-header">
+                <div class="family-name">Megapodes</div>
+                <div class="family-order-label">Megapodiidae / Galliformes</div>
+            </div>
+            <div class="species-list">
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Australian Brushturkey</div>
+                        <div class="french-label">Talégalle de Latham</div>
+                        <div class="latin-label">(Alectura lathami)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1LJvH_Cta-U2nnuZme1DGrTtxd895HAkm" loading="lazy" alt="Australian_Brushturkey_7950.jpg">
+                            <div class="meta-label">Australia - 09 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1LJvH_Cta-U2nnuZme1DGrTtxd895HAkm" target="_blank">Australian_Brushturkey_7950.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="family-card">
+            <div class="family-header">
+                <div class="family-name">Guans, Chachalacas, and Curassows</div>
+                <div class="family-order-label">"Cracidae " / Galliformes</div>
+            </div>
+            <div class="species-list">
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Sickle-winged Guan</div>
+                        <div class="french-label">Pénélope de Goudot</div>
+                        <div class="latin-label">(Chamaepetes goudotii)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/10nvBzfebbmHZb9qJOwFvh3J5RRkCl4gW" loading="lazy" alt="Sickle-winged_Guan_6042.jpg">
+                            <div class="meta-label">Colombia - 19 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/10nvBzfebbmHZb9qJOwFvh3J5RRkCl4gW" target="_blank">Sickle-winged_Guan_6042.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Iz1ntVZaB1JK3O7e6shlXr5Zcnng6Yjz" loading="lazy" alt="Sickle-winged_Guan_6372.jpg">
+                            <div class="meta-label">Colombia - 19 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Iz1ntVZaB1JK3O7e6shlXr5Zcnng6Yjz" target="_blank">Sickle-winged_Guan_6372.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Band-tailed Guan</div>
+                        <div class="french-label">Pénélope à queue barrée</div>
+                        <div class="latin-label">(Penelope argyrotis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/18xIYkS-GJ_Fv7WZf7PN8tXYwp2Qj1-4K" loading="lazy" alt="Band-tailed_Guan_4613.jpg">
+                            <div class="meta-label">Colombia - 08 Apr 2025</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/18xIYkS-GJ_Fv7WZf7PN8tXYwp2Qj1-4K" target="_blank">Band-tailed_Guan_4613.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1KWuLqp5o1gN2Av-bXPB0orgMglf33Mqm" loading="lazy" alt="Band-tailed_Guan_4650.jpg">
+                            <div class="meta-label">Colombia - 08 Apr 2025</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1KWuLqp5o1gN2Av-bXPB0orgMglf33Mqm" target="_blank">Band-tailed_Guan_4650.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Crested Guan</div>
+                        <div class="french-label">Pénélope panachée</div>
+                        <div class="latin-label">(Penelope purpurascens)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1PIt72Ujw37RdSef9M-IUqiaoBQJ0AU9N" loading="lazy" alt="Crested_Guan_5364.jpg">
+                            <div class="meta-label">CR - 08 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1PIt72Ujw37RdSef9M-IUqiaoBQJ0AU9N" target="_blank">Crested_Guan_5364.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Xa_Y7OYFBji8ZHs_7wNMDAwozaPy8YDj" loading="lazy" alt="Crested_Guan_6644.jpg">
+                            <div class="meta-label">CR - 08 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Xa_Y7OYFBji8ZHs_7wNMDAwozaPy8YDj" target="_blank">Crested_Guan_6644.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1WgV_gr8J8eIWtHPz2GW3bJU7o_jGk0nb" loading="lazy" alt="Crested_Guan_MF4789.jpg">
+                            <div class="meta-label">CR - 08 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1WgV_gr8J8eIWtHPz2GW3bJU7o_jGk0nb" target="_blank">Crested_Guan_MF4789.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Great Curassow</div>
+                        <div class="french-label">Grand Hocco</div>
+                        <div class="latin-label">(Crax rubra)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1b4-TypkpBoNT_NN2tLx-QIXQQsD92rj9" loading="lazy" alt="Great_Curassow_3795MF.jpg">
+                            <div class="meta-label">CR - 10 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1b4-TypkpBoNT_NN2tLx-QIXQQsD92rj9" target="_blank">Great_Curassow_3795MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1kiE2GcZBSBr9xhm6C_qL5md9W8oVJe6U" loading="lazy" alt="Great_Curassow_6586.jpg">
+                            <div class="meta-label">CR - 10 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1kiE2GcZBSBr9xhm6C_qL5md9W8oVJe6U" target="_blank">Great_Curassow_6586.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/17tzLveH5_EsfYuEvislgGBwrS0KwozeX" loading="lazy" alt="Great_Curassow_6595.jpg">
+                            <div class="meta-label">CR - 10 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/17tzLveH5_EsfYuEvislgGBwrS0KwozeX" target="_blank">Great_Curassow_6595.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Plain Chachalaca</div>
+                        <div class="french-label">Ortalide chacamel</div>
+                        <div class="latin-label">(Ortalis vetula)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1hV38oPLpmNRCuO3F4N1jsQsfVUQMUyIq" loading="lazy" alt="Plain_Chachalaca_418.jpg">
+                            <div class="meta-label">Belize - 29 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1hV38oPLpmNRCuO3F4N1jsQsfVUQMUyIq" target="_blank">Plain_Chachalaca_418.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Gray-headed Chachalaca</div>
+                        <div class="french-label">Ortalide à tête grise</div>
+                        <div class="latin-label">(Ortalis cinereiceps)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1YxHYJZ8mjp6j2IAO4O-Sd1yZ00YEN82X" loading="lazy" alt="Gray-headed_Chachalaca_4700.jpg">
+                            <div class="meta-label">Panama - 12 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1YxHYJZ8mjp6j2IAO4O-Sd1yZ00YEN82X" target="_blank">Gray-headed_Chachalaca_4700.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1-AaE5uoFfXlWOnNcyEFdenkxn0Ed7S8d" loading="lazy" alt="Gray-headed_Chachalaca_4831.jpg">
+                            <div class="meta-label">Panama - 12 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1-AaE5uoFfXlWOnNcyEFdenkxn0Ed7S8d" target="_blank">Gray-headed_Chachalaca_4831.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1CqoUTQR1On8XAum8D-7WFNtzsprTNVwe" loading="lazy" alt="Gray-headed_Chachalaca_4838.jpg">
+                            <div class="meta-label">Panama - 12 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1CqoUTQR1On8XAum8D-7WFNtzsprTNVwe" target="_blank">Gray-headed_Chachalaca_4838.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1pqkh8xsQbypiVEMX-eixjaoB-2FxypCl" loading="lazy" alt="Gray-headed_Chachalaca_MF5294.jpg">
+                            <div class="meta-label">Panama - 12 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1pqkh8xsQbypiVEMX-eixjaoB-2FxypCl" target="_blank">Gray-headed_Chachalaca_MF5294.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Chestnut-winged Chachalaca</div>
+                        <div class="french-label">Ortalide babillarde</div>
+                        <div class="latin-label">(Ortalis garrula)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/15NU7qUfi_SpsbhcyrreFVXX6Nbqd1Ove" loading="lazy" alt="Chestnut-winged_Chachalaca_21193.jpg">
+                            <div class="meta-label">Colombia - 02 Apr 2025</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/15NU7qUfi_SpsbhcyrreFVXX6Nbqd1Ove" target="_blank">Chestnut-winged_Chachalaca_21193.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Rufous-vented Chachalaca</div>
+                        <div class="french-label">Ortalide à ventre roux</div>
+                        <div class="latin-label">(Ortalis ruficauda)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Z4tO-LHIUHRi9EdTn7d6AR2DtWw6Yka-" loading="lazy" alt="Rufous-vented_Chachalaca.jpg">
+                            <div class="meta-label">TT - 12 Apr 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Z4tO-LHIUHRi9EdTn7d6AR2DtWw6Yka-" target="_blank">Rufous-vented_Chachalaca.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1OlaO8RCEj47y_V4oQWeqgzSJi6M1z8jY" loading="lazy" alt="Rufous-vented_Chachalaca_6378.jpg">
+                            <div class="meta-label">TT - 12 Apr 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1OlaO8RCEj47y_V4oQWeqgzSJi6M1z8jY" target="_blank">Rufous-vented_Chachalaca_6378.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1HjfyOQVVqmAuLMIoTIsWtTN7VXxL_lQQ" loading="lazy" alt="Rufous-vented_Chachalaca_6449.jpg">
+                            <div class="meta-label">TT - 12 Apr 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1HjfyOQVVqmAuLMIoTIsWtTN7VXxL_lQQ" target="_blank">Rufous-vented_Chachalaca_6449.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1uN2v6reO9PZ-JYmYCgvbfGluMIvf7scC" loading="lazy" alt="Rufous-vented_Chachalaca_6450.jpg">
+                            <div class="meta-label">TT - 12 Apr 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1uN2v6reO9PZ-JYmYCgvbfGluMIvf7scC" target="_blank">Rufous-vented_Chachalaca_6450.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="family-card">
+            <div class="family-header">
+                <div class="family-name">Guineafowl</div>
+                <div class="family-order-label">Numididae / Galliformes</div>
+            </div>
+            <div class="species-list">
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Helmeted Guineafowl</div>
+                        <div class="french-label">Pintade de Numidie</div>
+                        <div class="latin-label">(Numida meleagris)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1bXJ2xcc4zU8m3_f3thudp1BFrhtXxHWF" loading="lazy" alt="Helmeted_Guineafowl_103.jpg">
+                            <div class="meta-label">Tanzania - 09 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1bXJ2xcc4zU8m3_f3thudp1BFrhtXxHWF" target="_blank">Helmeted_Guineafowl_103.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1bzGi6loLnZtO5ld9viKphpzA9FYyS2p1" loading="lazy" alt="Helmeted_Guineafowl_20.jpg">
+                            <div class="meta-label">Tanzania - 09 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1bzGi6loLnZtO5ld9viKphpzA9FYyS2p1" target="_blank">Helmeted_Guineafowl_20.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1l5nXCXhnOYpscw32z3NYE1D_7pNQC_0S" loading="lazy" alt="Helmeted_Guineafowl_254.jpg">
+                            <div class="meta-label">Tanzania - 09 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1l5nXCXhnOYpscw32z3NYE1D_7pNQC_0S" target="_blank">Helmeted_Guineafowl_254.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Z6qrDtdMFrQ6CXhpNnw0AJ35Yc4SRgib" loading="lazy" alt="Helmeted_Guineafowl_7825.jpg">
+                            <div class="meta-label">Tanzania - 09 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Z6qrDtdMFrQ6CXhpNnw0AJ35Yc4SRgib" target="_blank">Helmeted_Guineafowl_7825.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="family-card">
+            <div class="family-header">
+                <div class="family-name">New World Quail</div>
+                <div class="family-order-label">Odontophoridae / Galliformes</div>
+            </div>
+            <div class="species-list">
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Rufous-fronted Wood-Quail</div>
+                        <div class="french-label">Tocro à front roux</div>
+                        <div class="latin-label">(Odontophorus erythrops)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1BVSCtXJ9SHvNzEvzuWm9_dpq6-GZadG7" loading="lazy" alt="Rufous-fronted_Wood-Quail_6402.jpg">
+                            <div class="meta-label">Ecuador - 10 Apr 2019</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1BVSCtXJ9SHvNzEvzuWm9_dpq6-GZadG7" target="_blank">Rufous-fronted_Wood-Quail_6402.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Spotted Wood-Quail</div>
+                        <div class="french-label">Tocro tacheté</div>
+                        <div class="latin-label">(Odontophorus guttatus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1HooCWcQvphgp8gKdpD2w2NwLN9sxnTJb" loading="lazy" alt="Spotted_Wood-Quail_2016MF.jpg">
+                            <div class="meta-label">CR - 05 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1HooCWcQvphgp8gKdpD2w2NwLN9sxnTJb" target="_blank">Spotted_Wood-Quail_2016MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Xl0UKIOdOrGgk6IZoLdO0IiGtL517Z81" loading="lazy" alt="Spotted_Wood-Quail_3659.jpg">
+                            <div class="meta-label">CR - 05 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Xl0UKIOdOrGgk6IZoLdO0IiGtL517Z81" target="_blank">Spotted_Wood-Quail_3659.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1nkwMYa_I-KjxBzIPDRrbaELMmTWQYjyh" loading="lazy" alt="Spotted_Wood-Quail_MF2878.jpg">
+                            <div class="meta-label">CR - 05 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1nkwMYa_I-KjxBzIPDRrbaELMmTWQYjyh" target="_blank">Spotted_Wood-Quail_MF2878.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/16W3eFzzhCVbikFxcfNBC8elTGXhL1Qfn" loading="lazy" alt="Spotted_Wood-Quail_MF2895.jpg">
+                            <div class="meta-label">CR - 05 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/16W3eFzzhCVbikFxcfNBC8elTGXhL1Qfn" target="_blank">Spotted_Wood-Quail_MF2895.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="family-card">
+            <div class="family-header">
+                <div class="family-name">Pheasants, Grouse, and Allies</div>
+                <div class="family-order-label">"Phasianidae " / Galliformes</div>
+            </div>
+            <div class="species-list">
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Wild Turkey</div>
+                        <div class="french-label">Dindon sauvage</div>
+                        <div class="latin-label">(Meleagris gallopavo)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1a3Zfcc-oeFy3IJ-gpGh6epO5h0fXv-Hp" loading="lazy" alt="Wild_Turkey_1789.jpg">
+                            <div class="meta-label">Canada - 02 May 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1a3Zfcc-oeFy3IJ-gpGh6epO5h0fXv-Hp" target="_blank">Wild_Turkey_1789.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1_a1gpdt0YIIDIfn1qbEA2ULi9-mXMGdh" loading="lazy" alt="Wild_Turkey_2488.jpg">
+                            <div class="meta-label">Canada - 02 May 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1_a1gpdt0YIIDIfn1qbEA2ULi9-mXMGdh" target="_blank">Wild_Turkey_2488.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1eqLpKZgrSP2tHXo9n0If-RFGqMDbROj-" loading="lazy" alt="Wild_Turkey_7693MF.jpg">
+                            <div class="meta-label">Canada - 02 May 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1eqLpKZgrSP2tHXo9n0If-RFGqMDbROj-" target="_blank">Wild_Turkey_7693MF.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Ruffed Grouse</div>
+                        <div class="french-label">Gélinotte huppée</div>
+                        <div class="latin-label">(Bonasa umbellus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/10e9TLZLtbOdBp2PzPp9Af7nXEW_Lw6_p" loading="lazy" alt="Ruffed_Grouse_9015.jpg">
+                            <div class="meta-label">Canada - 25 May 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/10e9TLZLtbOdBp2PzPp9Af7nXEW_Lw6_p" target="_blank">Ruffed_Grouse_9015.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1yytRkmtQrdwCCASxyfpVEWF7dEMvd6HV" loading="lazy" alt="Ruffed_grouse_7270MF.jpg">
+                            <div class="meta-label">Canada - 25 May 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1yytRkmtQrdwCCASxyfpVEWF7dEMvd6HV" target="_blank">Ruffed_grouse_7270MF.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Willow Ptarmigan</div>
+                        <div class="french-label">Lagopède des saules</div>
+                        <div class="latin-label">(Lagopus lagopus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1E_F4liAxrH8C-98TSUHrqlguaHPlpusw" loading="lazy" alt="Willow_Ptarmigan_2507.jpg">
+                            <div class="meta-label">Canada - 01 Jul 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1E_F4liAxrH8C-98TSUHrqlguaHPlpusw" target="_blank">Willow_Ptarmigan_2507.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1K3-c8dqFYXmEVzY3iX-ds0Qg86_Ks8Pa" loading="lazy" alt="Willow_Ptarmigan_3121.jpg">
+                            <div class="meta-label">Canada - 01 Jul 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1K3-c8dqFYXmEVzY3iX-ds0Qg86_Ks8Pa" target="_blank">Willow_Ptarmigan_3121.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Spruce Grouse</div>
+                        <div class="french-label">Tétras du Canada</div>
+                        <div class="latin-label">(Canachites canadensis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1YtJgiKJwC0HKU5tST5QpOQIWxtMuzLbB" loading="lazy" alt="Spruce_grouse-2.jpg">
+                            <div class="meta-label">Canada - 27 Sep 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1YtJgiKJwC0HKU5tST5QpOQIWxtMuzLbB" target="_blank">Spruce_grouse-2.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1bpum1EeWXc_-Wpljpm9txBp3bhxuRXEE" loading="lazy" alt="Spruce_grouse-male.jpg">
+                            <div class="meta-label">Canada - 27 Sep 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1bpum1EeWXc_-Wpljpm9txBp3bhxuRXEE" target="_blank">Spruce_grouse-male.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1w9EC6vBZJx0z5UR7EeifcTWr35PxLYSl" loading="lazy" alt="Spruce_grouse.jpg">
+                            <div class="meta-label">Canada - 27 Sep 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1w9EC6vBZJx0z5UR7EeifcTWr35PxLYSl" target="_blank">Spruce_grouse.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Kalij Pheasant</div>
+                        <div class="french-label">Faisan leucomèle</div>
+                        <div class="latin-label">(Lophura leucomelanos)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/13elBHEuE_6Al40EUpJsJ7cMgjOVOd_T_" loading="lazy" alt="Kalij_Pheasant_0625.jpg">
+                            <div class="meta-label">USA - 31 Oct 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/13elBHEuE_6Al40EUpJsJ7cMgjOVOd_T_" target="_blank">Kalij_Pheasant_0625.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/159Jhwlwvefh-pIlUxqVvWMXEj9jzm9Fa" loading="lazy" alt="Kalij_Pheasant_0625A.jpg">
+                            <div class="meta-label">USA - 31 Oct 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/159Jhwlwvefh-pIlUxqVvWMXEj9jzm9Fa" target="_blank">Kalij_Pheasant_0625A.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Crested Francolin</div>
+                        <div class="french-label">Francolin huppé</div>
+                        <div class="latin-label">(Ortygornis sephaena)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1QFbz_vmM6KDrUr6qjgIGAZYTwDVkj_y6" loading="lazy" alt="Crested_Francolin_218.jpg">
+                            <div class="meta-label">Tanzania - 16 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1QFbz_vmM6KDrUr6qjgIGAZYTwDVkj_y6" target="_blank">Crested_Francolin_218.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/14Qxskovlws2qnSeB5Ly94P5dcS3yvsNj" loading="lazy" alt="Crested_Francolin_8914.jpg">
+                            <div class="meta-label">Tanzania - 16 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/14Qxskovlws2qnSeB5Ly94P5dcS3yvsNj" target="_blank">Crested_Francolin_8914.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Gray Francolin</div>
+                        <div class="french-label">Francolin gris</div>
+                        <div class="latin-label">(Ortygornis pondicerianus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1cM7WU0bc-OCjCVT8PTZaXWVO_e5_BgnU" loading="lazy" alt="Gray_Francolin_0350.jpg">
+                            <div class="meta-label">USA - 28 Oct 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1cM7WU0bc-OCjCVT8PTZaXWVO_e5_BgnU" target="_blank">Gray_Francolin_0350.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Black Francolin</div>
+                        <div class="french-label">Francolin noir</div>
+                        <div class="latin-label">(Francolinus francolinus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1CYik3lMhFJ72Ha08yq41mI3fdDeZF2o8" loading="lazy" alt="Black_Francolin_0753.jpg">
+                            <div class="meta-label">USA - 01 Nov 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1CYik3lMhFJ72Ha08yq41mI3fdDeZF2o8" target="_blank">Black_Francolin_0753.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Coqui Francolin</div>
+                        <div class="french-label">Francolin coqui</div>
+                        <div class="latin-label">(Campocolinus coqui)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1UFxEI6Wzgrqa2TXbroDVBYQ6BhoJp_3h" loading="lazy" alt="Coqui_Francolin_209.jpg">
+                            <div class="meta-label">Tanzania - 12 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1UFxEI6Wzgrqa2TXbroDVBYQ6BhoJp_3h" target="_blank">Coqui_Francolin_209.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Chukar</div>
+                        <div class="french-label">Perdrix choukar</div>
+                        <div class="latin-label">(Alectoris chukar)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1MVrWHoEkKRK0fICqazr9bGcWwYUzdC6S" loading="lazy" alt="Chukar_1486.jpg">
+                            <div class="meta-label">USA - 09 Nov 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1MVrWHoEkKRK0fICqazr9bGcWwYUzdC6S" target="_blank">Chukar_1486.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Erckel's Spurfowl</div>
+                        <div class="french-label">Francolin d'Erckel</div>
+                        <div class="latin-label">(Pternistis erckelii)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="Photos/Erckel%27s_Spurfowl_0702.jpg" loading="lazy" alt="Erckel's_Spurfowl_0702.jpg">
+                            <div class="meta-label">USA - 31 Oct 2018</div>
+                            <div class="filename"><a href="Photos/Erckel%27s_Spurfowl_0702.jpg" target="_blank">Erckel's_Spurfowl_0702.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Red-billed Spurfowl</div>
+                        <div class="french-label">Francolin à bec rouge</div>
+                        <div class="latin-label">(Pternistis adspersus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1XuKIkh9Pq3MstIHKGC0INSbNGQb09-Ox" loading="lazy" alt="Red-billed_Spurfowl_8684.jpg">
+                            <div class="meta-label">BW - 09 Oct 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1XuKIkh9Pq3MstIHKGC0INSbNGQb09-Ox" target="_blank">Red-billed_Spurfowl_8684.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Hildebrandt's Spurfowl</div>
+                        <div class="french-label">Francolin de Hildebrandt</div>
+                        <div class="latin-label">(Pternistis hildebrandti)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="Photos/Hildebrandt%27s_Spurfowl_293.jpg" loading="lazy" alt="Hildebrandt's_Spurfowl_293.jpg">
+                            <div class="meta-label">Tanzania - 09 Aug 2005</div>
+                            <div class="filename"><a href="Photos/Hildebrandt%27s_Spurfowl_293.jpg" target="_blank">Hildebrandt's_Spurfowl_293.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Swainson's Spurfowl</div>
+                        <div class="french-label">Francolin de Swainson</div>
+                        <div class="latin-label">(Pternistis swainsonii)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="Photos/Swainson%27s_Spurfowl_9345.jpg" loading="lazy" alt="Swainson's_Spurfowl_9345.jpg">
+                            <div class="meta-label">South Africa - 25 Sep 2014</div>
+                            <div class="filename"><a href="Photos/Swainson%27s_Spurfowl_9345.jpg" target="_blank">Swainson's_Spurfowl_9345.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Yellow-necked Spurfowl</div>
+                        <div class="french-label">Francolin à cou jaune</div>
+                        <div class="latin-label">(Pternistis leucoscepus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1J0q-MaZvLpNeMAFHPnzYi9f-kocsqeFx" loading="lazy" alt="Yellow-necked_Spurfowl_325.jpg">
+                            <div class="meta-label">Tanzania - 16 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1J0q-MaZvLpNeMAFHPnzYi9f-kocsqeFx" target="_blank">Yellow-necked_Spurfowl_325.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Red-necked Spurfowl</div>
+                        <div class="french-label">Francolin à gorge rouge</div>
+                        <div class="latin-label">(Pternistis afer)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Y3_kh0v6TTQTry-HbV0zM4_4sqYdhxwI" loading="lazy" alt="Red-necked_Spurfowl_257.jpg">
+                            <div class="meta-label">Tanzania - 12 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Y3_kh0v6TTQTry-HbV0zM4_4sqYdhxwI" target="_blank">Red-necked_Spurfowl_257.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div></div></body></html>

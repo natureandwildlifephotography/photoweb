@@ -1,0 +1,1148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photo Index</title>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; background: #121212; color: white; margin: 0; padding: 20px; padding-top: 80px; }
+        .family-list { display: flex; flex-direction: column; gap: 60px; max-width: 1800px; margin: 0 auto; }
+        
+        .family-card { background: #1e1e1e; border-radius: 24px; padding: 40px; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .family-header { margin-bottom: 30px; border-bottom: 2px solid #555; padding-bottom: 20px; }
+        .family-name { font-size: 36px; font-weight: 800; color: #4a9eff; text-transform: uppercase; letter-spacing: 2px; }
+        .family-order-label { font-size: 18px; opacity: 0.6; color: #fff; margin-top: 5px; font-weight: 500; }
+        
+        .species-list { display: flex; flex-direction: column; gap: 30px; }
+        .species-card { background: #2a2a2a; border-radius: 16px; padding: 20px; border: 1px solid #444; }
+        .species-header { margin-bottom: 15px; border-bottom: 1px solid #444; padding-bottom: 10px; }
+        .label { font-size: 24px; font-weight: 700; color: #fff; }
+        .french-label { font-size: 18px; opacity: 0.8; color: #ddd; }
+        .latin-label { font-size: 16px; opacity: 0.7; font-style: italic; color: #bbb; }
+        
+        .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
+        .photo-card { background: #333; border-radius: 10px; overflow: hidden; padding: 10px; display: flex; flex-direction: column; align-items: center; transition: transform 0.2s, background 0.2s; }
+        .photo-card:hover { transform: scale(1.02); background: #3d3d3d; }
+        
+        img { max-width: 100%; height: auto; border-radius: 6px; object-fit: contain; }
+        .meta-label { font-size: 11px; opacity: 0.7; align-self: flex-start; margin-top: 8px; color: #fff; }
+        .filename { font-size: 9px; opacity: 0.4; margin-top: 2px; word-break: break-all; align-self: flex-start; }
+        .filename a { color: #4a9eff; text-decoration: none; transition: color 0.2s; }
+        .filename a:hover { text-decoration: underline; }
+        
+        /* Intro Section Styles */
+        .intro-section { max-width: 1200px; margin: 0 auto 80px; padding: 60px; background: #1e1e1e; border-radius: 32px; border: 1px solid #333; box-shadow: 0 20px 50px rgba(0,0,0,0.6); line-height: 1.8; }
+        .intro-title { font-size: 48px; font-weight: 900; margin-bottom: 40px; color: #4a9eff; line-height: 1.2; text-align: center; }
+        .intro-text { font-size: 20px; opacity: 0.9; margin-bottom: 30px; }
+        .intro-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 30px; margin-top: 50px; border-top: 1px solid #444; padding-top: 40px; }
+        .stat-item { text-align: center; }
+        .stat-value { font-size: 36px; font-weight: 800; color: #4a9eff; display: block; }
+        .stat-label { font-size: 14px; opacity: 0.6; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* Mode Selector Styles */
+        .mode-selector { position: fixed; top: 0; left: 0; right: 0; background: rgba(30, 30, 30, 0.95); backdrop-filter: blur(10px); padding: 15px 40px; border-bottom: 1px solid #333; z-index: 1000; display: flex; justify-content: flex-end; align-items: center; gap: 20px; }
+        .mode-button { background: #333; border: 1px solid #444; color: white; padding: 8px 20px; border-radius: 20px; cursor: pointer; font-weight: 600; transition: all 0.2s; }
+        .mode-button.active { background: #4a9eff; border-color: #4a9eff; }
+        .mode-label { font-size: 14px; opacity: 0.6; font-weight: 600; text-transform: uppercase; }
+
+        /* Restricted Mode Styles */
+        body.mode-public .filename { display: none; }
+        body.mode-public .photo-card:hover { transform: none; background: #333; }
+
+        /* Modal Styles */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; justify-content: center; align-items: center; }
+        .modal { background: #1e1e1e; padding: 40px; border-radius: 24px; border: 1px solid #333; width: 400px; box-shadow: 0 20px 50px rgba(0,0,0,0.8); }
+        .modal h2 { margin-top: 0; color: #4a9eff; }
+        .modal input { width: 100%; padding: 12px; margin: 20px 0; background: #2a2a2a; border: 1px solid #444; color: white; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        .modal-buttons { display: flex; justify-content: flex-end; gap: 15px; }
+        .modal-buttons button { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; }
+        .btn-cancel { background: #333; color: white; }
+        .btn-submit { background: #4a9eff; color: white; }
+    </style>
+</head>
+<body class="mode-public">
+    <div class="mode-selector">
+        <span class="mode-label">View Mode:</span>
+        <button id="btn-public" class="mode-button active" onclick="setMode('PUBLIC')">PUBLIC</button>
+        <button id="btn-user" class="mode-button" onclick="requestUserMode()">USER</button>
+    </div>
+
+    <div id="password-modal" class="modal-overlay">
+        <div class="modal">
+            <h2>Enter Password</h2>
+            <p>Please enter the password to activate USER mode.</p>
+            <input type="password" id="password-input" placeholder="Password">
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+                <button class="btn-submit" onclick="submitPassword()">Submit</button>
+            </div>
+        </div>
+    </div>
+
+    
+    <div class="family-list">
+        <div class="family-card">
+            <div class="family-header">
+                <div class="family-name">Cockatoos</div>
+                <div class="family-order-label">Cacatuidae / Psittaciformes</div>
+            </div>
+            <div class="species-list">
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Yellow-tailed Black-Cockatoo</div>
+                        <div class="french-label">Cacatoès funèbre</div>
+                        <div class="latin-label">(Zanda funerea)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/18b2pYM3kHWLgxT8eOoo_cchmydhO4If1" loading="lazy" alt="Yellow-tailed_Black-Cockatoo_1885.jpg">
+                            <div class="meta-label">Australia - 12 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/18b2pYM3kHWLgxT8eOoo_cchmydhO4If1" target="_blank">Yellow-tailed_Black-Cockatoo_1885.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1EPqAtdu5Z1LIMmHhj03cZjqNPNE3rRhH" loading="lazy" alt="Yellow-tailed_Black-Cockatoo_2758MF.jpg">
+                            <div class="meta-label">Australia - 12 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1EPqAtdu5Z1LIMmHhj03cZjqNPNE3rRhH" target="_blank">Yellow-tailed_Black-Cockatoo_2758MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1MZD6YNfkciSpeyOcyEvGzyFkEeMw5a4Q" loading="lazy" alt="Yellow-tailed_Black-cockatoo-2.jpg">
+                            <div class="meta-label">Australia - 12 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1MZD6YNfkciSpeyOcyEvGzyFkEeMw5a4Q" target="_blank">Yellow-tailed_Black-cockatoo-2.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/17phsLrhn0DQu9Hw7GQJBGqqqcnwvwTvt" loading="lazy" alt="Yellow-tailed_Black-cockatoo.jpg">
+                            <div class="meta-label">Australia - 12 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/17phsLrhn0DQu9Hw7GQJBGqqqcnwvwTvt" target="_blank">Yellow-tailed_Black-cockatoo.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1quMIcYsPhMpPmEm6U-o-2VjZuiBNtMsf" loading="lazy" alt="Yellow-tailed_Black-cockatoo_8768.jpg">
+                            <div class="meta-label">Australia - 12 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1quMIcYsPhMpPmEm6U-o-2VjZuiBNtMsf" target="_blank">Yellow-tailed_Black-cockatoo_8768.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Gang-gang Cockatoo</div>
+                        <div class="french-label">Cacatoès à tête rouge</div>
+                        <div class="latin-label">(Callocephalon fimbriatum)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1SfZWxxnwBqUEEMGU7MINImM8HBVaYYen" loading="lazy" alt="Gang-gang_Cockatoo_3141MF.jpg">
+                            <div class="meta-label">Australia - 14 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1SfZWxxnwBqUEEMGU7MINImM8HBVaYYen" target="_blank">Gang-gang_Cockatoo_3141MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1a5cajztsyT4761CU-71FJh-lagz-Padj" loading="lazy" alt="Gang-gang_Cockatoo_9767.jpg">
+                            <div class="meta-label">Australia - 14 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1a5cajztsyT4761CU-71FJh-lagz-Padj" target="_blank">Gang-gang_Cockatoo_9767.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Galah</div>
+                        <div class="french-label">Cacatoès rosalbin</div>
+                        <div class="latin-label">(Eolophus roseicapilla)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1GKbmjBcXvHEvW5Jdc0hHqZliYgYMHDt7" loading="lazy" alt="Galah_0348.jpg">
+                            <div class="meta-label">Australia - 11 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1GKbmjBcXvHEvW5Jdc0hHqZliYgYMHDt7" target="_blank">Galah_0348.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1rKmoeZxVKhuOLPAB7r2U4LVLd3f2DAq_" loading="lazy" alt="Galah_3750MF.jpg">
+                            <div class="meta-label">Australia - 11 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1rKmoeZxVKhuOLPAB7r2U4LVLd3f2DAq_" target="_blank">Galah_3750MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Vm9YQdmttmRwJfLItHGWTc_p-g2B_zHE" loading="lazy" alt="Galah_9715.jpg">
+                            <div class="meta-label">Australia - 11 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Vm9YQdmttmRwJfLItHGWTc_p-g2B_zHE" target="_blank">Galah_9715.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Little Corella</div>
+                        <div class="french-label">Cacatoès corella</div>
+                        <div class="latin-label">(Cacatua sanguinea)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1AXb0QiitBo1bXm-PqeuICHR76T4-pf_W" loading="lazy" alt="Little_Corella_2271.jpg">
+                            <div class="meta-label">Australia - 23 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1AXb0QiitBo1bXm-PqeuICHR76T4-pf_W" target="_blank">Little_Corella_2271.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Long-billed Corella</div>
+                        <div class="french-label">Cacatoès nasique</div>
+                        <div class="latin-label">(Cacatua tenuirostris)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1gHGbdnPC0Pbo2JaTSPMPUJVu0hxmPwd8" loading="lazy" alt="Long-billed_Corella_0991.jpg">
+                            <div class="meta-label">Australia - 22 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1gHGbdnPC0Pbo2JaTSPMPUJVu0hxmPwd8" target="_blank">Long-billed_Corella_0991.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Sulphur-crested Cockatoo</div>
+                        <div class="french-label">Cacatoès à huppe jaune</div>
+                        <div class="latin-label">(Cacatua galerita)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Anf1lmycJYTd4zZG9awIx6LIM8eZIVV1" loading="lazy" alt="Sulphur-crested_Cockatoo_2269.jpg">
+                            <div class="meta-label">Australia - 07 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Anf1lmycJYTd4zZG9awIx6LIM8eZIVV1" target="_blank">Sulphur-crested_Cockatoo_2269.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1G2yK52rCjXRZMcTlGUpZKa6qNNUGCKKA" loading="lazy" alt="Sulphur-crested_Cockatoo_8159.jpg">
+                            <div class="meta-label">Australia - 07 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1G2yK52rCjXRZMcTlGUpZKa6qNNUGCKKA" target="_blank">Sulphur-crested_Cockatoo_8159.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="family-card">
+            <div class="family-header">
+                <div class="family-name">Old World Parrots</div>
+                <div class="family-order-label">Psittaculidae / Psittaciformes</div>
+            </div>
+            <div class="species-list">
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Greater Vasa Parrot</div>
+                        <div class="french-label">Grand Vaza</div>
+                        <div class="latin-label">(Coracopsis vasa)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1nuI6Ny4y5dmSfR7TecM0Fox3SenCK119" loading="lazy" alt="Greater_Vasa_Parrot_-_Grand_Vasa_7004.jpg">
+                            <div class="meta-label">MG - 07 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1nuI6Ny4y5dmSfR7TecM0Fox3SenCK119" target="_blank">Greater_Vasa_Parrot_-_Grand_Vasa_7004.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1S1kn4TKTIjss2GVTUkws6J2rGCDAz2aJ" loading="lazy" alt="Greater_Vasa_Parrot_-_Grand_vaza_7013.jpg">
+                            <div class="meta-label">MG - 07 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1S1kn4TKTIjss2GVTUkws6J2rGCDAz2aJ" target="_blank">Greater_Vasa_Parrot_-_Grand_vaza_7013.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Australian King-Parrot</div>
+                        <div class="french-label">Perruche royale</div>
+                        <div class="latin-label">(Alisterus scapularis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/11dm1lDZ2_i22D7NZ8VmE_oqfcIDWsLNu" loading="lazy" alt="Australian_King-Parrot.jpg">
+                            <div class="meta-label">Australia - 12 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/11dm1lDZ2_i22D7NZ8VmE_oqfcIDWsLNu" target="_blank">Australian_King-Parrot.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/13I1v_mhyL72NAbpg09HJNkacZ1UuuNB0" loading="lazy" alt="Australian_King-Parrot_2507MF.jpg">
+                            <div class="meta-label">Australia - 12 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/13I1v_mhyL72NAbpg09HJNkacZ1UuuNB0" target="_blank">Australian_King-Parrot_2507MF.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Blue-winged Parrot</div>
+                        <div class="french-label">Perruche à bouche d'or</div>
+                        <div class="latin-label">(Neophema chrysostoma)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1P6ke8_SJ-HIB-iq4rNqR8E1L4WTMO1-Y" loading="lazy" alt="Blue-winged_Parrot_3368MF.jpg">
+                            <div class="meta-label">Australia - 15 Nov 2025</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1P6ke8_SJ-HIB-iq4rNqR8E1L4WTMO1-Y" target="_blank">Blue-winged_Parrot_3368MF.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Green Rosella</div>
+                        <div class="french-label">Perruche à ventre jaune</div>
+                        <div class="latin-label">(Platycercus caledonicus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1fbQkA2AHCGGGhUGwfwg5botFQp2qPj5k" loading="lazy" alt="Green_Rosella_4184MF.jpg">
+                            <div class="meta-label">Australia - 19 Nov 2025</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1fbQkA2AHCGGGhUGwfwg5botFQp2qPj5k" target="_blank">Green_Rosella_4184MF.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Crimson Rosella</div>
+                        <div class="french-label">Perruche de Pennant</div>
+                        <div class="latin-label">(Platycercus elegans)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1-5qX8uGK_E3djIKhshBl-er-dY0v9U9X" loading="lazy" alt="Crimson_Rosella_1048.jpg">
+                            <div class="meta-label">Australia - 09 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1-5qX8uGK_E3djIKhshBl-er-dY0v9U9X" target="_blank">Crimson_Rosella_1048.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/12za-0YJs61zWR3yAszaAt8nP3PSDaAN9" loading="lazy" alt="Crimson_Rosella_2320.jpg">
+                            <div class="meta-label">Australia - 09 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/12za-0YJs61zWR3yAszaAt8nP3PSDaAN9" target="_blank">Crimson_Rosella_2320.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/13a4nuKl6GLM_5pm_9ShuOG6dP3QU0OE4" loading="lazy" alt="Crimson_Rosella_2500MF.jpg">
+                            <div class="meta-label">Australia - 09 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/13a4nuKl6GLM_5pm_9ShuOG6dP3QU0OE4" target="_blank">Crimson_Rosella_2500MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1hmqTwq-eFtekJKw2uK4TGMuyPP101ahh" loading="lazy" alt="Crimson_Rosella_7870.jpg">
+                            <div class="meta-label">Australia - 09 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1hmqTwq-eFtekJKw2uK4TGMuyPP101ahh" target="_blank">Crimson_Rosella_7870.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Eastern Rosella</div>
+                        <div class="french-label">Perruche omnicolore</div>
+                        <div class="latin-label">(Platycercus eximius)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/18N9_H28_7d7m8no__QZkdw5glABVP1P1" loading="lazy" alt="Eastern_Rosella_3797MF.jpg">
+                            <div class="meta-label">Australia - 13 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/18N9_H28_7d7m8no__QZkdw5glABVP1P1" target="_blank">Eastern_Rosella_3797MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1M6WHSKMoCNbu463g7cT3MJg4V7pD8K_V" loading="lazy" alt="Eastern_Rosella_8932.jpg">
+                            <div class="meta-label">Australia - 13 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1M6WHSKMoCNbu463g7cT3MJg4V7pD8K_V" target="_blank">Eastern_Rosella_8932.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Red-rumped Parrot</div>
+                        <div class="french-label">Perruche à croupion rouge</div>
+                        <div class="latin-label">(Psephotus haematonotus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1NMZNpYY_Q7t_O55JmB3CW5aHaDgRgjkD" loading="lazy" alt="Red-rumped_Parrot.jpg">
+                            <div class="meta-label">Australia - 26 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1NMZNpYY_Q7t_O55JmB3CW5aHaDgRgjkD" target="_blank">Red-rumped_Parrot.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1CHFG55NJwKu5HE0GHaQ02uuxO0x9HqWq" loading="lazy" alt="Red-rumped_Parrot_2631MF.jpg">
+                            <div class="meta-label">Australia - 26 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1CHFG55NJwKu5HE0GHaQ02uuxO0x9HqWq" target="_blank">Red-rumped_Parrot_2631MF.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Musk Lorikeet</div>
+                        <div class="french-label">Loriquet à bandeau rouge</div>
+                        <div class="latin-label">(Trichoglossus concinnus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1PUGpG8EW-A6w8PxYxvmQigfWzGSwBvMp" loading="lazy" alt="Musk_Lorikeet_3844MF.jpg">
+                            <div class="meta-label">Australia - 09 Nov 2025</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1PUGpG8EW-A6w8PxYxvmQigfWzGSwBvMp" target="_blank">Musk_Lorikeet_3844MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Xr-oyNk618Btt1qHw8BYKyTkySDEX_eL" loading="lazy" alt="Musk_Lorikeet_5285MF.jpg">
+                            <div class="meta-label">Australia - 09 Nov 2025</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Xr-oyNk618Btt1qHw8BYKyTkySDEX_eL" target="_blank">Musk_Lorikeet_5285MF.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Rainbow Lorikeet</div>
+                        <div class="french-label">Loriquet arc-en-ciel</div>
+                        <div class="latin-label">(Trichoglossus moluccanus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1PMJGeNyC-n87kLI0Wl7r1N8JZFRuK5MZ" loading="lazy" alt="Rainbow_Lorikeet_2314.jpg">
+                            <div class="meta-label">Australia - 07 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1PMJGeNyC-n87kLI0Wl7r1N8JZFRuK5MZ" target="_blank">Rainbow_Lorikeet_2314.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1BvlS1k8-DS2bV6zN2DkOhEokbkG-C-fe" loading="lazy" alt="Rainbow_Lorikeet_3745MF.jpg">
+                            <div class="meta-label">Australia - 07 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1BvlS1k8-DS2bV6zN2DkOhEokbkG-C-fe" target="_blank">Rainbow_Lorikeet_3745MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1GfpaooGR05q7EInV2VLAulPds8heSSsD" loading="lazy" alt="Rainbow_Lorikeet_5258MF.jpg">
+                            <div class="meta-label">Australia - 07 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1GfpaooGR05q7EInV2VLAulPds8heSSsD" target="_blank">Rainbow_Lorikeet_5258MF.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Gray-headed Lovebird</div>
+                        <div class="french-label">Inséparable à tête grise</div>
+                        <div class="latin-label">(Agapornis canus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1e6ffKrtKB_ZOJyScr8nuyPxH65RevYmy" loading="lazy" alt="Gray-headed_Lovebird_-_Inseparable_a_tete_grise_6661-2.jpg.jpg">
+                            <div class="meta-label">MG - 12 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1e6ffKrtKB_ZOJyScr8nuyPxH65RevYmy" target="_blank">Gray-headed_Lovebird_-_Inseparable_a_tete_grise_6661-2.jpg.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1I2pJ3mPrSxJ3WaQbfie0YDeHR93KJAXX" loading="lazy" alt="Gray-headed_Lovebird_-_Inseparable_a_tete_grise_6661.jpg">
+                            <div class="meta-label">MG - 12 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1I2pJ3mPrSxJ3WaQbfie0YDeHR93KJAXX" target="_blank">Gray-headed_Lovebird_-_Inseparable_a_tete_grise_6661.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Rosy-faced Lovebird</div>
+                        <div class="french-label">Inséparable rosegorge</div>
+                        <div class="latin-label">(Agapornis roseicollis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1C9jOHV0CwbGRf-trRCoKzd9CWEm3uZT8" loading="lazy" alt="Rosy-faced_Lovebird_113.jpg">
+                            <div class="meta-label">NA - 12 Jun 2007</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1C9jOHV0CwbGRf-trRCoKzd9CWEm3uZT8" target="_blank">Rosy-faced_Lovebird_113.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1ztXUtg99bZuh8lbWNThnnbUkNuFQ_hKO" loading="lazy" alt="Rosy-faced_Lovebird_64.jpg">
+                            <div class="meta-label">NA - 12 Jun 2007</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1ztXUtg99bZuh8lbWNThnnbUkNuFQ_hKO" target="_blank">Rosy-faced_Lovebird_64.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Yellow-collared Lovebird</div>
+                        <div class="french-label">Inséparable masqué</div>
+                        <div class="latin-label">(Agapornis personatus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/19_3iaQy6_c7uaptBD8mUKeUL9lKTqDrp" loading="lazy" alt="Yellow-collared_Lovebird_169.jpg">
+                            <div class="meta-label">Tanzania - 16 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/19_3iaQy6_c7uaptBD8mUKeUL9lKTqDrp" target="_blank">Yellow-collared_Lovebird_169.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="family-card">
+            <div class="family-header">
+                <div class="family-name">New World and African Parrots</div>
+                <div class="family-order-label">Psittacidae / Psittaciformes</div>
+            </div>
+            <div class="species-list">
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Blue-fronted Parrotlet</div>
+                        <div class="french-label">Toui à front bleu</div>
+                        <div class="latin-label">(Touit dilectissimus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1ZLeetB6ibx7f72VCk2aj4U6bVsMqRma-" loading="lazy" alt="Blue-fronted_parrotlet_6194.jpg">
+                            <div class="meta-label">Ecuador - 10 Apr 2019</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1ZLeetB6ibx7f72VCk2aj4U6bVsMqRma-" target="_blank">Blue-fronted_parrotlet_6194.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/15t4qMgrHUpu_rQddietfgSUglsLdEut-" loading="lazy" alt="Blue-fronted_parrotlet_6203.jpg">
+                            <div class="meta-label">Ecuador - 10 Apr 2019</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/15t4qMgrHUpu_rQddietfgSUglsLdEut-" target="_blank">Blue-fronted_parrotlet_6203.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Monk Parakeet</div>
+                        <div class="french-label">Conure veuve</div>
+                        <div class="latin-label">(Myiopsitta monachus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/12aSt1ZXNWJMd9AyqX7tFztLjikOZ0hkL" loading="lazy" alt="Monk_Parakeet_7942.jpg">
+                            <div class="meta-label">USA - 05 Apr 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/12aSt1ZXNWJMd9AyqX7tFztLjikOZ0hkL" target="_blank">Monk_Parakeet_7942.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1VcWmAvMcQe1E6J0dGErE_RxTQXiZjcY4" loading="lazy" alt="Monk_Parakeet_7970.jpg">
+                            <div class="meta-label">USA - 05 Apr 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1VcWmAvMcQe1E6J0dGErE_RxTQXiZjcY4" target="_blank">Monk_Parakeet_7970.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1DeSNtJX4HLPP2f-eBT1honeV7T9OwC1F" loading="lazy" alt="Monk_Parakeet_8026.jpg">
+                            <div class="meta-label">USA - 05 Apr 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1DeSNtJX4HLPP2f-eBT1honeV7T9OwC1F" target="_blank">Monk_Parakeet_8026.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1ya7jfgKXjCy-9DzeNdWlxQh0cFpITDV9" loading="lazy" alt="Monk_Parakeet_8045.jpg">
+                            <div class="meta-label">USA - 05 Apr 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1ya7jfgKXjCy-9DzeNdWlxQh0cFpITDV9" target="_blank">Monk_Parakeet_8045.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1jdFABXJylruqrLd1bsbZnYKFHgRvkvci" loading="lazy" alt="Monk_Parakeet_8175.jpg">
+                            <div class="meta-label">USA - 05 Apr 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1jdFABXJylruqrLd1bsbZnYKFHgRvkvci" target="_blank">Monk_Parakeet_8175.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Orange-chinned Parakeet</div>
+                        <div class="french-label">Toui à menton d'or</div>
+                        <div class="latin-label">(Brotogeris jugularis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1QYje80ATbLDbVr4YBXqF67rmBq5YSlZP" loading="lazy" alt="Orange-chinned_Parakeet_6110.jpg">
+                            <div class="meta-label">Panama - 14 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1QYje80ATbLDbVr4YBXqF67rmBq5YSlZP" target="_blank">Orange-chinned_Parakeet_6110.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1HKxOcQI0deTkkfrCr8N_FkFLMyVRa5F2" loading="lazy" alt="Orange-chinned_Parakeet_MF5900.jpg">
+                            <div class="meta-label">Panama - 14 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1HKxOcQI0deTkkfrCr8N_FkFLMyVRa5F2" target="_blank">Orange-chinned_Parakeet_MF5900.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1JcP8GyG-iXVBrq7mKBnJeOub2L1XzQCa" loading="lazy" alt="Orange-chinned_Parakeet_MF629.jpg">
+                            <div class="meta-label">Panama - 14 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1JcP8GyG-iXVBrq7mKBnJeOub2L1XzQCa" target="_blank">Orange-chinned_Parakeet_MF629.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Brown-hooded Parrot</div>
+                        <div class="french-label">Caïque à capuchon</div>
+                        <div class="latin-label">(Pyrilia haematotis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1rMex7N-W-6vZ-cwmAIf2g8pPIpcdS5Cf" loading="lazy" alt="Brown-hooded_Parrot_5504.jpg">
+                            <div class="meta-label">Panama - 11 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1rMex7N-W-6vZ-cwmAIf2g8pPIpcdS5Cf" target="_blank">Brown-hooded_Parrot_5504.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Red-billed Parrot</div>
+                        <div class="french-label">Pione à bec rouge</div>
+                        <div class="latin-label">(Pionus sordidus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1bISvPPbYOjTd4wvdJrC5bVI3MFAnNdiz" loading="lazy" alt="Red-billed_Parrot_3739MF.jpg">
+                            <div class="meta-label">Ecuador - 02 Jul 2004</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1bISvPPbYOjTd4wvdJrC5bVI3MFAnNdiz" target="_blank">Red-billed_Parrot_3739MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1vAdMHTJRoRUsdTU_ozdOPqZVXQGiT-fA" loading="lazy" alt="Red-billed_Parrot_4469.jpg">
+                            <div class="meta-label">Ecuador - 02 Jul 2004</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1vAdMHTJRoRUsdTU_ozdOPqZVXQGiT-fA" target="_blank">Red-billed_Parrot_4469.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Blue-headed Parrot</div>
+                        <div class="french-label">Pione à tête bleue</div>
+                        <div class="latin-label">(Pionus menstruus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1U-rm4ygqH3a3bma_QE8PGab8HR3N8vlJ" loading="lazy" alt="Blue-headed_Parrot_3841.jpg">
+                            <div class="meta-label">Colombia - 16 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1U-rm4ygqH3a3bma_QE8PGab8HR3N8vlJ" target="_blank">Blue-headed_Parrot_3841.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">White-crowned Parrot</div>
+                        <div class="french-label">Pione à couronne blanche</div>
+                        <div class="latin-label">(Pionus senilis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1F4iIcei2_XNwRGjJh3fSqlMDmqR2EGBw" loading="lazy" alt="White-crowned_Parrot_MF3494.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1F4iIcei2_XNwRGjJh3fSqlMDmqR2EGBw" target="_blank">White-crowned_Parrot_MF3494.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Bronze-winged Parrot</div>
+                        <div class="french-label">Pione noire</div>
+                        <div class="latin-label">(Pionus chalcopterus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1CII30w8jOVx_GXZ-0N-uW-AHGqeB6ogY" loading="lazy" alt="Bronze-winged_Parrot_5174.jpg">
+                            <div class="meta-label">Ecuador - 07 Apr 2019</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1CII30w8jOVx_GXZ-0N-uW-AHGqeB6ogY" target="_blank">Bronze-winged_Parrot_5174.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Red-lored Amazon</div>
+                        <div class="french-label">Amazone diadème [autumnalis ou salvini]</div>
+                        <div class="latin-label">(Amazona autumnalis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1TZS-RlwXf69En4A8s4IzuNsyc4ydO0b4" loading="lazy" alt="Red-lored_Amazon_240.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1TZS-RlwXf69En4A8s4IzuNsyc4ydO0b4" target="_blank">Red-lored_Amazon_240.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1whHQvBc1VKiKHaK321TvtJPjktbIUbrG" loading="lazy" alt="Red-lored_Amazon_2704MF.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1whHQvBc1VKiKHaK321TvtJPjktbIUbrG" target="_blank">Red-lored_Amazon_2704MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1kzBo3Dola61goPhFA0fQRitgPN2ksrNE" loading="lazy" alt="Red-lored_Amazon_3930.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1kzBo3Dola61goPhFA0fQRitgPN2ksrNE" target="_blank">Red-lored_Amazon_3930.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/185g5bcxVYC-hyyOoEU2OmL8lO7g-XL3b" loading="lazy" alt="Red-lored_Amazon_6297.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/185g5bcxVYC-hyyOoEU2OmL8lO7g-XL3b" target="_blank">Red-lored_Amazon_6297.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1uDipBbuRvMYs6_kFu2_Tu9DvgLY5flY5" loading="lazy" alt="Red-lored_Amazon_7071.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1uDipBbuRvMYs6_kFu2_Tu9DvgLY5flY5" target="_blank">Red-lored_Amazon_7071.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Jr9sunOBrQzx_s6-_4BYfHj8Z6Ml1ZbQ" loading="lazy" alt="Red-lored_Amazon_7368.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Jr9sunOBrQzx_s6-_4BYfHj8Z6Ml1ZbQ" target="_blank">Red-lored_Amazon_7368.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Yellow-naped Amazon</div>
+                        <div class="french-label">Amazone à nuque d'or</div>
+                        <div class="latin-label">(Amazona auropalliata)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1duHwTwTXRsiVoMcMX8EzzUezNVHhfYz8" loading="lazy" alt="Yellow-naped_Amazon_MF6166.jpg">
+                            <div class="meta-label">CR - 14 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1duHwTwTXRsiVoMcMX8EzzUezNVHhfYz8" target="_blank">Yellow-naped_Amazon_MF6166.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Yellow-crowned Amazon</div>
+                        <div class="french-label">Amazone à front jaune</div>
+                        <div class="latin-label">(Amazona ochrocephala)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1aeNyfaHF76ppcZ2op8j1v1I3-AYA7qer" loading="lazy" alt="Yellow-crowned_Amazon_22837.jpg">
+                            <div class="meta-label">TT - 09 Apr 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1aeNyfaHF76ppcZ2op8j1v1I3-AYA7qer" target="_blank">Yellow-crowned_Amazon_22837.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1-4-Pe9Hhas8y6vP7lQGvyiqp4HDydVhh" loading="lazy" alt="Yellow-crowned_Amazon_2560MF.jpg">
+                            <div class="meta-label">TT - 09 Apr 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1-4-Pe9Hhas8y6vP7lQGvyiqp4HDydVhh" target="_blank">Yellow-crowned_Amazon_2560MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1jThOVoBkSmpcZ5de8MM0tOS3Ef8wjUMP" loading="lazy" alt="Yellow-crowned_Amazon_4866.jpg">
+                            <div class="meta-label">TT - 09 Apr 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1jThOVoBkSmpcZ5de8MM0tOS3Ef8wjUMP" target="_blank">Yellow-crowned_Amazon_4866.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">White-fronted Amazon</div>
+                        <div class="french-label">Amazone à front blanc</div>
+                        <div class="latin-label">(Amazona albifrons)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1dZPF-ciD3uimGLEp2Aw_bk-ABUbNp4Lx" loading="lazy" alt="White-fronted_Amazon_2703MF.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1dZPF-ciD3uimGLEp2Aw_bk-ABUbNp4Lx" target="_blank">White-fronted_Amazon_2703MF.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Mealy Amazon</div>
+                        <div class="french-label">Amazone poudrée</div>
+                        <div class="latin-label">(Amazona farinosa)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1x7sLU50HDi7opPkYTMY4Gd-OdJ4YlsCT" loading="lazy" alt="Mealy_Amazon_38.jpg">
+                            <div class="meta-label">Ecuador - 29 Jun 2004</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1x7sLU50HDi7opPkYTMY4Gd-OdJ4YlsCT" target="_blank">Mealy_Amazon_38.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1UFw9VElG4Ojkf_yohPeJiHwLaLbr74B9" loading="lazy" alt="Mealy_Amazon_436.jpg">
+                            <div class="meta-label">Ecuador - 29 Jun 2004</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1UFw9VElG4Ojkf_yohPeJiHwLaLbr74B9" target="_blank">Mealy_Amazon_436.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1UVbk9nHUXkSBScX_-_FFKdyhyB9cenx7" loading="lazy" alt="Mealy_Amazon_7161.jpg">
+                            <div class="meta-label">Ecuador - 29 Jun 2004</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1UVbk9nHUXkSBScX_-_FFKdyhyB9cenx7" target="_blank">Mealy_Amazon_7161.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Orange-winged Amazon</div>
+                        <div class="french-label">Amazone aourou</div>
+                        <div class="latin-label">(Amazona amazonica)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1zFE_Q3jqObmmfQXkMUx-NAq2PBv6k5qr" loading="lazy" alt="Orange-winged_Amazon_5144.jpg">
+                            <div class="meta-label">TT - 07 Apr 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1zFE_Q3jqObmmfQXkMUx-NAq2PBv6k5qr" target="_blank">Orange-winged_Amazon_5144.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Turquoise-winged Parrotlet</div>
+                        <div class="french-label">Toui de Spengel</div>
+                        <div class="latin-label">(Forpus spengeli)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Bc62EWKr5CMqxYacn2gD-Fu-e0IQuSyf" loading="lazy" alt="Turquoise-winged_Parrotlet_21528.jpg">
+                            <div class="meta-label">Colombia - 02 Apr 2025</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Bc62EWKr5CMqxYacn2gD-Fu-e0IQuSyf" target="_blank">Turquoise-winged_Parrotlet_21528.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Green-rumped Parrotlet</div>
+                        <div class="french-label">Toui été</div>
+                        <div class="latin-label">(Forpus passerinus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/12xg4X2CtWf4bVXb5FhpG_2fl1WG5LWpR" loading="lazy" alt="Green-rumped_Parrotlet_4972.jpg">
+                            <div class="meta-label">TT - 10 Apr 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/12xg4X2CtWf4bVXb5FhpG_2fl1WG5LWpR" target="_blank">Green-rumped_Parrotlet_4972.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1sABZEepAKjDpfBNrQVqnilMLAedtH1qY" loading="lazy" alt="Green-rumped_Parrotlet_5066.jpg">
+                            <div class="meta-label">TT - 10 Apr 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1sABZEepAKjDpfBNrQVqnilMLAedtH1qY" target="_blank">Green-rumped_Parrotlet_5066.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1obuEF9INgbTKS49qnSa7Y5_sBE4GIvOj" loading="lazy" alt="Green-rumped_Parrotlet_5183.jpg">
+                            <div class="meta-label">TT - 10 Apr 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1obuEF9INgbTKS49qnSa7Y5_sBE4GIvOj" target="_blank">Green-rumped_Parrotlet_5183.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Spectacled Parrotlet</div>
+                        <div class="french-label">Toui à lunettes</div>
+                        <div class="latin-label">(Forpus conspicillatus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1PX425z-ud_obnXR-Jrfd5JR8chj7Yeia" loading="lazy" alt="Spectacled_Parrotlet_7317.jpg">
+                            <div class="meta-label">Panama - 05 Apr 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1PX425z-ud_obnXR-Jrfd5JR8chj7Yeia" target="_blank">Spectacled_Parrotlet_7317.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Santa Marta Parakeet</div>
+                        <div class="french-label">Conure de Santa Marta</div>
+                        <div class="latin-label">(Pyrrhura viridicata)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1BwmLKR7JN7HSKd158tuqI4QBZUefNuo_" loading="lazy" alt="Santa_Marta_Parakeet_23525.jpg">
+                            <div class="meta-label">Colombia - 06 Apr 2025</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1BwmLKR7JN7HSKd158tuqI4QBZUefNuo_" target="_blank">Santa_Marta_Parakeet_23525.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1PWTmqsag-K9iJHZNyJZhSIrw44jOeTD8" loading="lazy" alt="Santa_Marta_Parakeet_3039MF.jpg">
+                            <div class="meta-label">Colombia - 06 Apr 2025</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1PWTmqsag-K9iJHZNyJZhSIrw44jOeTD8" target="_blank">Santa_Marta_Parakeet_3039MF.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Sulphur-winged Parakeet</div>
+                        <div class="french-label">Conure de Hoffmann</div>
+                        <div class="latin-label">(Pyrrhura hoffmanni)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1v2smFGXpPw93NzlFlpRWdzLw8kQagsRX" loading="lazy" alt="Sulphur-winged_Parakeet_2393.jpg">
+                            <div class="meta-label">CR - 04 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1v2smFGXpPw93NzlFlpRWdzLw8kQagsRX" target="_blank">Sulphur-winged_Parakeet_2393.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Rf3eO4syi_dskjF3Kjs2pBlBMTW8VP6a" loading="lazy" alt="Sulphur-winged_Parakeet_2664.jpg">
+                            <div class="meta-label">CR - 04 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Rf3eO4syi_dskjF3Kjs2pBlBMTW8VP6a" target="_blank">Sulphur-winged_Parakeet_2664.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Olive-throated Parakeet</div>
+                        <div class="french-label">Conure naine</div>
+                        <div class="latin-label">(Eupsittula nana)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1CRhf1G2aYh0Bs992kAFBoxJXy3v0Vz2p" loading="lazy" alt="Olive-throated_Parakeet_175.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1CRhf1G2aYh0Bs992kAFBoxJXy3v0Vz2p" target="_blank">Olive-throated_Parakeet_175.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1he4qT6ruNq653BYWOy29s4T-9efkbaP3" loading="lazy" alt="Olive-throated_Parakeet_413.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1he4qT6ruNq653BYWOy29s4T-9efkbaP3" target="_blank">Olive-throated_Parakeet_413.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1vxIkNQfiY_7bFQBlKgKjACWnaYhF5zp5" loading="lazy" alt="Olive-throated_Parakeet_7022.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1vxIkNQfiY_7bFQBlKgKjACWnaYhF5zp5" target="_blank">Olive-throated_Parakeet_7022.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Orange-fronted Parakeet</div>
+                        <div class="french-label">Conure à front rouge</div>
+                        <div class="latin-label">(Eupsittula canicularis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1UtlCtPEnp2nF7aZ3IKmRqrdpyyodShuA" loading="lazy" alt="Orange-fronted_Parakeet_2110MF.jpg">
+                            <div class="meta-label">CR - 15 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1UtlCtPEnp2nF7aZ3IKmRqrdpyyodShuA" target="_blank">Orange-fronted_Parakeet_2110MF.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Brown-throated Parakeet</div>
+                        <div class="french-label">Conure cuivrée</div>
+                        <div class="latin-label">(Eupsittula pertinax)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1nSJCzASJHeYpqMttfxLcEXrDQzU2Prn_" loading="lazy" alt="Brown-throated_Parakeet.jpg">
+                            <div class="meta-label">Panama - 14 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1nSJCzASJHeYpqMttfxLcEXrDQzU2Prn_" target="_blank">Brown-throated_Parakeet.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="Photos/Brown-throated_Parakeet_%28Lehmanni%29_1411MF.jpg" loading="lazy" alt="Brown-throated_Parakeet_(Lehmanni)_1411MF.jpg">
+                            <div class="meta-label">Panama - 14 Nov 2016</div>
+                            <div class="filename"><a href="Photos/Brown-throated_Parakeet_%28Lehmanni%29_1411MF.jpg" target="_blank">Brown-throated_Parakeet_(Lehmanni)_1411MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1WPMCb70gBMHjyFPvb-rXjcIx2xOR7xOJ" loading="lazy" alt="Brown-throated_Parakeet_22881.jpg">
+                            <div class="meta-label">Panama - 14 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1WPMCb70gBMHjyFPvb-rXjcIx2xOR7xOJ" target="_blank">Brown-throated_Parakeet_22881.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1wdrtiic7pD3L4rBfNvSWXANLKv7stQ2V" loading="lazy" alt="Brown-throated_Parakeet_3239.jpg">
+                            <div class="meta-label">Panama - 14 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1wdrtiic7pD3L4rBfNvSWXANLKv7stQ2V" target="_blank">Brown-throated_Parakeet_3239.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1WklWHuJd81z-cwpZvtxR44iWTu4VIt4q" loading="lazy" alt="Brown-throated_Parakeet_5021.jpg">
+                            <div class="meta-label">Panama - 14 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1WklWHuJd81z-cwpZvtxR44iWTu4VIt4q" target="_blank">Brown-throated_Parakeet_5021.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1NIEjAXA_qjOwx9Td_Owq0-p2kWX8WiEa" loading="lazy" alt="Brown-throated_Parakeet_5060.jpg">
+                            <div class="meta-label">Panama - 14 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1NIEjAXA_qjOwx9Td_Owq0-p2kWX8WiEa" target="_blank">Brown-throated_Parakeet_5060.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Nanday Parakeet</div>
+                        <div class="french-label">Conure nanday</div>
+                        <div class="latin-label">(Aratinga nenday)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1dqrzeSb2JBV-j1qIxxfN7X9QG4tdI-ft" loading="lazy" alt="Nanday_Parakeet_20292.jpg">
+                            <div class="meta-label">USA - 13 Apr 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1dqrzeSb2JBV-j1qIxxfN7X9QG4tdI-ft" target="_blank">Nanday_Parakeet_20292.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1XFocBeaqn-BJvzuNV_XgpAPflOOiuSs3" loading="lazy" alt="Nanday_Parakeet_20322.jpg">
+                            <div class="meta-label">USA - 13 Apr 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1XFocBeaqn-BJvzuNV_XgpAPflOOiuSs3" target="_blank">Nanday_Parakeet_20322.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1EeKqpCFeICBR1U2Psm8xT2LxJZLVzyF8" loading="lazy" alt="Nanday_Parakeet_20329.jpg">
+                            <div class="meta-label">USA - 13 Apr 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1EeKqpCFeICBR1U2Psm8xT2LxJZLVzyF8" target="_blank">Nanday_Parakeet_20329.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1PZm6AbrhUP3imqrr8IQQ79RJpu0VBKhw" loading="lazy" alt="Nanday_Parakeet_7937MF.jpg">
+                            <div class="meta-label">USA - 13 Apr 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1PZm6AbrhUP3imqrr8IQQ79RJpu0VBKhw" target="_blank">Nanday_Parakeet_7937MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1MeyUdWW_sdJolham9zdDw03m1FPaSU6S" loading="lazy" alt="Nanday_Parakeet_9536MF.jpg">
+                            <div class="meta-label">USA - 13 Apr 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1MeyUdWW_sdJolham9zdDw03m1FPaSU6S" target="_blank">Nanday_Parakeet_9536MF.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Blue-and-yellow Macaw</div>
+                        <div class="french-label">Ara bleu</div>
+                        <div class="latin-label">(Ara ararauna)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1C7_Zdhx7Zi35fkGjyqAXZ-3iuzKySqmF" loading="lazy" alt="Blue-and-Yellow_Macaw_4812.jpg">
+                            <div class="meta-label">TT - 09 Apr 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1C7_Zdhx7Zi35fkGjyqAXZ-3iuzKySqmF" target="_blank">Blue-and-Yellow_Macaw_4812.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Chestnut-fronted Macaw</div>
+                        <div class="french-label">Ara vert</div>
+                        <div class="latin-label">(Ara severus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1PyKwBcDjELN1-6L93Eb7MEkIka9CY19A" loading="lazy" alt="Chestnut-fronted_Macaw_8798MF.jpg">
+                            <div class="meta-label">USA - 10 Apr 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1PyKwBcDjELN1-6L93Eb7MEkIka9CY19A" target="_blank">Chestnut-fronted_Macaw_8798MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1qFDdGQrNQmzM-fMkBH8-2HMCykb1ON9D" loading="lazy" alt="Chestnut-fronted_Macaw_8815MF.jpg">
+                            <div class="meta-label">USA - 10 Apr 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1qFDdGQrNQmzM-fMkBH8-2HMCykb1ON9D" target="_blank">Chestnut-fronted_Macaw_8815MF.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Great Green Macaw</div>
+                        <div class="french-label">Ara de Buffon</div>
+                        <div class="latin-label">(Ara ambiguus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1-UD7-5TP4pzlEp8wCjH4umdu6v29dc9g" loading="lazy" alt="Great_Green_Macaw_5266.jpg">
+                            <div class="meta-label">Panama - 05 Apr 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1-UD7-5TP4pzlEp8wCjH4umdu6v29dc9g" target="_blank">Great_Green_Macaw_5266.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1jFiHIxLNRG28AR0LVv93ejJ_8SgwPs65" loading="lazy" alt="Great_Green_Macaw_5270.jpg">
+                            <div class="meta-label">Panama - 05 Apr 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1jFiHIxLNRG28AR0LVv93ejJ_8SgwPs65" target="_blank">Great_Green_Macaw_5270.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/14egiqhTWTJ6aOLlGdL3jusKJOMGBFmEk" loading="lazy" alt="Great_Green_Macaw_5986.jpg">
+                            <div class="meta-label">Panama - 05 Apr 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/14egiqhTWTJ6aOLlGdL3jusKJOMGBFmEk" target="_blank">Great_Green_Macaw_5986.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Z7HB1aIDh452_42ZPVM69DIT4xtzzY51" loading="lazy" alt="Great_Green_Macaw_5992.jpg">
+                            <div class="meta-label">Panama - 05 Apr 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Z7HB1aIDh452_42ZPVM69DIT4xtzzY51" target="_blank">Great_Green_Macaw_5992.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1r4d2Ym49FXk6hdoxIbKpZ8SYxv9-0Vql" loading="lazy" alt="Great_Green_Macaw_MF4207.jpg">
+                            <div class="meta-label">Panama - 05 Apr 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1r4d2Ym49FXk6hdoxIbKpZ8SYxv9-0Vql" target="_blank">Great_Green_Macaw_MF4207.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Scarlet Macaw</div>
+                        <div class="french-label">Ara rouge</div>
+                        <div class="latin-label">(Ara macao)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1-bIXCPGKj83bG5X9jg1CtX1kRUQ_ROVa" loading="lazy" alt="Scarlet_Macaw_2515MF.jpg">
+                            <div class="meta-label">CR - 14 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1-bIXCPGKj83bG5X9jg1CtX1kRUQ_ROVa" target="_blank">Scarlet_Macaw_2515MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1yXr758wbj6DX_Ous09us9hcIL-eC4Dbm" loading="lazy" alt="Scarlet_Macaw_6719.jpg">
+                            <div class="meta-label">CR - 14 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1yXr758wbj6DX_Ous09us9hcIL-eC4Dbm" target="_blank">Scarlet_Macaw_6719.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1MoWtcr8awbYbWdrdKJyKLf0cr4jLiZzV" loading="lazy" alt="Scarlet_Macaw_8203.jpg">
+                            <div class="meta-label">CR - 14 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1MoWtcr8awbYbWdrdKJyKLf0cr4jLiZzV" target="_blank">Scarlet_Macaw_8203.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1eC-AbIxXAWsGrLVl-KLuPUwfIGeEWjJK" loading="lazy" alt="Scarlet_Macaw_MF5734.jpg">
+                            <div class="meta-label">CR - 14 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1eC-AbIxXAWsGrLVl-KLuPUwfIGeEWjJK" target="_blank">Scarlet_Macaw_MF5734.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1oyFifFZRJ152oYhNJtfv82mzysOuCSEp" loading="lazy" alt="Scarlet_Macaw_MF5739.jpg">
+                            <div class="meta-label">CR - 14 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1oyFifFZRJ152oYhNJtfv82mzysOuCSEp" target="_blank">Scarlet_Macaw_MF5739.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1grpyD6gZynv4oWUapPxk84ch-0VPuzxX" loading="lazy" alt="Scarlet_Macaw_MF6140.jpg">
+                            <div class="meta-label">CR - 14 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1grpyD6gZynv4oWUapPxk84ch-0VPuzxX" target="_blank">Scarlet_Macaw_MF6140.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Golden-plumed Parakeet</div>
+                        <div class="french-label">Conure à pinceaux d'or</div>
+                        <div class="latin-label">(Leptosittaca branickii)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1IHtWngPw1ZolY6k-yUPim-7xL9gLzk77" loading="lazy" alt="Golden-plumed_Parakeet_4802.jpg">
+                            <div class="meta-label">Colombia - 18 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1IHtWngPw1ZolY6k-yUPim-7xL9gLzk77" target="_blank">Golden-plumed_Parakeet_4802.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Ymh8Q1sRZG9FoX5aY2olXhyWnI3iJyod" loading="lazy" alt="Golden-plumed_Parakeet_6146.jpg">
+                            <div class="meta-label">Colombia - 18 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Ymh8Q1sRZG9FoX5aY2olXhyWnI3iJyod" target="_blank">Golden-plumed_Parakeet_6146.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Blue-crowned Parakeet</div>
+                        <div class="french-label">Conure à tête bleue</div>
+                        <div class="latin-label">(Thectocercus acuticaudatus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1tuDoEO_uLneoUzSvO_An-WHfysw8VXbB" loading="lazy" alt="Blue-crowned_Parakeet_0619.jpg">
+                            <div class="meta-label">USA - 18 Mar 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1tuDoEO_uLneoUzSvO_An-WHfysw8VXbB" target="_blank">Blue-crowned_Parakeet_0619.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1infBriiansl9Vr9oROdurhKOMFIyiFre" loading="lazy" alt="Blue-crowned_Parakeet_0638.jpg">
+                            <div class="meta-label">USA - 18 Mar 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1infBriiansl9Vr9oROdurhKOMFIyiFre" target="_blank">Blue-crowned_Parakeet_0638.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1BmkvFpMNPTdDciscaGGFUMAkVdKTBDZW" loading="lazy" alt="Blue-crowned_Parakeet_0652.jpg">
+                            <div class="meta-label">USA - 18 Mar 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1BmkvFpMNPTdDciscaGGFUMAkVdKTBDZW" target="_blank">Blue-crowned_Parakeet_0652.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Crimson-fronted Parakeet</div>
+                        <div class="french-label">Conure de Finsch</div>
+                        <div class="latin-label">(Psittacara finschi)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1sc8bJ45oXheIw7nZ_LNDfrY_cpm7MO5X" loading="lazy" alt="Crimson-fronted_Parakeet_3882.jpg">
+                            <div class="meta-label">CR - 03 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1sc8bJ45oXheIw7nZ_LNDfrY_cpm7MO5X" target="_blank">Crimson-fronted_Parakeet_3882.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Scarlet-fronted Parakeet</div>
+                        <div class="french-label">Conure de Wagler</div>
+                        <div class="latin-label">(Psittacara wagleri)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Af5jQr3xzJj7BKDfATc7VBHVMp8Vyep9" loading="lazy" alt="Scarlet-fronted_Parakeet_23642.jpg">
+                            <div class="meta-label">Colombia - 05 Apr 2025</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Af5jQr3xzJj7BKDfATc7VBHVMp8Vyep9" target="_blank">Scarlet-fronted_Parakeet_23642.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Vh833N9VaCkm0j3w8SPLFNWHELN17Iv4" loading="lazy" alt="Scarlet-fronted_Parakeet_23862.jpg">
+                            <div class="meta-label">Colombia - 05 Apr 2025</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Vh833N9VaCkm0j3w8SPLFNWHELN17Iv4" target="_blank">Scarlet-fronted_Parakeet_23862.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1vau6We8CW09tbkYiRD4br4tBvLre1w_k" loading="lazy" alt="Scarlet-fronted_Parakeet_4336.jpg">
+                            <div class="meta-label">Colombia - 05 Apr 2025</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1vau6We8CW09tbkYiRD4br4tBvLre1w_k" target="_blank">Scarlet-fronted_Parakeet_4336.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Mitred Parakeet</div>
+                        <div class="french-label">Conure mitrée</div>
+                        <div class="latin-label">(Psittacara mitratus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1_lKZQDtlyQ20npvTuCd73A84sIB4kViU" loading="lazy" alt="Mitred_Parakeet_8152.jpg">
+                            <div class="meta-label">USA - 28 Nov 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1_lKZQDtlyQ20npvTuCd73A84sIB4kViU" target="_blank">Mitred_Parakeet_8152.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1eXKwaw_e1Tp_AfSTkJAM_IiaUIlbFvQg" loading="lazy" alt="Mitred_Parakeet_8182.jpg">
+                            <div class="meta-label">USA - 28 Nov 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1eXKwaw_e1Tp_AfSTkJAM_IiaUIlbFvQg" target="_blank">Mitred_Parakeet_8182.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div></div></body></html>

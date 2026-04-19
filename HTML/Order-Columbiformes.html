@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photo Index</title>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; background: #121212; color: white; margin: 0; padding: 20px; padding-top: 80px; }
+        .family-list { display: flex; flex-direction: column; gap: 60px; max-width: 1800px; margin: 0 auto; }
+        
+        .family-card { background: #1e1e1e; border-radius: 24px; padding: 40px; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .family-header { margin-bottom: 30px; border-bottom: 2px solid #555; padding-bottom: 20px; }
+        .family-name { font-size: 36px; font-weight: 800; color: #4a9eff; text-transform: uppercase; letter-spacing: 2px; }
+        .family-order-label { font-size: 18px; opacity: 0.6; color: #fff; margin-top: 5px; font-weight: 500; }
+        
+        .species-list { display: flex; flex-direction: column; gap: 30px; }
+        .species-card { background: #2a2a2a; border-radius: 16px; padding: 20px; border: 1px solid #444; }
+        .species-header { margin-bottom: 15px; border-bottom: 1px solid #444; padding-bottom: 10px; }
+        .label { font-size: 24px; font-weight: 700; color: #fff; }
+        .french-label { font-size: 18px; opacity: 0.8; color: #ddd; }
+        .latin-label { font-size: 16px; opacity: 0.7; font-style: italic; color: #bbb; }
+        
+        .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
+        .photo-card { background: #333; border-radius: 10px; overflow: hidden; padding: 10px; display: flex; flex-direction: column; align-items: center; transition: transform 0.2s, background 0.2s; }
+        .photo-card:hover { transform: scale(1.02); background: #3d3d3d; }
+        
+        img { max-width: 100%; height: auto; border-radius: 6px; object-fit: contain; }
+        .meta-label { font-size: 11px; opacity: 0.7; align-self: flex-start; margin-top: 8px; color: #fff; }
+        .filename { font-size: 9px; opacity: 0.4; margin-top: 2px; word-break: break-all; align-self: flex-start; }
+        .filename a { color: #4a9eff; text-decoration: none; transition: color 0.2s; }
+        .filename a:hover { text-decoration: underline; }
+        
+        /* Intro Section Styles */
+        .intro-section { max-width: 1200px; margin: 0 auto 80px; padding: 60px; background: #1e1e1e; border-radius: 32px; border: 1px solid #333; box-shadow: 0 20px 50px rgba(0,0,0,0.6); line-height: 1.8; }
+        .intro-title { font-size: 48px; font-weight: 900; margin-bottom: 40px; color: #4a9eff; line-height: 1.2; text-align: center; }
+        .intro-text { font-size: 20px; opacity: 0.9; margin-bottom: 30px; }
+        .intro-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 30px; margin-top: 50px; border-top: 1px solid #444; padding-top: 40px; }
+        .stat-item { text-align: center; }
+        .stat-value { font-size: 36px; font-weight: 800; color: #4a9eff; display: block; }
+        .stat-label { font-size: 14px; opacity: 0.6; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* Mode Selector Styles */
+        .mode-selector { position: fixed; top: 0; left: 0; right: 0; background: rgba(30, 30, 30, 0.95); backdrop-filter: blur(10px); padding: 15px 40px; border-bottom: 1px solid #333; z-index: 1000; display: flex; justify-content: flex-end; align-items: center; gap: 20px; }
+        .mode-button { background: #333; border: 1px solid #444; color: white; padding: 8px 20px; border-radius: 20px; cursor: pointer; font-weight: 600; transition: all 0.2s; }
+        .mode-button.active { background: #4a9eff; border-color: #4a9eff; }
+        .mode-label { font-size: 14px; opacity: 0.6; font-weight: 600; text-transform: uppercase; }
+
+        /* Restricted Mode Styles */
+        body.mode-public .filename { display: none; }
+        body.mode-public .photo-card:hover { transform: none; background: #333; }
+
+        /* Modal Styles */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; justify-content: center; align-items: center; }
+        .modal { background: #1e1e1e; padding: 40px; border-radius: 24px; border: 1px solid #333; width: 400px; box-shadow: 0 20px 50px rgba(0,0,0,0.8); }
+        .modal h2 { margin-top: 0; color: #4a9eff; }
+        .modal input { width: 100%; padding: 12px; margin: 20px 0; background: #2a2a2a; border: 1px solid #444; color: white; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        .modal-buttons { display: flex; justify-content: flex-end; gap: 15px; }
+        .modal-buttons button { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; }
+        .btn-cancel { background: #333; color: white; }
+        .btn-submit { background: #4a9eff; color: white; }
+    </style>
+</head>
+<body class="mode-public">
+    <div class="mode-selector">
+        <span class="mode-label">View Mode:</span>
+        <button id="btn-public" class="mode-button active" onclick="setMode('PUBLIC')">PUBLIC</button>
+        <button id="btn-user" class="mode-button" onclick="requestUserMode()">USER</button>
+    </div>
+
+    <div id="password-modal" class="modal-overlay">
+        <div class="modal">
+            <h2>Enter Password</h2>
+            <p>Please enter the password to activate USER mode.</p>
+            <input type="password" id="password-input" placeholder="Password">
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+                <button class="btn-submit" onclick="submitPassword()">Submit</button>
+            </div>
+        </div>
+    </div>
+
+    
+    <div class="family-list">
+        <div class="family-card">
+            <div class="family-header">
+                <div class="family-name">Pigeons and Doves</div>
+                <div class="family-order-label">Columbidae / Columbiformes</div>
+            </div>
+            <div class="species-list">
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Speckled Pigeon</div>
+                        <div class="french-label">Pigeon roussard</div>
+                        <div class="latin-label">(Columba guinea)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1TXVLONoOUiIXPoU7QRpVUklZUSBgZFej" loading="lazy" alt="Speckled_Pigeon_58.jpg">
+                            <div class="meta-label">NA - 12 Jun 2007</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1TXVLONoOUiIXPoU7QRpVUklZUSBgZFej" target="_blank">Speckled_Pigeon_58.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Pale-vented Pigeon</div>
+                        <div class="french-label">Pigeon rousset</div>
+                        <div class="latin-label">(Patagioenas cayennensis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/10YCleyMzD7EY3CyqBeoxIl0sN4k-yljk" loading="lazy" alt="Pale-vented_Pigeon_20681.jpg">
+                            <div class="meta-label">Belize - 01 Dec 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/10YCleyMzD7EY3CyqBeoxIl0sN4k-yljk" target="_blank">Pale-vented_Pigeon_20681.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1SEiIf6uM9oFnWbyq1CY_WmtWx86-Xanm" loading="lazy" alt="Pale-vented_Pigeon_21553.jpg">
+                            <div class="meta-label">Belize - 01 Dec 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1SEiIf6uM9oFnWbyq1CY_WmtWx86-Xanm" target="_blank">Pale-vented_Pigeon_21553.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/11VWuysjXzXeyqasgxXpubqsYa97Q_iIL" loading="lazy" alt="Pale-vented_Pigeon_22873.jpg">
+                            <div class="meta-label">Belize - 01 Dec 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/11VWuysjXzXeyqasgxXpubqsYa97Q_iIL" target="_blank">Pale-vented_Pigeon_22873.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Bare-eyed Pigeon</div>
+                        <div class="french-label">Pigeon jounud</div>
+                        <div class="latin-label">(Patagioenas corensis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1oAbxwNARFSWjzCaB3hIQBQkh8dmREnmQ" loading="lazy" alt="Bare-eyed_Pigeon_4448MF.jpg">
+                            <div class="meta-label">Colombia - 09 Apr 2025</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1oAbxwNARFSWjzCaB3hIQBQkh8dmREnmQ" target="_blank">Bare-eyed_Pigeon_4448MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1W5DeX19xbVJPrOcduIengrWHqrA7MyZK" loading="lazy" alt="Bare-eyed_Pigeon_5353.jpg">
+                            <div class="meta-label">Colombia - 09 Apr 2025</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1W5DeX19xbVJPrOcduIengrWHqrA7MyZK" target="_blank">Bare-eyed_Pigeon_5353.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Red-billed Pigeon</div>
+                        <div class="french-label">Pigeon à bec rouge</div>
+                        <div class="latin-label">(Patagioenas flavirostris)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1RvGT9Seub_l0ZuYYEo8yzQ4AVX0ZBORI" loading="lazy" alt="Red-billed_Pigeon_4500.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1RvGT9Seub_l0ZuYYEo8yzQ4AVX0ZBORI" target="_blank">Red-billed_Pigeon_4500.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Band-tailed Pigeon</div>
+                        <div class="french-label">Pigeon à queue barrée</div>
+                        <div class="latin-label">(Patagioenas fasciata)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1L6Eh6dBYnYLKrIk1uuP43uVj0QjrknBr" loading="lazy" alt="Band-tailed_Pigeon.jpg">
+                            <div class="meta-label">Colombia - 20 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1L6Eh6dBYnYLKrIk1uuP43uVj0QjrknBr" target="_blank">Band-tailed_Pigeon.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1ZfitHwiVj7RGbglJcVI6KRg9B-PzcPH9" loading="lazy" alt="Band-tailed_Pigeon_3216MF.jpg">
+                            <div class="meta-label">Colombia - 20 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1ZfitHwiVj7RGbglJcVI6KRg9B-PzcPH9" target="_blank">Band-tailed_Pigeon_3216MF.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Short-billed Pigeon</div>
+                        <div class="french-label">Pigeon à bec noir</div>
+                        <div class="latin-label">(Patagioenas nigrirostris)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Yv9AAz3BmJYnHZPpqgu13Z87iEzVTPK7" loading="lazy" alt="Short-billed_pigeon_528.jpg">
+                            <div class="meta-label">Belize - 01 Dec 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Yv9AAz3BmJYnHZPpqgu13Z87iEzVTPK7" target="_blank">Short-billed_pigeon_528.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1xu-YEScbdjB2BT9olrjAl_XIOgFKRlxF" loading="lazy" alt="Short-billed_pigeon_5816.jpg">
+                            <div class="meta-label">Belize - 01 Dec 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1xu-YEScbdjB2BT9olrjAl_XIOgFKRlxF" target="_blank">Short-billed_pigeon_5816.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Eurasian Collared-Dove</div>
+                        <div class="french-label">Tourterelle turque</div>
+                        <div class="latin-label">(Streptopelia decaocto)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/11Toniar2R7C4Tiu_eY3mk4mX9sciJe4I" loading="lazy" alt="Eurasian_Collared-Dove_4624.jpg">
+                            <div class="meta-label">Canada - 19 Mar 2015</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/11Toniar2R7C4Tiu_eY3mk4mX9sciJe4I" target="_blank">Eurasian_Collared-Dove_4624.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1I3cvb6ee65e3AjWMDe5GHS9-d8Gl7McO" loading="lazy" alt="Eurasian_Collared-Dove_7578.jpg">
+                            <div class="meta-label">Canada - 19 Mar 2015</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1I3cvb6ee65e3AjWMDe5GHS9-d8Gl7McO" target="_blank">Eurasian_Collared-Dove_7578.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Red-eyed Dove</div>
+                        <div class="french-label">Tourterelle à collier</div>
+                        <div class="latin-label">(Streptopelia semitorquata)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1FdJdZDyo0ZC328GmwJag2N6j4p_C9ai3" loading="lazy" alt="Red-eyed_Dove_0499.jpg">
+                            <div class="meta-label">ZW - 07 Oct 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1FdJdZDyo0ZC328GmwJag2N6j4p_C9ai3" target="_blank">Red-eyed_Dove_0499.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1jv3hfwXFUAAWJJfZme42QCvJySe6pXuZ" loading="lazy" alt="Red-eyed_Dove_6272.jpg">
+                            <div class="meta-label">ZW - 07 Oct 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1jv3hfwXFUAAWJJfZme42QCvJySe6pXuZ" target="_blank">Red-eyed_Dove_6272.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Spotted Dove</div>
+                        <div class="french-label">Tourterelle tigrine</div>
+                        <div class="latin-label">(Spilopelia chinensis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1oxi-VdvCatsQUuNfQ3jDSSHQPK_GDIoh" loading="lazy" alt="Spotted_Dove_0136.jpg">
+                            <div class="meta-label">Australia - 08 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1oxi-VdvCatsQUuNfQ3jDSSHQPK_GDIoh" target="_blank">Spotted_Dove_0136.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1tB28piMCusoXEqVDNsmBnadXKvahGShp" loading="lazy" alt="Spotted_Dove_9865.jpg">
+                            <div class="meta-label">Australia - 08 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1tB28piMCusoXEqVDNsmBnadXKvahGShp" target="_blank">Spotted_Dove_9865.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Brown Cuckoo-Dove</div>
+                        <div class="french-label">Phasianelle brune</div>
+                        <div class="latin-label">(Macropygia phasianella)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1EgXLZdVIee1zX77vGeoZfIWq4E59kola" loading="lazy" alt="Brown_Cuckoo-Dove_8110.jpg">
+                            <div class="meta-label">Australia - 10 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1EgXLZdVIee1zX77vGeoZfIWq4E59kola" target="_blank">Brown_Cuckoo-Dove_8110.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Emerald-spotted Wood-Dove</div>
+                        <div class="french-label">Tourtelette émeraudine</div>
+                        <div class="latin-label">(Turtur chalcospilos)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1ZxIiujKpP0-RLgGwaFTroD_lN79No1AJ" loading="lazy" alt="Emerald-spotted_Wood-Dove_9196.jpg">
+                            <div class="meta-label">South Africa - 25 Sep 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1ZxIiujKpP0-RLgGwaFTroD_lN79No1AJ" target="_blank">Emerald-spotted_Wood-Dove_9196.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Namaqua Dove</div>
+                        <div class="french-label">Tourtelette masquée</div>
+                        <div class="latin-label">(Oena capensis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1wfO44a8x1PaVjULPEEa5lB4nzuMxxueL" loading="lazy" alt="Namaqua_Dove_-_Tourtelette_masquee-6529.jpg">
+                            <div class="meta-label">Tanzania - 16 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1wfO44a8x1PaVjULPEEa5lB4nzuMxxueL" target="_blank">Namaqua_Dove_-_Tourtelette_masquee-6529.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1WS72TdkwWBNgJW9ZGil3AlpNM0RGVNx_" loading="lazy" alt="Namaqua_Dove_-_Tourtelette_masquee_9330MF.jpg">
+                            <div class="meta-label">Tanzania - 16 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1WS72TdkwWBNgJW9ZGil3AlpNM0RGVNx_" target="_blank">Namaqua_Dove_-_Tourtelette_masquee_9330MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/14P0iMd_SRZVivAcBqBygItJlSzfTJcwx" loading="lazy" alt="Namaqua_Dove_258.jpg">
+                            <div class="meta-label">Tanzania - 16 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/14P0iMd_SRZVivAcBqBygItJlSzfTJcwx" target="_blank">Namaqua_Dove_258.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Common Bronzewing</div>
+                        <div class="french-label">Colombine lumachelle</div>
+                        <div class="latin-label">(Phaps chalcoptera)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1cUs7KMWT_ezIdY5gYQGDylGdhp7qeszs" loading="lazy" alt="Common_Bronzewing_2259.jpg">
+                            <div class="meta-label">Australia - 25 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1cUs7KMWT_ezIdY5gYQGDylGdhp7qeszs" target="_blank">Common_Bronzewing_2259.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Crested Pigeon</div>
+                        <div class="french-label">Colombine longup</div>
+                        <div class="latin-label">(Ocyphaps lophotes)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/10kFudZ4vrum2S4NiBJbG6U8pgOJcVrau" loading="lazy" alt="Crested_Pigeon_2229.jpg">
+                            <div class="meta-label">Australia - 07 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/10kFudZ4vrum2S4NiBJbG6U8pgOJcVrau" target="_blank">Crested_Pigeon_2229.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Zebra Dove</div>
+                        <div class="french-label">Géopélie zébrée</div>
+                        <div class="latin-label">(Geopelia striata)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1pxulVopi8pJcqQ7r4OuqGTFOuvGEThen" loading="lazy" alt="Zebra_Dove_0023.jpg">
+                            <div class="meta-label">USA - 28 Oct 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1pxulVopi8pJcqQ7r4OuqGTFOuvGEThen" target="_blank">Zebra_Dove_0023.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Inca Dove</div>
+                        <div class="french-label">Colombe inca</div>
+                        <div class="latin-label">(Columbina inca)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1P3KFcTZyE7L7jlAaCq9st6RhW2v5D0ai" loading="lazy" alt="Inca_Dove_MF6097.jpg">
+                            <div class="meta-label">CR - 15 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1P3KFcTZyE7L7jlAaCq9st6RhW2v5D0ai" target="_blank">Inca_Dove_MF6097.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Common Ground Dove</div>
+                        <div class="french-label">Colombe à queue noire</div>
+                        <div class="latin-label">(Columbina passerina)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1fAB_BuTMqXGabnGBFebtZ2BwSRmov-0e" loading="lazy" alt="Common_Ground_Dove_7944MF.jpg">
+                            <div class="meta-label">Ecuador - 03 Apr 2019</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1fAB_BuTMqXGabnGBFebtZ2BwSRmov-0e" target="_blank">Common_Ground_Dove_7944MF.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Ruddy Ground Dove</div>
+                        <div class="french-label">Colombe rousse</div>
+                        <div class="latin-label">(Columbina talpacoti)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1pOxX5Usf4HQWS-phxNxNGxJ-7d_vq63A" loading="lazy" alt="Ruddy_Ground_Dove_1731MF.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1pOxX5Usf4HQWS-phxNxNGxJ-7d_vq63A" target="_blank">Ruddy_Ground_Dove_1731MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/13yDWZBYeiuGdNxJZuzLLia0nS60huBuK" loading="lazy" alt="Ruddy_Ground_Dove_358.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/13yDWZBYeiuGdNxJZuzLLia0nS60huBuK" target="_blank">Ruddy_Ground_Dove_358.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Scaled Dove</div>
+                        <div class="french-label">Colombe écaillée</div>
+                        <div class="latin-label">(Columbina squammata)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1gdkOzWBaG4BkJVHZqycWFRjKcJyZ-en7" loading="lazy" alt="Scaled_Dove_4853.jpg">
+                            <div class="meta-label">Colombia - 04 Apr 2025</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1gdkOzWBaG4BkJVHZqycWFRjKcJyZ-en7" target="_blank">Scaled_Dove_4853.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1CIvZzZELt4BrQMCIfGq9xCTljhdJ8Sss" loading="lazy" alt="Scaled_Dove_5245.jpg">
+                            <div class="meta-label">Colombia - 04 Apr 2025</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1CIvZzZELt4BrQMCIfGq9xCTljhdJ8Sss" target="_blank">Scaled_Dove_5245.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">White-tipped Dove</div>
+                        <div class="french-label">Colombe de Verreaux</div>
+                        <div class="latin-label">(Leptotila verreauxi)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1kf9VnPuQWUROue-DTCPrmNqdlr_wwG0U" loading="lazy" alt="White-tipped_Dove_0954.jpg">
+                            <div class="meta-label">Panama - 11 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1kf9VnPuQWUROue-DTCPrmNqdlr_wwG0U" target="_blank">White-tipped_Dove_0954.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Buff-fronted Quail-Dove</div>
+                        <div class="french-label">Colombe du Costa Rica</div>
+                        <div class="latin-label">(Zentrygon costaricensis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1GoDWwARwLQ_nOENO8IUt-PQpUs-VqLr-" loading="lazy" alt="Buff-fronted_Quail-Dove_2647.jpg">
+                            <div class="meta-label">CR - 04 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1GoDWwARwLQ_nOENO8IUt-PQpUs-VqLr-" target="_blank">Buff-fronted_Quail-Dove_2647.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">White-throated Quail-Dove</div>
+                        <div class="french-label">Colombe à gorge blanche</div>
+                        <div class="latin-label">(Zentrygon frenata)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1gW1njnwS6Yl08TwN2ZvlisVI9-IIBfAp" loading="lazy" alt="White-throated_Quail-Dove_3908.jpg">
+                            <div class="meta-label">Ecuador - 05 Apr 2019</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1gW1njnwS6Yl08TwN2ZvlisVI9-IIBfAp" target="_blank">White-throated_Quail-Dove_3908.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">White-winged Dove</div>
+                        <div class="french-label">Tourterelle à ailes blanches</div>
+                        <div class="latin-label">(Zenaida asiatica)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1veBHJ7lTetNrgrJyRJmB99tgp8syVOXy" loading="lazy" alt="White-winged_Dove_1823.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1veBHJ7lTetNrgrJyRJmB99tgp8syVOXy" target="_blank">White-winged_Dove_1823.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1ehDLaVo8svAFcVSJQMDqYIEM_yNGtAAl" loading="lazy" alt="White-winged_Dove_208.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1ehDLaVo8svAFcVSJQMDqYIEM_yNGtAAl" target="_blank">White-winged_Dove_208.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1tF9ExBYpilehsLX2cbjSHxenKTm1VgUO" loading="lazy" alt="White-winged_Dove_6270.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1tF9ExBYpilehsLX2cbjSHxenKTm1VgUO" target="_blank">White-winged_Dove_6270.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/19VfuG0ZeMMH-AoihbkHj4fHuL1m-4tRB" loading="lazy" alt="White-winged_Dove_8448.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/19VfuG0ZeMMH-AoihbkHj4fHuL1m-4tRB" target="_blank">White-winged_Dove_8448.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1h6WA_dr5XSwhPsQons8S3SyTe-2rU_ce" loading="lazy" alt="White-winged_Dove_MF5929.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1h6WA_dr5XSwhPsQons8S3SyTe-2rU_ce" target="_blank">White-winged_Dove_MF5929.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Galapagos Dove</div>
+                        <div class="french-label">Tourterelle des Galapagos</div>
+                        <div class="latin-label">(Zenaida galapagoensis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1nj4uyblHffNkt3INns5cae5VnmXqpxsS" loading="lazy" alt="Galapagos_Dove_52.jpg">
+                            <div class="meta-label">Ecuador - 08 Jul 2004</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1nj4uyblHffNkt3INns5cae5VnmXqpxsS" target="_blank">Galapagos_Dove_52.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Eared Dove</div>
+                        <div class="french-label">Tourterelle oreillarde</div>
+                        <div class="latin-label">(Zenaida auriculata)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1-jEF79BVh7zip5nXbhLbWA5z3V6BAM3-" loading="lazy" alt="Eared_Dove_5733.jpg">
+                            <div class="meta-label">Colombia - 16 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1-jEF79BVh7zip5nXbhLbWA5z3V6BAM3-" target="_blank">Eared_Dove_5733.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1GOfY9VUCcPeaM2xUawR2UiV2CgWxDkQ8" loading="lazy" alt="Eared_Dove_5927.jpg">
+                            <div class="meta-label">Colombia - 16 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1GOfY9VUCcPeaM2xUawR2UiV2CgWxDkQ8" target="_blank">Eared_Dove_5927.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1SdDNufD4dEMsuMGRiEnWbZfFPdugW2w0" loading="lazy" alt="Eared_Dove_6112.jpg">
+                            <div class="meta-label">Colombia - 16 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1SdDNufD4dEMsuMGRiEnWbZfFPdugW2w0" target="_blank">Eared_Dove_6112.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Mourning Dove</div>
+                        <div class="french-label">Tourterelle triste</div>
+                        <div class="latin-label">(Zenaida macroura)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1KbdTcbJy4Neu-a-DUIMS74GtXeAXTs2l" loading="lazy" alt="Mourning_Dove_1264.jpg">
+                            <div class="meta-label">Canada - 02 May 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1KbdTcbJy4Neu-a-DUIMS74GtXeAXTs2l" target="_blank">Mourning_Dove_1264.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1t6SX7G6-NE0z7sR1_BnUqNwKx8AIAx-t" loading="lazy" alt="Mourning_Dove_2522.jpg">
+                            <div class="meta-label">Canada - 02 May 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1t6SX7G6-NE0z7sR1_BnUqNwKx8AIAx-t" target="_blank">Mourning_Dove_2522.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1AcMvTo8V7iwrS8PKZudt3HG-BFTh5_jd" loading="lazy" alt="Mourning_Dove_7079.jpg">
+                            <div class="meta-label">Canada - 02 May 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1AcMvTo8V7iwrS8PKZudt3HG-BFTh5_jd" target="_blank">Mourning_Dove_7079.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1O3dr0v1U2U7YcI2pcuW_XEZadQ_870T3" loading="lazy" alt="Mourning_Dove_8003MF.jpg">
+                            <div class="meta-label">Canada - 02 May 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1O3dr0v1U2U7YcI2pcuW_XEZadQ_870T3" target="_blank">Mourning_Dove_8003MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1zWfVugT4icRq45m5ZSWkY8vXKDIc5b9W" loading="lazy" alt="Mourning_Dove_8637.jpg">
+                            <div class="meta-label">Canada - 02 May 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1zWfVugT4icRq45m5ZSWkY8vXKDIc5b9W" target="_blank">Mourning_Dove_8637.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1SBVp5y-EKBpGm_0gxQTQ80tyCS7MJCpx" loading="lazy" alt="Mourning_Dove_8967.jpg">
+                            <div class="meta-label">Canada - 02 May 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1SBVp5y-EKBpGm_0gxQTQ80tyCS7MJCpx" target="_blank">Mourning_Dove_8967.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/17MPHhsuZxARBzbgR-C4sZuXPrFVPkZr6" loading="lazy" alt="Mourning_Dove_9281.jpg">
+                            <div class="meta-label">Canada - 02 May 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/17MPHhsuZxARBzbgR-C4sZuXPrFVPkZr6" target="_blank">Mourning_Dove_9281.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Madagascar Blue-Pigeon</div>
+                        <div class="french-label">Founingo bleu</div>
+                        <div class="latin-label">(Alectroenas madagascariensis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1852lcA_mI7ZAl8aeqiRlH7K1SW4r4Au2" loading="lazy" alt="Madagascar_Blue-Pigeon_-_Founingo_bleu_5546.jpg">
+                            <div class="meta-label">MG - 07 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1852lcA_mI7ZAl8aeqiRlH7K1SW4r4Au2" target="_blank">Madagascar_Blue-Pigeon_-_Founingo_bleu_5546.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1tnvzf4Sg7H5yxaIxxUzS8vR22XzktvZ8" loading="lazy" alt="Madagascar_Blue-Pigeon_-_Founingo_bleu_5673.jpg">
+                            <div class="meta-label">MG - 07 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1tnvzf4Sg7H5yxaIxxUzS8vR22XzktvZ8" target="_blank">Madagascar_Blue-Pigeon_-_Founingo_bleu_5673.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div></div></body></html>

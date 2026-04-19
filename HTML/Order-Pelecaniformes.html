@@ -1,0 +1,1890 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photo Index</title>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; background: #121212; color: white; margin: 0; padding: 20px; padding-top: 80px; }
+        .family-list { display: flex; flex-direction: column; gap: 60px; max-width: 1800px; margin: 0 auto; }
+        
+        .family-card { background: #1e1e1e; border-radius: 24px; padding: 40px; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .family-header { margin-bottom: 30px; border-bottom: 2px solid #555; padding-bottom: 20px; }
+        .family-name { font-size: 36px; font-weight: 800; color: #4a9eff; text-transform: uppercase; letter-spacing: 2px; }
+        .family-order-label { font-size: 18px; opacity: 0.6; color: #fff; margin-top: 5px; font-weight: 500; }
+        
+        .species-list { display: flex; flex-direction: column; gap: 30px; }
+        .species-card { background: #2a2a2a; border-radius: 16px; padding: 20px; border: 1px solid #444; }
+        .species-header { margin-bottom: 15px; border-bottom: 1px solid #444; padding-bottom: 10px; }
+        .label { font-size: 24px; font-weight: 700; color: #fff; }
+        .french-label { font-size: 18px; opacity: 0.8; color: #ddd; }
+        .latin-label { font-size: 16px; opacity: 0.7; font-style: italic; color: #bbb; }
+        
+        .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
+        .photo-card { background: #333; border-radius: 10px; overflow: hidden; padding: 10px; display: flex; flex-direction: column; align-items: center; transition: transform 0.2s, background 0.2s; }
+        .photo-card:hover { transform: scale(1.02); background: #3d3d3d; }
+        
+        img { max-width: 100%; height: auto; border-radius: 6px; object-fit: contain; }
+        .meta-label { font-size: 11px; opacity: 0.7; align-self: flex-start; margin-top: 8px; color: #fff; }
+        .filename { font-size: 9px; opacity: 0.4; margin-top: 2px; word-break: break-all; align-self: flex-start; }
+        .filename a { color: #4a9eff; text-decoration: none; transition: color 0.2s; }
+        .filename a:hover { text-decoration: underline; }
+        
+        /* Intro Section Styles */
+        .intro-section { max-width: 1200px; margin: 0 auto 80px; padding: 60px; background: #1e1e1e; border-radius: 32px; border: 1px solid #333; box-shadow: 0 20px 50px rgba(0,0,0,0.6); line-height: 1.8; }
+        .intro-title { font-size: 48px; font-weight: 900; margin-bottom: 40px; color: #4a9eff; line-height: 1.2; text-align: center; }
+        .intro-text { font-size: 20px; opacity: 0.9; margin-bottom: 30px; }
+        .intro-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 30px; margin-top: 50px; border-top: 1px solid #444; padding-top: 40px; }
+        .stat-item { text-align: center; }
+        .stat-value { font-size: 36px; font-weight: 800; color: #4a9eff; display: block; }
+        .stat-label { font-size: 14px; opacity: 0.6; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* Mode Selector Styles */
+        .mode-selector { position: fixed; top: 0; left: 0; right: 0; background: rgba(30, 30, 30, 0.95); backdrop-filter: blur(10px); padding: 15px 40px; border-bottom: 1px solid #333; z-index: 1000; display: flex; justify-content: flex-end; align-items: center; gap: 20px; }
+        .mode-button { background: #333; border: 1px solid #444; color: white; padding: 8px 20px; border-radius: 20px; cursor: pointer; font-weight: 600; transition: all 0.2s; }
+        .mode-button.active { background: #4a9eff; border-color: #4a9eff; }
+        .mode-label { font-size: 14px; opacity: 0.6; font-weight: 600; text-transform: uppercase; }
+
+        /* Restricted Mode Styles */
+        body.mode-public .filename { display: none; }
+        body.mode-public .photo-card:hover { transform: none; background: #333; }
+
+        /* Modal Styles */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; justify-content: center; align-items: center; }
+        .modal { background: #1e1e1e; padding: 40px; border-radius: 24px; border: 1px solid #333; width: 400px; box-shadow: 0 20px 50px rgba(0,0,0,0.8); }
+        .modal h2 { margin-top: 0; color: #4a9eff; }
+        .modal input { width: 100%; padding: 12px; margin: 20px 0; background: #2a2a2a; border: 1px solid #444; color: white; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        .modal-buttons { display: flex; justify-content: flex-end; gap: 15px; }
+        .modal-buttons button { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; }
+        .btn-cancel { background: #333; color: white; }
+        .btn-submit { background: #4a9eff; color: white; }
+    </style>
+</head>
+<body class="mode-public">
+    <div class="mode-selector">
+        <span class="mode-label">View Mode:</span>
+        <button id="btn-public" class="mode-button active" onclick="setMode('PUBLIC')">PUBLIC</button>
+        <button id="btn-user" class="mode-button" onclick="requestUserMode()">USER</button>
+    </div>
+
+    <div id="password-modal" class="modal-overlay">
+        <div class="modal">
+            <h2>Enter Password</h2>
+            <p>Please enter the password to activate USER mode.</p>
+            <input type="password" id="password-input" placeholder="Password">
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+                <button class="btn-submit" onclick="submitPassword()">Submit</button>
+            </div>
+        </div>
+    </div>
+
+    
+    <div class="family-list">
+        <div class="family-card">
+            <div class="family-header">
+                <div class="family-name">Ibises and Spoonbills</div>
+                <div class="family-order-label">Threskiornithidae / Pelecaniformes</div>
+            </div>
+            <div class="species-list">
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">White Ibis</div>
+                        <div class="french-label">Ibis blanc</div>
+                        <div class="latin-label">(Eudocimus albus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1yjGKKjQ6_5_EDALg3uMSmvaaNMWCaZzu" loading="lazy" alt="White_Ibis_0505.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1yjGKKjQ6_5_EDALg3uMSmvaaNMWCaZzu" target="_blank">White_Ibis_0505.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1sRXd5K9UVOWDYzhf0uPYMavx0wXOgwvN" loading="lazy" alt="White_Ibis_1001.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1sRXd5K9UVOWDYzhf0uPYMavx0wXOgwvN" target="_blank">White_Ibis_1001.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1qmQzw5dBVughHMkgIZYr7hdKwA3RSY1P" loading="lazy" alt="White_Ibis_1471MF.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1qmQzw5dBVughHMkgIZYr7hdKwA3RSY1P" target="_blank">White_Ibis_1471MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1sJvYsbBqZEzgHhLocGel5TlCv0tKbOq1" loading="lazy" alt="White_Ibis_20520.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1sJvYsbBqZEzgHhLocGel5TlCv0tKbOq1" target="_blank">White_Ibis_20520.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/16c-I4B8BBqifpvL-63Tpz_LyVu-jhXgk" loading="lazy" alt="White_Ibis_2622.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/16c-I4B8BBqifpvL-63Tpz_LyVu-jhXgk" target="_blank">White_Ibis_2622.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1jzyYh1pqPivG8vPwK97Ftk84c_xxNBKX" loading="lazy" alt="White_Ibis_2719.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1jzyYh1pqPivG8vPwK97Ftk84c_xxNBKX" target="_blank">White_Ibis_2719.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/14FEDztGs6r4mrwOkYrADgrdsvCLZ64-K" loading="lazy" alt="White_Ibis_5101MF.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/14FEDztGs6r4mrwOkYrADgrdsvCLZ64-K" target="_blank">White_Ibis_5101MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1_GfaYGc4EEaJeo0ku8L1TRE83rYKJ_GX" loading="lazy" alt="White_Ibis_5803.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1_GfaYGc4EEaJeo0ku8L1TRE83rYKJ_GX" target="_blank">White_Ibis_5803.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1ccrTHkvrYhVFdIPW6dGf6Nxyt5v7a41H" loading="lazy" alt="White_Ibis_6598.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1ccrTHkvrYhVFdIPW6dGf6Nxyt5v7a41H" target="_blank">White_Ibis_6598.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1NizCPi4xdS1qwTHmCz4MYnqhioRz4Nqa" loading="lazy" alt="White_Ibis_8648.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1NizCPi4xdS1qwTHmCz4MYnqhioRz4Nqa" target="_blank">White_Ibis_8648.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1bxUX9xadkp8jO5tbfHBgrvUteEG2Qns4" loading="lazy" alt="White_Ibis_9694.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1bxUX9xadkp8jO5tbfHBgrvUteEG2Qns4" target="_blank">White_Ibis_9694.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Scarlet Ibis</div>
+                        <div class="french-label">Ibis rouge</div>
+                        <div class="latin-label">(Eudocimus ruber)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/10-OxZOCpyfRy_xwYUYIJPAwUB9DqAr7Z" loading="lazy" alt="Scarlet_Ibis_5749.jpg">
+                            <div class="meta-label">TT - 11 Apr 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/10-OxZOCpyfRy_xwYUYIJPAwUB9DqAr7Z" target="_blank">Scarlet_Ibis_5749.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1gnijCid54WiuX1Mpo-Q3dT1xPoxPH_s-" loading="lazy" alt="Scarlet_Ibis_6206.jpg">
+                            <div class="meta-label">TT - 11 Apr 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1gnijCid54WiuX1Mpo-Q3dT1xPoxPH_s-" target="_blank">Scarlet_Ibis_6206.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1RUV9zXp7_Ws-B6eKiJ49hHDNLW8qrAgX" loading="lazy" alt="Scarlet_Ibis_6271.jpg">
+                            <div class="meta-label">TT - 11 Apr 2018</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1RUV9zXp7_Ws-B6eKiJ49hHDNLW8qrAgX" target="_blank">Scarlet_Ibis_6271.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Glossy Ibis</div>
+                        <div class="french-label">Ibis falcinelle</div>
+                        <div class="latin-label">(Plegadis falcinellus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/15TsBKraKZPW3Cp7Sb7UGuiWBfIKDVjRn" loading="lazy" alt="Glossy_Ibis_0991.jpg">
+                            <div class="meta-label">Tanzania - 09 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/15TsBKraKZPW3Cp7Sb7UGuiWBfIKDVjRn" target="_blank">Glossy_Ibis_0991.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1i4UbBDth7nP7Td0hk1CmsnNlz7b9zYBi" loading="lazy" alt="Glossy_Ibis_1627.jpg">
+                            <div class="meta-label">Tanzania - 09 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1i4UbBDth7nP7Td0hk1CmsnNlz7b9zYBi" target="_blank">Glossy_Ibis_1627.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1ihliIJg4V_PNLabEBGjGmB2NdiP3HESF" loading="lazy" alt="Glossy_Ibis_1649.jpg">
+                            <div class="meta-label">Tanzania - 09 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1ihliIJg4V_PNLabEBGjGmB2NdiP3HESF" target="_blank">Glossy_Ibis_1649.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1XYLAijwVVhf5NkAkdE6_Oy2NxIIeMzm1" loading="lazy" alt="Glossy_Ibis_21073.jpg">
+                            <div class="meta-label">Tanzania - 09 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1XYLAijwVVhf5NkAkdE6_Oy2NxIIeMzm1" target="_blank">Glossy_Ibis_21073.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1tkaTXbA1ytPaOCfPWaOjnp_rnDLehJi-" loading="lazy" alt="Glossy_Ibis_3106.jpg">
+                            <div class="meta-label">Tanzania - 09 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1tkaTXbA1ytPaOCfPWaOjnp_rnDLehJi-" target="_blank">Glossy_Ibis_3106.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Et2eIrrPSrW3qGrE2pLwZdShD3-e2uZS" loading="lazy" alt="Glossy_Ibis_349.jpg">
+                            <div class="meta-label">Tanzania - 09 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Et2eIrrPSrW3qGrE2pLwZdShD3-e2uZS" target="_blank">Glossy_Ibis_349.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/19FkyH-BEENnMJ5UUY2-XXERdOTda2mKl" loading="lazy" alt="Glossy_Ibis_349g.jpg">
+                            <div class="meta-label">Tanzania - 09 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/19FkyH-BEENnMJ5UUY2-XXERdOTda2mKl" target="_blank">Glossy_Ibis_349g.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/19VfQRmI1E0DPo12x1jQ1ANTKXTeXwGMw" loading="lazy" alt="Glossy_Ibis_4576.jpg">
+                            <div class="meta-label">Tanzania - 09 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/19VfQRmI1E0DPo12x1jQ1ANTKXTeXwGMw" target="_blank">Glossy_Ibis_4576.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1oZMU2poa5X-YsSX0j5IS1JtBC8wkIo1X" loading="lazy" alt="Glossy_Ibis_9708.jpg">
+                            <div class="meta-label">Tanzania - 09 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1oZMU2poa5X-YsSX0j5IS1JtBC8wkIo1X" target="_blank">Glossy_Ibis_9708.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/13_X65WLWoWCVHy3UOSWceUGC0Jx-BZ5c" loading="lazy" alt="Glossy_Ibis_9792.jpg">
+                            <div class="meta-label">Tanzania - 09 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/13_X65WLWoWCVHy3UOSWceUGC0Jx-BZ5c" target="_blank">Glossy_Ibis_9792.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Qiv8ORJz1emkLYAEdGgFSDrDTUiA8LzP" loading="lazy" alt="Glossy_Ibis_9877.jpg">
+                            <div class="meta-label">Tanzania - 09 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Qiv8ORJz1emkLYAEdGgFSDrDTUiA8LzP" target="_blank">Glossy_Ibis_9877.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Madagascar Ibis</div>
+                        <div class="french-label">Ibis huppé</div>
+                        <div class="latin-label">(Lophotibis cristata)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1kG9HDJ-8KwJh3IMmJurOUapkiAHY2WF7" loading="lazy" alt="Madagascar_Ibis_-_Ibis_huppe_5600.jpg">
+                            <div class="meta-label">MG - 07 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1kG9HDJ-8KwJh3IMmJurOUapkiAHY2WF7" target="_blank">Madagascar_Ibis_-_Ibis_huppe_5600.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Green Ibis</div>
+                        <div class="french-label">Ibis vert</div>
+                        <div class="latin-label">(Mesembrinibis cayennensis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1KmkJScnBDC1-HfqizpEFxCaMMj7hqiJR" loading="lazy" alt="Green_Ibis_4510.jpg">
+                            <div class="meta-label">CR - 06 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1KmkJScnBDC1-HfqizpEFxCaMMj7hqiJR" target="_blank">Green_Ibis_4510.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1DCRyHc9kiOwzbF6N-6tYyWhL2a-f5soE" loading="lazy" alt="Green_Ibis_MF4900.jpg">
+                            <div class="meta-label">CR - 06 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1DCRyHc9kiOwzbF6N-6tYyWhL2a-f5soE" target="_blank">Green_Ibis_MF4900.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Bare-faced Ibis</div>
+                        <div class="french-label">Ibis à face nue</div>
+                        <div class="latin-label">(Phimosus infuscatus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1A5BzWxO1_r3uHwujJIgtcrjC09Sm8VFk" loading="lazy" alt="Bare-faced_Ibis_1073.jpg">
+                            <div class="meta-label">Colombia - 16 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1A5BzWxO1_r3uHwujJIgtcrjC09Sm8VFk" target="_blank">Bare-faced_Ibis_1073.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1XEFsMMJw2B9wlgWyrWWF366imp34N5dG" loading="lazy" alt="Bare-faced_Ibis_2114MF.jpg">
+                            <div class="meta-label">Colombia - 16 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1XEFsMMJw2B9wlgWyrWWF366imp34N5dG" target="_blank">Bare-faced_Ibis_2114MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1TFlvjGGc0jdNQTjFTtZvhEwvReZ0wFpV" loading="lazy" alt="Bare-faced_Ibis_2277MF.jpg">
+                            <div class="meta-label">Colombia - 16 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1TFlvjGGc0jdNQTjFTtZvhEwvReZ0wFpV" target="_blank">Bare-faced_Ibis_2277MF.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Buff-necked Ibis</div>
+                        <div class="french-label">Ibis mandore</div>
+                        <div class="latin-label">(Theristicus caudatus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1zSwqSeRe4bom0O7MMb6GfORBsWzDlsxa" loading="lazy" alt="Buff-necked_Ibis_2014-017.jpg">
+                            <div class="meta-label">Colombia - 16 Dec 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1zSwqSeRe4bom0O7MMb6GfORBsWzDlsxa" target="_blank">Buff-necked_Ibis_2014-017.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Andean Ibis</div>
+                        <div class="french-label">Ibis des Andes</div>
+                        <div class="latin-label">(Theristicus branickii)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1LZgevY4jUCUcvDEIo3On2w7YuDS6MC9s" loading="lazy" alt="Andean_Ibis_6966.jpg">
+                            <div class="meta-label">Ecuador - 12 Apr 2019</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1LZgevY4jUCUcvDEIo3On2w7YuDS6MC9s" target="_blank">Andean_Ibis_6966.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Australian Ibis</div>
+                        <div class="french-label">Ibis à cou noir</div>
+                        <div class="latin-label">(Threskiornis molucca)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/14PnKGiSMhOJUTQEtO0RJaEuMcai_djTA" loading="lazy" alt="Australian_Ibis_2344.jpg">
+                            <div class="meta-label">Australia - 07 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/14PnKGiSMhOJUTQEtO0RJaEuMcai_djTA" target="_blank">Australian_Ibis_2344.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Southern Bald Ibis</div>
+                        <div class="french-label">Ibis du Cap</div>
+                        <div class="latin-label">(Geronticus calvus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/17Di0RPyRzftrAaZuo3A0sk9sNzwCfcni" loading="lazy" alt="Southern_Bald_Ibis_2789.jpg">
+                            <div class="meta-label">South Africa - 01 Oct 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/17Di0RPyRzftrAaZuo3A0sk9sNzwCfcni" target="_blank">Southern_Bald_Ibis_2789.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Royal Spoonbill</div>
+                        <div class="french-label">Spatule royale</div>
+                        <div class="latin-label">(Platalea regia)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Nd7dGACc3Q_4BwoTsYqt9k4GA9q7E8Qs" loading="lazy" alt="Royal_Spoonbill_1555.jpg">
+                            <div class="meta-label">Australia - 21 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Nd7dGACc3Q_4BwoTsYqt9k4GA9q7E8Qs" target="_blank">Royal_Spoonbill_1555.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1clEPW0mQg2RUIzZK0Aue0jAPR7dRWMKt" loading="lazy" alt="Royal_Spoonbill_2861MF.jpg">
+                            <div class="meta-label">Australia - 21 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1clEPW0mQg2RUIzZK0Aue0jAPR7dRWMKt" target="_blank">Royal_Spoonbill_2861MF.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">African Spoonbill</div>
+                        <div class="french-label">Spatule d'Afrique</div>
+                        <div class="latin-label">(Platalea alba)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1r8OTX_bj_aGTg4xOGZLZbDTX-HdnuGCg" loading="lazy" alt="African_Spoonbill_7924.jpg">
+                            <div class="meta-label">South Africa - 25 Sep 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1r8OTX_bj_aGTg4xOGZLZbDTX-HdnuGCg" target="_blank">African_Spoonbill_7924.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Yellow-billed Spoonbill</div>
+                        <div class="french-label">Spatule à bec jaune</div>
+                        <div class="latin-label">(Platalea flavipes)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1NmUr5vE3aQw8o8yo2yj2ZfiqwoFlHYlY" loading="lazy" alt="Yellow-billed_Spoonbill_1583.jpg">
+                            <div class="meta-label">Australia - 27 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1NmUr5vE3aQw8o8yo2yj2ZfiqwoFlHYlY" target="_blank">Yellow-billed_Spoonbill_1583.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1eX3EbIuNEsfoelG_I7_KCB7x6gsNkEVK" loading="lazy" alt="Yellow-billed_Spoonbill_3635MF.jpg">
+                            <div class="meta-label">Australia - 27 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1eX3EbIuNEsfoelG_I7_KCB7x6gsNkEVK" target="_blank">Yellow-billed_Spoonbill_3635MF.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Roseate Spoonbill</div>
+                        <div class="french-label">Spatule rosée</div>
+                        <div class="latin-label">(Platalea ajaja)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1xN6kBqQy0vNtJEox5yUBSPJYZJELBN7C" loading="lazy" alt="Roseate_Spoonbill_1208.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1xN6kBqQy0vNtJEox5yUBSPJYZJELBN7C" target="_blank">Roseate_Spoonbill_1208.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1fcu6WLWbtSaBQY5KsCu5epVqwew_5GEz" loading="lazy" alt="Roseate_Spoonbill_2077MF.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1fcu6WLWbtSaBQY5KsCu5epVqwew_5GEz" target="_blank">Roseate_Spoonbill_2077MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1a8SBbPzkPR05ow1RPZdg9MJm2jAEzjYy" loading="lazy" alt="Roseate_Spoonbill_21087.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1a8SBbPzkPR05ow1RPZdg9MJm2jAEzjYy" target="_blank">Roseate_Spoonbill_21087.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1obcqbPk74WGr_-h1LTUa6n7m881hEbNd" loading="lazy" alt="Roseate_Spoonbill_2703.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1obcqbPk74WGr_-h1LTUa6n7m881hEbNd" target="_blank">Roseate_Spoonbill_2703.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1xQSN29bKvkkTbNwexNcRg2GmyIAE0b86" loading="lazy" alt="Roseate_Spoonbill_3681.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1xQSN29bKvkkTbNwexNcRg2GmyIAE0b86" target="_blank">Roseate_Spoonbill_3681.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/15PVYkiwLANhUzened87yXTFakASspOzs" loading="lazy" alt="Roseate_Spoonbill_4477.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/15PVYkiwLANhUzened87yXTFakASspOzs" target="_blank">Roseate_Spoonbill_4477.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1-IVWd66lm2xCH9eRYBhH_NKiPbWNgsqH" loading="lazy" alt="Roseate_Spoonbill_6325.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1-IVWd66lm2xCH9eRYBhH_NKiPbWNgsqH" target="_blank">Roseate_Spoonbill_6325.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1ZRLAfSJbIt1Cnr-jtFhpbPQli5dgpobx" loading="lazy" alt="Roseate_Spoonbill_6457MF.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1ZRLAfSJbIt1Cnr-jtFhpbPQli5dgpobx" target="_blank">Roseate_Spoonbill_6457MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/12rLigiZG0reol8dUTASXIWIfmJvkkuoZ" loading="lazy" alt="Roseate_Spoonbill_9242.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/12rLigiZG0reol8dUTASXIWIfmJvkkuoZ" target="_blank">Roseate_Spoonbill_9242.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1GByOG09WS76MnQkuEan_yvfwC-qX3spl" loading="lazy" alt="Roseate_Spoonbill_9622.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1GByOG09WS76MnQkuEan_yvfwC-qX3spl" target="_blank">Roseate_Spoonbill_9622.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1PoYxGtQgFvgDDuDDcGkylZXkbiOjCXbP" loading="lazy" alt="Roseate_Spoonbill_9645.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1PoYxGtQgFvgDDuDDcGkylZXkbiOjCXbP" target="_blank">Roseate_Spoonbill_9645.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="family-card">
+            <div class="family-header">
+                <div class="family-name">Herons, Egrets, and Bitterns</div>
+                <div class="family-order-label">"Ardeidae " / Pelecaniformes</div>
+            </div>
+            <div class="species-list">
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Rufescent Tiger-Heron</div>
+                        <div class="french-label">Onoré rayé</div>
+                        <div class="latin-label">(Tigrisoma lineatum)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1SGHwUiFSh3Kca6ekm5GYsog-gtr5q42c" loading="lazy" alt="Rufescent_Tiger-Heron_1706.jpg">
+                            <div class="meta-label">Panama - 23 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1SGHwUiFSh3Kca6ekm5GYsog-gtr5q42c" target="_blank">Rufescent_Tiger-Heron_1706.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/12cGW1mahInp32C49lypRooKje99dAFqo" loading="lazy" alt="Rufescent_Tiger-Heron_22089.jpg">
+                            <div class="meta-label">Panama - 23 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/12cGW1mahInp32C49lypRooKje99dAFqo" target="_blank">Rufescent_Tiger-Heron_22089.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1T33_MvMyo5X6Ex551mhp7qXJ9J9dKf43" loading="lazy" alt="Rufescent_Tiger-Heron_22286.jpg">
+                            <div class="meta-label">Panama - 23 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1T33_MvMyo5X6Ex551mhp7qXJ9J9dKf43" target="_blank">Rufescent_Tiger-Heron_22286.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1q6Gz-yrhGjMWJmAqoYBqQ50wHqpuyoaO" loading="lazy" alt="Rufescent_Tiger-Heron_2238MF.jpg">
+                            <div class="meta-label">Panama - 23 Nov 2016</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1q6Gz-yrhGjMWJmAqoYBqQ50wHqpuyoaO" target="_blank">Rufescent_Tiger-Heron_2238MF.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Bare-throated Tiger-Heron</div>
+                        <div class="french-label">Onoré du Mexique</div>
+                        <div class="latin-label">(Tigrisoma mexicanum)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Qy-crvqvYH8HB66QPWHJpZ5bZKUgBHLK" loading="lazy" alt="Bare-throated_Tiger-Heron_6301.jpg">
+                            <div class="meta-label">Colombia - 29 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Qy-crvqvYH8HB66QPWHJpZ5bZKUgBHLK" target="_blank">Bare-throated_Tiger-Heron_6301.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1TokqtdfzVMdZM7r8ydA8_4cIeBdg4lMP" loading="lazy" alt="Bare-throated_Tiger-Heron_7508.jpg">
+                            <div class="meta-label">Colombia - 29 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1TokqtdfzVMdZM7r8ydA8_4cIeBdg4lMP" target="_blank">Bare-throated_Tiger-Heron_7508.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Boat-billed Heron</div>
+                        <div class="french-label">Savacou huppé</div>
+                        <div class="latin-label">(Cochlearius cochlearius)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1cDT6KtwJ08fFnCeDaUrDxhla_JKBVT-s" loading="lazy" alt="Boat-billed_Heron_296.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1cDT6KtwJ08fFnCeDaUrDxhla_JKBVT-s" target="_blank">Boat-billed_Heron_296.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Fbg7IPvl5pKrXBtTT1E5D2f45sc2vfbA" loading="lazy" alt="Boat-billed_Heron_5622.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Fbg7IPvl5pKrXBtTT1E5D2f45sc2vfbA" target="_blank">Boat-billed_Heron_5622.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Agami Heron</div>
+                        <div class="french-label">Héron agami</div>
+                        <div class="latin-label">(Agamia agami)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1hm-bE-MYt9G4d3bNlaeiNrbhKyF3Gv1L" loading="lazy" alt="Agami_Heron_7409.jpg">
+                            <div class="meta-label">CR - 11 Jun 2022</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1hm-bE-MYt9G4d3bNlaeiNrbhKyF3Gv1L" target="_blank">Agami_Heron_7409.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">American Bittern</div>
+                        <div class="french-label">Butor d'Amérique</div>
+                        <div class="latin-label">(Botaurus lentiginosus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1PKUEZkeDHP7NGcXoAtxJwG4X_teOLdWR" loading="lazy" alt="American_Bittern.jpg">
+                            <div class="meta-label">Canada - 05 Apr 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1PKUEZkeDHP7NGcXoAtxJwG4X_teOLdWR" target="_blank">American_Bittern.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1hope7_Xe7pZlJTGX28kpiuBeUoBAo7Wv" loading="lazy" alt="American_Bittern_2788.jpg">
+                            <div class="meta-label">Canada - 05 Apr 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1hope7_Xe7pZlJTGX28kpiuBeUoBAo7Wv" target="_blank">American_Bittern_2788.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1WAO8yRiL_QCuViO4_Poxj3C1jm2fq_we" loading="lazy" alt="American_Bittern_2804.jpg">
+                            <div class="meta-label">Canada - 05 Apr 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1WAO8yRiL_QCuViO4_Poxj3C1jm2fq_we" target="_blank">American_Bittern_2804.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1gcovb90bmqgNm43Nb8T52g6zk7RrSwuj" loading="lazy" alt="American_Bittern_6940MF.jpg">
+                            <div class="meta-label">Canada - 05 Apr 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1gcovb90bmqgNm43Nb8T52g6zk7RrSwuj" target="_blank">American_Bittern_6940MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1QfeCDfGjxhq1GH_CYtrN1UjKENRT-5Xo" loading="lazy" alt="American_Bittern_7902.jpg">
+                            <div class="meta-label">Canada - 05 Apr 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1QfeCDfGjxhq1GH_CYtrN1UjKENRT-5Xo" target="_blank">American_Bittern_7902.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1_Xj8GNQYvQcPr1OurvA5In3_IGwOPyS5" loading="lazy" alt="American_Bittern_9918.jpg">
+                            <div class="meta-label">Canada - 05 Apr 2013</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1_Xj8GNQYvQcPr1OurvA5In3_IGwOPyS5" target="_blank">American_Bittern_9918.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Least Bittern</div>
+                        <div class="french-label">Petit Blongios</div>
+                        <div class="latin-label">(Botaurus exilis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1ZYBYips14J6xnRFCEe0vq2PvliXZsaJO" loading="lazy" alt="Least_Bittern_0107.jpg">
+                            <div class="meta-label">Canada - 09 Sep 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1ZYBYips14J6xnRFCEe0vq2PvliXZsaJO" target="_blank">Least_Bittern_0107.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/121tps2AP8MN5wOaL1glaGIXLfUcXwFAM" loading="lazy" alt="Least_Bittern_2051.jpg">
+                            <div class="meta-label">Canada - 09 Sep 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/121tps2AP8MN5wOaL1glaGIXLfUcXwFAM" target="_blank">Least_Bittern_2051.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1MgYgCnBZWbsNHjklheGu2M4CbUOTjrxs" loading="lazy" alt="Least_Bittern_4485.jpg">
+                            <div class="meta-label">Canada - 09 Sep 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1MgYgCnBZWbsNHjklheGu2M4CbUOTjrxs" target="_blank">Least_Bittern_4485.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/18iqnsxd7LBliHdzKrhvjhZkrqvK6DQZg" loading="lazy" alt="Least_Bittern_6761.jpg">
+                            <div class="meta-label">Canada - 09 Sep 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/18iqnsxd7LBliHdzKrhvjhZkrqvK6DQZg" target="_blank">Least_Bittern_6761.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/15CB5TK-awhw_6mnqmVn2obhIemgf0rEm" loading="lazy" alt="Least_Bittern_6812.jpg">
+                            <div class="meta-label">Canada - 09 Sep 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/15CB5TK-awhw_6mnqmVn2obhIemgf0rEm" target="_blank">Least_Bittern_6812.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Yellow-crowned Night Heron</div>
+                        <div class="french-label">Bihoreau violacé</div>
+                        <div class="latin-label">(Nyctanassa violacea)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Ilka3GNG-wxY1JoBCT1IJ9lcRa6-jGg5" loading="lazy" alt="Yellow-crowned_Night_Heron_1777.jpg">
+                            <div class="meta-label">Colombia - 27 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Ilka3GNG-wxY1JoBCT1IJ9lcRa6-jGg5" target="_blank">Yellow-crowned_Night_Heron_1777.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Yqq4JsA1um8BwbkVEnA35ifyTMthrbn6" loading="lazy" alt="Yellow-crowned_Night_Heron_6463.jpg">
+                            <div class="meta-label">Colombia - 27 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Yqq4JsA1um8BwbkVEnA35ifyTMthrbn6" target="_blank">Yellow-crowned_Night_Heron_6463.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1J7L2auRYVuPJQNDkrBWY1LRR_3Bgu79M" loading="lazy" alt="Yellow-crowned_Night_Heron_7082.jpg">
+                            <div class="meta-label">Colombia - 27 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1J7L2auRYVuPJQNDkrBWY1LRR_3Bgu79M" target="_blank">Yellow-crowned_Night_Heron_7082.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Black-crowned Night Heron</div>
+                        <div class="french-label">Bihoreau gris</div>
+                        <div class="latin-label">(Nycticorax nycticorax)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1wyOHCmb9gbw4k-QvHg3Dkj6oxJOX_x6Y" loading="lazy" alt="Black-crowned_Night_Heron.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1wyOHCmb9gbw4k-QvHg3Dkj6oxJOX_x6Y" target="_blank">Black-crowned_Night_Heron.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/14_3n5BBQ6gVzH6hRuxYgQNa-x6x1ayWj" loading="lazy" alt="Black-crowned_Night_Heron_0117.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/14_3n5BBQ6gVzH6hRuxYgQNa-x6x1ayWj" target="_blank">Black-crowned_Night_Heron_0117.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1RUaOAH8-avjo0-0TkWwWPbUEE19BIQh_" loading="lazy" alt="Black-crowned_Night_Heron_1693.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1RUaOAH8-avjo0-0TkWwWPbUEE19BIQh_" target="_blank">Black-crowned_Night_Heron_1693.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1SAVIVG5iDKU8rzfyeIC9Geubdt3N4nd5" loading="lazy" alt="Black-crowned_Night_Heron_291.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1SAVIVG5iDKU8rzfyeIC9Geubdt3N4nd5" target="_blank">Black-crowned_Night_Heron_291.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1_9qCHO09HChkQx1OjHe-ROa1c6P3qHlY" loading="lazy" alt="Black-crowned_Night_Heron_4932.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1_9qCHO09HChkQx1OjHe-ROa1c6P3qHlY" target="_blank">Black-crowned_Night_Heron_4932.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1LmM87tnk2gdFMCp2I3s4un1hScSoWv-5" loading="lazy" alt="Black-crowned_Night_Heron_6304.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1LmM87tnk2gdFMCp2I3s4un1hScSoWv-5" target="_blank">Black-crowned_Night_Heron_6304.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1JJ31rj76FhpWl_vYlJLnNaj3wSa3xOE4" loading="lazy" alt="Black-crowned_Night_Heron_9336.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1JJ31rj76FhpWl_vYlJLnNaj3wSa3xOE4" target="_blank">Black-crowned_Night_Heron_9336.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Little Blue Heron</div>
+                        <div class="french-label">Aigrette bleue</div>
+                        <div class="latin-label">(Egretta caerulea)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1YXs_Pe2ZHoVLQdcFerdCvIimVMlyy3pc" loading="lazy" alt="Little_Blue_Heron_1102.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1YXs_Pe2ZHoVLQdcFerdCvIimVMlyy3pc" target="_blank">Little_Blue_Heron_1102.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/16z_1fQUfBzEDlzFkIZQLfil6KOgXXAyp" loading="lazy" alt="Little_Blue_Heron_1528.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/16z_1fQUfBzEDlzFkIZQLfil6KOgXXAyp" target="_blank">Little_Blue_Heron_1528.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1si1nET-WqAoDIjgN98T69zP0u3j0d04h" loading="lazy" alt="Little_Blue_Heron_1778.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1si1nET-WqAoDIjgN98T69zP0u3j0d04h" target="_blank">Little_Blue_Heron_1778.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1kAs8dz8iF7ZIzIvLFLf4Y61DD0joYBxa" loading="lazy" alt="Little_Blue_Heron_20890.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1kAs8dz8iF7ZIzIvLFLf4Y61DD0joYBxa" target="_blank">Little_Blue_Heron_20890.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1a6PM1WR94NJBaD_KHNfmf8tJSki3ZwEw" loading="lazy" alt="Little_Blue_Heron_2105MF.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1a6PM1WR94NJBaD_KHNfmf8tJSki3ZwEw" target="_blank">Little_Blue_Heron_2105MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1yWK4RfZNvlBE0t9lHjy9-jLaCMuWoZqK" loading="lazy" alt="Little_Blue_Heron_21319.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1yWK4RfZNvlBE0t9lHjy9-jLaCMuWoZqK" target="_blank">Little_Blue_Heron_21319.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/116keMVnrb02OM0LeINSJ2vQClwZrLoDk" loading="lazy" alt="Little_Blue_Heron_3453.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/116keMVnrb02OM0LeINSJ2vQClwZrLoDk" target="_blank">Little_Blue_Heron_3453.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1w6P1mGImb1-LxUO2tgzlCEzOWQQUzEWj" loading="lazy" alt="Little_Blue_Heron_4125.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1w6P1mGImb1-LxUO2tgzlCEzOWQQUzEWj" target="_blank">Little_Blue_Heron_4125.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/10tWceIHDZAwVrJt1SYGo-rI61edsInka" loading="lazy" alt="Little_Blue_Heron_7123MF_7123MF.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/10tWceIHDZAwVrJt1SYGo-rI61edsInka" target="_blank">Little_Blue_Heron_7123MF_7123MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/11cuoQ0WmsY1rY-83iKoly2NCZ9ooMkc0" loading="lazy" alt="Little_Blue_Heron_9250.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/11cuoQ0WmsY1rY-83iKoly2NCZ9ooMkc0" target="_blank">Little_Blue_Heron_9250.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/17Y5OB4c5bq2kgVzPoOdWneHnlHk-WV91" loading="lazy" alt="Little_Blue_Heron_9255.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/17Y5OB4c5bq2kgVzPoOdWneHnlHk-WV91" target="_blank">Little_Blue_Heron_9255.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1rsAfx8CoPr_xG9VpyzgJK42vSItqLvgp" loading="lazy" alt="Little_Blue_Heron_9590.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1rsAfx8CoPr_xG9VpyzgJK42vSItqLvgp" target="_blank">Little_Blue_Heron_9590.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1IdphQqy4J2QJ15URqIGKUpM6BdgbNK2j" loading="lazy" alt="Little_Blue_Heron_9714.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1IdphQqy4J2QJ15URqIGKUpM6BdgbNK2j" target="_blank">Little_Blue_Heron_9714.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1ADqfM9KaUqEl1-UwhCoUODLPe62pZdwk" loading="lazy" alt="Little_Blue_Heron_9923.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1ADqfM9KaUqEl1-UwhCoUODLPe62pZdwk" target="_blank">Little_Blue_Heron_9923.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Tricolored Heron</div>
+                        <div class="french-label">Aigrette tricolore</div>
+                        <div class="latin-label">(Egretta tricolor)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Bty3z0HenJUGdqjm-5TJHhLOf4FVEW2y" loading="lazy" alt="Tricolored_Heron_1349.jpg">
+                            <div class="meta-label">Colombia - 27 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Bty3z0HenJUGdqjm-5TJHhLOf4FVEW2y" target="_blank">Tricolored_Heron_1349.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1esL2MvlJ2qR6mEma5GtftY_GBcKMG3X-" loading="lazy" alt="Tricolored_Heron_1480MF.jpg">
+                            <div class="meta-label">Colombia - 27 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1esL2MvlJ2qR6mEma5GtftY_GBcKMG3X-" target="_blank">Tricolored_Heron_1480MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Volf9j-w90ZQrFy2qJafJWHRiqM5HnAV" loading="lazy" alt="Tricolored_Heron_1589.jpg">
+                            <div class="meta-label">Colombia - 27 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Volf9j-w90ZQrFy2qJafJWHRiqM5HnAV" target="_blank">Tricolored_Heron_1589.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1tz1YO43cuoJouTOhNn2ZTWVSiME6Pgl_" loading="lazy" alt="Tricolored_Heron_2033.jpg">
+                            <div class="meta-label">Colombia - 27 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1tz1YO43cuoJouTOhNn2ZTWVSiME6Pgl_" target="_blank">Tricolored_Heron_2033.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1ufprjUnl4zMNQv78VAEx7aF4KT0BMxiM" loading="lazy" alt="Tricolored_Heron_20382.jpg">
+                            <div class="meta-label">Colombia - 27 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1ufprjUnl4zMNQv78VAEx7aF4KT0BMxiM" target="_blank">Tricolored_Heron_20382.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1fq7MQ8_pghDdFuGT5Ph06jCdGfmx-ASf" loading="lazy" alt="Tricolored_Heron_20969.jpg">
+                            <div class="meta-label">Colombia - 27 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1fq7MQ8_pghDdFuGT5Ph06jCdGfmx-ASf" target="_blank">Tricolored_Heron_20969.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1IaWdTsN1cgftVoAW5aAfvxAC5-PQxt4d" loading="lazy" alt="Tricolored_Heron_235.jpg">
+                            <div class="meta-label">Colombia - 27 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1IaWdTsN1cgftVoAW5aAfvxAC5-PQxt4d" target="_blank">Tricolored_Heron_235.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Lta3MtK-gWywlhVv3T-sB2zs9PqFInyg" loading="lazy" alt="Tricolored_Heron_2490.jpg">
+                            <div class="meta-label">Colombia - 27 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Lta3MtK-gWywlhVv3T-sB2zs9PqFInyg" target="_blank">Tricolored_Heron_2490.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1ALVe40IEZBtrIoTSp0-YNvogEOK0vSDU" loading="lazy" alt="Tricolored_Heron_2492.jpg">
+                            <div class="meta-label">Colombia - 27 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1ALVe40IEZBtrIoTSp0-YNvogEOK0vSDU" target="_blank">Tricolored_Heron_2492.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1A22K_iEUwVpaGgabcZVBW4DjANNSkGdg" loading="lazy" alt="Tricolored_Heron_3918.jpg">
+                            <div class="meta-label">Colombia - 27 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1A22K_iEUwVpaGgabcZVBW4DjANNSkGdg" target="_blank">Tricolored_Heron_3918.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1lS_hBzCib4bb9i8ScA8ftffOR_SlCaLB" loading="lazy" alt="Tricolored_Heron_4580.jpg">
+                            <div class="meta-label">Colombia - 27 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1lS_hBzCib4bb9i8ScA8ftffOR_SlCaLB" target="_blank">Tricolored_Heron_4580.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1GfwDfoUobXF2aDj53fhoEYYbudNrLg5Z" loading="lazy" alt="Tricolored_Heron_4805MF.jpg">
+                            <div class="meta-label">Colombia - 27 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1GfwDfoUobXF2aDj53fhoEYYbudNrLg5Z" target="_blank">Tricolored_Heron_4805MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1ilcjawUV0EuMRgCmwsMfnV8Phfp2b1Nj" loading="lazy" alt="Tricolored_Heron_5934.jpg">
+                            <div class="meta-label">Colombia - 27 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1ilcjawUV0EuMRgCmwsMfnV8Phfp2b1Nj" target="_blank">Tricolored_Heron_5934.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1EIEzG20oePr67vR_uMyun3OPUb7iP6MB" loading="lazy" alt="Tricolored_Heron_6630MF.jpg">
+                            <div class="meta-label">Colombia - 27 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1EIEzG20oePr67vR_uMyun3OPUb7iP6MB" target="_blank">Tricolored_Heron_6630MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1n6JYQs3UX6hlPRY4IzzelWFCcDK-k0LH" loading="lazy" alt="Tricolored_Heron_7108.jpg">
+                            <div class="meta-label">Colombia - 27 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1n6JYQs3UX6hlPRY4IzzelWFCcDK-k0LH" target="_blank">Tricolored_Heron_7108.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1viDHiE0I9FvWtc-E6Fbm1Zwc2gyJKhD3" loading="lazy" alt="Tricolored_Heron_7134.jpg">
+                            <div class="meta-label">Colombia - 27 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1viDHiE0I9FvWtc-E6Fbm1Zwc2gyJKhD3" target="_blank">Tricolored_Heron_7134.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1OViPZNYizYWwTwpRvOisozKeK0MTzu3k" loading="lazy" alt="Tricolored_Heron_7246.jpg">
+                            <div class="meta-label">Colombia - 27 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1OViPZNYizYWwTwpRvOisozKeK0MTzu3k" target="_blank">Tricolored_Heron_7246.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1cekV7IbD_MH-fRPYoOoxHNEtF5kajRAR" loading="lazy" alt="Tricolored_Heron_9601.jpg">
+                            <div class="meta-label">Colombia - 27 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1cekV7IbD_MH-fRPYoOoxHNEtF5kajRAR" target="_blank">Tricolored_Heron_9601.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1sT8h7sPwSI87rCAfAIDMiQG4lmxFlTO1" loading="lazy" alt="Tricolored_Heron_9853.jpg">
+                            <div class="meta-label">Colombia - 27 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1sT8h7sPwSI87rCAfAIDMiQG4lmxFlTO1" target="_blank">Tricolored_Heron_9853.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Reddish Egret</div>
+                        <div class="french-label">Aigrette roussâtre</div>
+                        <div class="latin-label">(Egretta rufescens)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1TP7rIc5v9N0fBx1TzRSF4FbJlqr4vrfh" loading="lazy" alt="Reddish_Egret_0226.jpg">
+                            <div class="meta-label">Colombia - 27 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1TP7rIc5v9N0fBx1TzRSF4FbJlqr4vrfh" target="_blank">Reddish_Egret_0226.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1krH5c55wdCHyyd4crwyQ7Dbwx2cMDTwe" loading="lazy" alt="Reddish_Egret_1713.jpg">
+                            <div class="meta-label">Colombia - 27 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1krH5c55wdCHyyd4crwyQ7Dbwx2cMDTwe" target="_blank">Reddish_Egret_1713.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1xsbPKzd1g37uAhWasntHqVFmfd38YqTe" loading="lazy" alt="Reddish_Egret_4230.jpg">
+                            <div class="meta-label">Colombia - 27 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1xsbPKzd1g37uAhWasntHqVFmfd38YqTe" target="_blank">Reddish_Egret_4230.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1ebjQykNziZvKd1pT7UiQ-X91IgqTL9Q-" loading="lazy" alt="Reddish_Egret_4236.jpg">
+                            <div class="meta-label">Colombia - 27 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1ebjQykNziZvKd1pT7UiQ-X91IgqTL9Q-" target="_blank">Reddish_Egret_4236.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1b2DnegnxMQSMa9-t89ykIzD7ROqSUEIC" loading="lazy" alt="Reddish_Egret_4604.jpg">
+                            <div class="meta-label">Colombia - 27 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1b2DnegnxMQSMa9-t89ykIzD7ROqSUEIC" target="_blank">Reddish_Egret_4604.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1yTKnyQFr1QB1Blvi_NCq08gulyZoYQSz" loading="lazy" alt="Reddish_Egret_6128.jpg">
+                            <div class="meta-label">Colombia - 27 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1yTKnyQFr1QB1Blvi_NCq08gulyZoYQSz" target="_blank">Reddish_Egret_6128.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/13PB1V7aauQXrTChCrqrP71d-w9lpbH6Z" loading="lazy" alt="Reddish_Egret_6378.jpg">
+                            <div class="meta-label">Colombia - 27 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/13PB1V7aauQXrTChCrqrP71d-w9lpbH6Z" target="_blank">Reddish_Egret_6378.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1EtRMRVX_8gktrkFXnm16sm4YWifUBIWA" loading="lazy" alt="Reddish_Egret_6653MF.jpg">
+                            <div class="meta-label">Colombia - 27 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1EtRMRVX_8gktrkFXnm16sm4YWifUBIWA" target="_blank">Reddish_Egret_6653MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1FFegVwytGZEqRZedImgYrr32E7p0aamW" loading="lazy" alt="Reddish_Egret_6886MF.jpg">
+                            <div class="meta-label">Colombia - 27 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1FFegVwytGZEqRZedImgYrr32E7p0aamW" target="_blank">Reddish_Egret_6886MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1bNH5beDwVYYWCbC5Ue3q53aV2jkj9mmX" loading="lazy" alt="Reddish_Egret_7628MF.jpg">
+                            <div class="meta-label">Colombia - 27 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1bNH5beDwVYYWCbC5Ue3q53aV2jkj9mmX" target="_blank">Reddish_Egret_7628MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1l9qe7I9VXdStmgYir1nJmCl1ARZfNd_M" loading="lazy" alt="Reddish_Egret_9975.jpg">
+                            <div class="meta-label">Colombia - 27 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1l9qe7I9VXdStmgYir1nJmCl1ARZfNd_M" target="_blank">Reddish_Egret_9975.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Slaty Egret</div>
+                        <div class="french-label">Aigrette vineuse</div>
+                        <div class="latin-label">(Egretta vinaceigula)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1ukNVHgtnhKjr4qEzfORhq4YAFAIEiNuX" loading="lazy" alt="Slaty_Egret_9465.jpg">
+                            <div class="meta-label">BW - 12 Oct 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1ukNVHgtnhKjr4qEzfORhq4YAFAIEiNuX" target="_blank">Slaty_Egret_9465.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Black Heron</div>
+                        <div class="french-label">Aigrette ardoisée</div>
+                        <div class="latin-label">(Egretta ardesiaca)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/15lZQtLArPlqBV8ZUYrZxSQ5_McVK8kgT" loading="lazy" alt="Black_Heron_-_Aigrette_ardoisee_9897.jpg">
+                            <div class="meta-label">MG - 17 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/15lZQtLArPlqBV8ZUYrZxSQ5_McVK8kgT" target="_blank">Black_Heron_-_Aigrette_ardoisee_9897.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1lVz3RWuMlkLkevbNWoeDO_4xiHnhBDhB" loading="lazy" alt="Black_Heron_-_Aigrette_ardoisee_9920.jpg">
+                            <div class="meta-label">MG - 17 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1lVz3RWuMlkLkevbNWoeDO_4xiHnhBDhB" target="_blank">Black_Heron_-_Aigrette_ardoisee_9920.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1QLOO2NX3XCHbMOAG7_l19OidzHx_oMNl" loading="lazy" alt="Black_Heron_-_Aigrette_ardoisee_9944.jpg">
+                            <div class="meta-label">MG - 17 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1QLOO2NX3XCHbMOAG7_l19OidzHx_oMNl" target="_blank">Black_Heron_-_Aigrette_ardoisee_9944.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/16X5Y0lXr3Ibuha4rRi6k2IgpbLkwQ5tW" loading="lazy" alt="Black_Heron_-_Aigrette_ardoisee_9956.jpg">
+                            <div class="meta-label">MG - 17 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/16X5Y0lXr3Ibuha4rRi6k2IgpbLkwQ5tW" target="_blank">Black_Heron_-_Aigrette_ardoisee_9956.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Snowy Egret</div>
+                        <div class="french-label">Aigrette neigeuse</div>
+                        <div class="latin-label">(Egretta thula)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/13nmqsOaX6YNwzyKWKyetVXuI5CP9M2VN" loading="lazy" alt="Snowy_Egret_1340.jpg">
+                            <div class="meta-label">Colombia - 27 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/13nmqsOaX6YNwzyKWKyetVXuI5CP9M2VN" target="_blank">Snowy_Egret_1340.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1-oxaDpkUQ5mBQDqHZY_5QVAGZyq9v_Le" loading="lazy" alt="Snowy_Egret_21169.jpg">
+                            <div class="meta-label">Colombia - 27 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1-oxaDpkUQ5mBQDqHZY_5QVAGZyq9v_Le" target="_blank">Snowy_Egret_21169.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1T6KFS9rskioUghB5mPTIIesp3Y40BGfV" loading="lazy" alt="Snowy_Egret_22321.jpg">
+                            <div class="meta-label">Colombia - 27 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1T6KFS9rskioUghB5mPTIIesp3Y40BGfV" target="_blank">Snowy_Egret_22321.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1jMAv_oio46PXKIeBC14-_HNUzDoHmmu8" loading="lazy" alt="Snowy_Egret_22688.jpg">
+                            <div class="meta-label">Colombia - 27 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1jMAv_oio46PXKIeBC14-_HNUzDoHmmu8" target="_blank">Snowy_Egret_22688.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1v5fNj3wk91GXzsGKv2Irm8qDaVedahzW" loading="lazy" alt="Snowy_Egret_2319MF.jpg">
+                            <div class="meta-label">Colombia - 27 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1v5fNj3wk91GXzsGKv2Irm8qDaVedahzW" target="_blank">Snowy_Egret_2319MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1BS9EQ2gCJGy0Pbjejj-LGg00yyc0B9vG" loading="lazy" alt="Snowy_Egret_2359.jpg">
+                            <div class="meta-label">Colombia - 27 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1BS9EQ2gCJGy0Pbjejj-LGg00yyc0B9vG" target="_blank">Snowy_Egret_2359.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/12lELA7hLD5zZqk6D_9R0jhgkqp52E4Ha" loading="lazy" alt="Snowy_Egret_6087.jpg">
+                            <div class="meta-label">Colombia - 27 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/12lELA7hLD5zZqk6D_9R0jhgkqp52E4Ha" target="_blank">Snowy_Egret_6087.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1FR5a4sgzRRQ-ZWVaQXqLUjeCbwgtyhVx" loading="lazy" alt="Snowy_Egret_6358.jpg">
+                            <div class="meta-label">Colombia - 27 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1FR5a4sgzRRQ-ZWVaQXqLUjeCbwgtyhVx" target="_blank">Snowy_Egret_6358.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1uml5DI5wZAjCoj8DlUQrjoEQn2vV9rH9" loading="lazy" alt="Snowy_Egret_6372.jpg">
+                            <div class="meta-label">Colombia - 27 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1uml5DI5wZAjCoj8DlUQrjoEQn2vV9rH9" target="_blank">Snowy_Egret_6372.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1ZrIqn-rOSkuM5XlrumhG4_ppZx01FS76" loading="lazy" alt="Snowy_Egret_6810MF.jpg">
+                            <div class="meta-label">Colombia - 27 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1ZrIqn-rOSkuM5XlrumhG4_ppZx01FS76" target="_blank">Snowy_Egret_6810MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1x3-wOtJxrNWk51QDaw6pZWK37RrwQIIr" loading="lazy" alt="Snowy_Egret_9787.jpg">
+                            <div class="meta-label">Colombia - 27 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1x3-wOtJxrNWk51QDaw6pZWK37RrwQIIr" target="_blank">Snowy_Egret_9787.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1GxyUJHcfoDEBMXfjJ3yg_7IO41hwIykd" loading="lazy" alt="Snowy_Egret_MF4890.jpg">
+                            <div class="meta-label">Colombia - 27 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1GxyUJHcfoDEBMXfjJ3yg_7IO41hwIykd" target="_blank">Snowy_Egret_MF4890.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Little Egret</div>
+                        <div class="french-label">Aigrette garzette</div>
+                        <div class="latin-label">(Egretta garzetta)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/13uQxiknEoSTBU57k1e7Q0M3AA0-MSAzS" loading="lazy" alt="Little_Egret_-_Aigrette_Garzette_9605.jpg">
+                            <div class="meta-label">Tanzania - 09 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/13uQxiknEoSTBU57k1e7Q0M3AA0-MSAzS" target="_blank">Little_Egret_-_Aigrette_Garzette_9605.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1eEBtKVKlsvcddh2slw99FSFSOu2q2Tji" loading="lazy" alt="Little_Egret_1947.jpg">
+                            <div class="meta-label">Tanzania - 09 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1eEBtKVKlsvcddh2slw99FSFSOu2q2Tji" target="_blank">Little_Egret_1947.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">White-faced Heron</div>
+                        <div class="french-label">Aigrette à face blanche</div>
+                        <div class="latin-label">(Egretta novaehollandiae)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="Photos/White-faced_Heron_%28immature%29.jpg" loading="lazy" alt="White-faced_Heron_(immature).jpg">
+                            <div class="meta-label">Australia - 12 Oct 2017</div>
+                            <div class="filename"><a href="Photos/White-faced_Heron_%28immature%29.jpg" target="_blank">White-faced_Heron_(immature).jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Y370ipamJue_w0zw78SoD4dWieOKIJ8i" loading="lazy" alt="White-faced_Heron_1081.jpg">
+                            <div class="meta-label">Australia - 12 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Y370ipamJue_w0zw78SoD4dWieOKIJ8i" target="_blank">White-faced_Heron_1081.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1PGUl0qpZk1kLwBFjxuewteyGkSFRC_FX" loading="lazy" alt="White-faced_Heron_3938MF.jpg">
+                            <div class="meta-label">Australia - 12 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1PGUl0qpZk1kLwBFjxuewteyGkSFRC_FX" target="_blank">White-faced_Heron_3938MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1dlyMM7RHQIs0ga7EIOn3J-vwjMCAVK8D" loading="lazy" alt="White-faced_heron.jpg">
+                            <div class="meta-label">Australia - 12 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1dlyMM7RHQIs0ga7EIOn3J-vwjMCAVK8D" target="_blank">White-faced_heron.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Striated Heron</div>
+                        <div class="french-label">Héron strié</div>
+                        <div class="latin-label">(Butorides striata)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1ptLWcwCgUXI-g2OB3xokHnMFaf1zADFQ" loading="lazy" alt="Striated_Heron_4770.jpg">
+                            <div class="meta-label">Colombia - 29 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1ptLWcwCgUXI-g2OB3xokHnMFaf1zADFQ" target="_blank">Striated_Heron_4770.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1YcyHxop5i-di3eIdbi0_Wx4LShBoJ7EU" loading="lazy" alt="Striated_Heron_6837.jpg">
+                            <div class="meta-label">Colombia - 29 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1YcyHxop5i-di3eIdbi0_Wx4LShBoJ7EU" target="_blank">Striated_Heron_6837.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1e6Oy84ua34bBft52DMFokdcgtmUu_DjO" loading="lazy" alt="Striated_Heron_9420.jpg">
+                            <div class="meta-label">Colombia - 29 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1e6Oy84ua34bBft52DMFokdcgtmUu_DjO" target="_blank">Striated_Heron_9420.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Lava Heron</div>
+                        <div class="french-label">Héron des Galapagos</div>
+                        <div class="latin-label">(Butorides sundevalli)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1OijqZUE3fcSKxPFP8SGE1Rk3GQDfn0EF" loading="lazy" alt="Lava_Heron_210.jpg">
+                            <div class="meta-label">Ecuador - 06 Jul 2004</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1OijqZUE3fcSKxPFP8SGE1Rk3GQDfn0EF" target="_blank">Lava_Heron_210.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Green Heron</div>
+                        <div class="french-label">Héron vert</div>
+                        <div class="latin-label">(Butorides virescens)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1m7_GdjGUsGFtc0U86BbNv5I9Wj_8HNx6" loading="lazy" alt="Green_Heron-2.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1m7_GdjGUsGFtc0U86BbNv5I9Wj_8HNx6" target="_blank">Green_Heron-2.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1WnYOQOYxgsbbFydcJPwdV4aSthDtedAB" loading="lazy" alt="Green_Heron.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1WnYOQOYxgsbbFydcJPwdV4aSthDtedAB" target="_blank">Green_Heron.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1yxENVFnutbFddt4xuv1IJ1euh2qh4NqD" loading="lazy" alt="Green_Heron_1681.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1yxENVFnutbFddt4xuv1IJ1euh2qh4NqD" target="_blank">Green_Heron_1681.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/18aSputDu5lx7qFA2vwX3Xr-Xv7wmBYbI" loading="lazy" alt="Green_Heron_1960.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/18aSputDu5lx7qFA2vwX3Xr-Xv7wmBYbI" target="_blank">Green_Heron_1960.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1ynySGhEPTEjR8B6_6LXVkmaXCwZVUtH4" loading="lazy" alt="Green_Heron_2.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1ynySGhEPTEjR8B6_6LXVkmaXCwZVUtH4" target="_blank">Green_Heron_2.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1quC71IPoBnu1rr2U8mxjZLFReDzxK5ND" loading="lazy" alt="Green_Heron_2181.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1quC71IPoBnu1rr2U8mxjZLFReDzxK5ND" target="_blank">Green_Heron_2181.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/10835WQSBbKBbsCy35VpC1i3G6lq1IQ3Q" loading="lazy" alt="Green_Heron_220904.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/10835WQSBbKBbsCy35VpC1i3G6lq1IQ3Q" target="_blank">Green_Heron_220904.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1gP0rch_R_wHZMy1ligtL9F5VM-oUqh2m" loading="lazy" alt="Green_Heron_228.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1gP0rch_R_wHZMy1ligtL9F5VM-oUqh2m" target="_blank">Green_Heron_228.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1clqiyFpGLAGtcA7y3kEGsB_wR-xKn9EM" loading="lazy" alt="Green_Heron_2321.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1clqiyFpGLAGtcA7y3kEGsB_wR-xKn9EM" target="_blank">Green_Heron_2321.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1VEfIF65F3fyPc4bm7ZODkJst6PMwnSew" loading="lazy" alt="Green_Heron_2333.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1VEfIF65F3fyPc4bm7ZODkJst6PMwnSew" target="_blank">Green_Heron_2333.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Ju7FtCMwPx3ri7AsrZnfAgdx-tbTsApP" loading="lazy" alt="Green_Heron_2376.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Ju7FtCMwPx3ri7AsrZnfAgdx-tbTsApP" target="_blank">Green_Heron_2376.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/14kiVIM1w_f2jGcgTXnx7Z9C13Qnjd8U5" loading="lazy" alt="Green_Heron_2451.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/14kiVIM1w_f2jGcgTXnx7Z9C13Qnjd8U5" target="_blank">Green_Heron_2451.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/10Z8zG6Po_8HrHb9J3GANSkOPj8HOU_yz" loading="lazy" alt="Green_Heron_4424.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/10Z8zG6Po_8HrHb9J3GANSkOPj8HOU_yz" target="_blank">Green_Heron_4424.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1oTCx9ddlDvLO3uT1qymXwEOHG8eOaqz0" loading="lazy" alt="Green_Heron_5793.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1oTCx9ddlDvLO3uT1qymXwEOHG8eOaqz0" target="_blank">Green_Heron_5793.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1y8oTtbS-9j-XTxZiIfBSmIlV5oHBZ6k5" loading="lazy" alt="Green_Heron_5800.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1y8oTtbS-9j-XTxZiIfBSmIlV5oHBZ6k5" target="_blank">Green_Heron_5800.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/10278pPEvdywnQ885zk1MpjNQBsofgOMl" loading="lazy" alt="Green_Heron_6020.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/10278pPEvdywnQ885zk1MpjNQBsofgOMl" target="_blank">Green_Heron_6020.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1cNSEaUttb7uf3lo8Nyp7WGDCvmxkHL1r" loading="lazy" alt="Green_Heron_6145MF.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1cNSEaUttb7uf3lo8Nyp7WGDCvmxkHL1r" target="_blank">Green_Heron_6145MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1iOPtXJakjApovaPgZwiTIJo94S9B9Y4U" loading="lazy" alt="Green_Heron_6525.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1iOPtXJakjApovaPgZwiTIJo94S9B9Y4U" target="_blank">Green_Heron_6525.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1RnUpSOLSr367BVMjRyHmSDG_7sAHD9fV" loading="lazy" alt="Green_Heron_6535MF.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1RnUpSOLSr367BVMjRyHmSDG_7sAHD9fV" target="_blank">Green_Heron_6535MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1lnPUBTMjFEbJUQSThVJUUKx9sZETc_w_" loading="lazy" alt="Green_Heron_6606.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1lnPUBTMjFEbJUQSThVJUUKx9sZETc_w_" target="_blank">Green_Heron_6606.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1HbtBWO-Pf3s23epkcHTCil9cVkebqxxa" loading="lazy" alt="Green_Heron_7298.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1HbtBWO-Pf3s23epkcHTCil9cVkebqxxa" target="_blank">Green_Heron_7298.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1RNUKEct8HBQQTdoFv0oG8xwrNPcNniDV" loading="lazy" alt="Green_Heron_7392MF.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1RNUKEct8HBQQTdoFv0oG8xwrNPcNniDV" target="_blank">Green_Heron_7392MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1eymeMHNCh0W29puBIwx_FGT3BHZFOsbp" loading="lazy" alt="Green_Heron_8403.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1eymeMHNCh0W29puBIwx_FGT3BHZFOsbp" target="_blank">Green_Heron_8403.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1iZH-h0u9SCPs5bmBxwTKFyLNP-bvQ_PS" loading="lazy" alt="Green_Heron_MF5848.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1iZH-h0u9SCPs5bmBxwTKFyLNP-bvQ_PS" target="_blank">Green_Heron_MF5848.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1a6JEnhjAGr8Xrv_4f7KE0cg4Q1H-coJo" loading="lazy" alt="Green_heron_with_frog.jpg">
+                            <div class="meta-label">Belize - 26 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1a6JEnhjAGr8Xrv_4f7KE0cg4Q1H-coJo" target="_blank">Green_heron_with_frog.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Squacco Heron</div>
+                        <div class="french-label">Crabier chevelu</div>
+                        <div class="latin-label">(Ardeola ralloides)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1oOs27qLDadsCYtgXQoEwr4lveEsnenHl" loading="lazy" alt="Squacco_Heron_0071.jpg">
+                            <div class="meta-label">Tanzania - 09 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1oOs27qLDadsCYtgXQoEwr4lveEsnenHl" target="_blank">Squacco_Heron_0071.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1SXbxlwxzQsvVLNnq3B2whudetU8LRBIy" loading="lazy" alt="Squacco_Heron_357.jpg">
+                            <div class="meta-label">Tanzania - 09 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1SXbxlwxzQsvVLNnq3B2whudetU8LRBIy" target="_blank">Squacco_Heron_357.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Ze2vDURA_av9Km3TZLwTGlPGsS4V2DDZ" loading="lazy" alt="Squacco_Heron_7124.jpg">
+                            <div class="meta-label">Tanzania - 09 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Ze2vDURA_av9Km3TZLwTGlPGsS4V2DDZ" target="_blank">Squacco_Heron_7124.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1LQzGOQlFWd2FlwSbOb1NmKErPZbvxuRz" loading="lazy" alt="Squacco_Heron_9714.jpg">
+                            <div class="meta-label">Tanzania - 09 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1LQzGOQlFWd2FlwSbOb1NmKErPZbvxuRz" target="_blank">Squacco_Heron_9714.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1ISyZxJCIQi4InxweYJZZadEwYAXqQdKi" loading="lazy" alt="Squacco_Heron_9761.jpg">
+                            <div class="meta-label">Tanzania - 09 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1ISyZxJCIQi4InxweYJZZadEwYAXqQdKi" target="_blank">Squacco_Heron_9761.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1JoDjXBOg8YQ3QqQA0epWSNUHgLiblMB5" loading="lazy" alt="Squacco_Heron_9804.jpg">
+                            <div class="meta-label">Tanzania - 09 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1JoDjXBOg8YQ3QqQA0epWSNUHgLiblMB5" target="_blank">Squacco_Heron_9804.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1glTKGNDdvBurLDPGFv_F_An6IUX4pqi3" loading="lazy" alt="Squacco_Heron_9810.jpg">
+                            <div class="meta-label">Tanzania - 09 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1glTKGNDdvBurLDPGFv_F_An6IUX4pqi3" target="_blank">Squacco_Heron_9810.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1uFyP8PeejqFWEayHM1yXFOmzUeAg1Ug4" loading="lazy" alt="Squacco_Heron_9831.jpg">
+                            <div class="meta-label">Tanzania - 09 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1uFyP8PeejqFWEayHM1yXFOmzUeAg1Ug4" target="_blank">Squacco_Heron_9831.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Malagasy Pond-Heron</div>
+                        <div class="french-label">Crabier blanc</div>
+                        <div class="latin-label">(Ardeola idae)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1LM8hgKJ8UmvhPldoWGdrnf_rwpT7wblJ" loading="lazy" alt="Malagasy_Pond-Heron_20223.jpg">
+                            <div class="meta-label">MG - 17 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1LM8hgKJ8UmvhPldoWGdrnf_rwpT7wblJ" target="_blank">Malagasy_Pond-Heron_20223.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1OJ-7l_b1_qu4QznzMBXjC6bJptGoZXdB" loading="lazy" alt="Malagasy_Pond-Heron_20321.jpg">
+                            <div class="meta-label">MG - 17 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1OJ-7l_b1_qu4QznzMBXjC6bJptGoZXdB" target="_blank">Malagasy_Pond-Heron_20321.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1-B-XF3qCA5L2N3N59gk-QLEijgHw01kt" loading="lazy" alt="Malagasy_Pond-Heron_20321G.jpg">
+                            <div class="meta-label">MG - 17 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1-B-XF3qCA5L2N3N59gk-QLEijgHw01kt" target="_blank">Malagasy_Pond-Heron_20321G.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Ume5p39XgFkH2_-fCLl_ZcqeHOJ96KPj" loading="lazy" alt="Malagasy_Pond-heron.jpg">
+                            <div class="meta-label">MG - 17 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Ume5p39XgFkH2_-fCLl_ZcqeHOJ96KPj" target="_blank">Malagasy_Pond-heron.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1HZ7F33mG3lkivGDBzcw06pCbbAiwkU-H" loading="lazy" alt="Malagasy_Pond-heron_0312.jpg">
+                            <div class="meta-label">MG - 17 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1HZ7F33mG3lkivGDBzcw06pCbbAiwkU-H" target="_blank">Malagasy_Pond-heron_0312.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1sY_Ec0qWFZ0HjjAlC85Wya_FVVOJWg-z" loading="lazy" alt="Malagasy_Pond-heron_0321G.jpg">
+                            <div class="meta-label">MG - 17 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1sY_Ec0qWFZ0HjjAlC85Wya_FVVOJWg-z" target="_blank">Malagasy_Pond-heron_0321G.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1MGEvXE25gLW07kJErpfqRQMvwErDPPPL" loading="lazy" alt="Malagasy_Pond-heron_0321G2.jpg">
+                            <div class="meta-label">MG - 17 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1MGEvXE25gLW07kJErpfqRQMvwErDPPPL" target="_blank">Malagasy_Pond-heron_0321G2.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1A6GKJW8Rveuzp8oGD5lfqutj7NTxq_Vx" loading="lazy" alt="Malagasy_Pond-heron_9859.jpg">
+                            <div class="meta-label">MG - 17 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1A6GKJW8Rveuzp8oGD5lfqutj7NTxq_Vx" target="_blank">Malagasy_Pond-heron_9859.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1_8JHTrWK43AQzvA-l4MMfpchIumY8waD" loading="lazy" alt="Malagasy_Pond-heron_9868.jpg">
+                            <div class="meta-label">MG - 17 Nov 2024</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1_8JHTrWK43AQzvA-l4MMfpchIumY8waD" target="_blank">Malagasy_Pond-heron_9868.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Western Cattle-Egret</div>
+                        <div class="french-label">Héron garde-boeufs</div>
+                        <div class="latin-label">(Ardea ibis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1TqqEZLQahk3LeouT825n87WhIIATKjhH" loading="lazy" alt="Western_Cattle-Egret_22697.jpg">
+                            <div class="meta-label">Ecuador - 10 Jul 2004</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1TqqEZLQahk3LeouT825n87WhIIATKjhH" target="_blank">Western_Cattle-Egret_22697.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1F18oizCU1hTzYdxinC3AeLzbevRZMgy9" loading="lazy" alt="Western_Cattle-Egret_2346MF.jpg">
+                            <div class="meta-label">Ecuador - 10 Jul 2004</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1F18oizCU1hTzYdxinC3AeLzbevRZMgy9" target="_blank">Western_Cattle-Egret_2346MF.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Eastern Cattle-Egret</div>
+                        <div class="french-label">Héron de Coromandel</div>
+                        <div class="latin-label">(Ardea coromanda)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1jU1qgaBIVHVxAb3dw_WEvAXyKoEvjFKb" loading="lazy" alt="Eastern_Cattle-egret_269.jpg">
+                            <div class="meta-label">Australia - 13 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1jU1qgaBIVHVxAb3dw_WEvAXyKoEvjFKb" target="_blank">Eastern_Cattle-egret_269.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1DfrNZCRkunmqgv36Hc3UHb70gCvKT26e" loading="lazy" alt="Eastern_Cattle-egret_4338.jpg">
+                            <div class="meta-label">Australia - 13 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1DfrNZCRkunmqgv36Hc3UHb70gCvKT26e" target="_blank">Eastern_Cattle-egret_4338.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1oecS1xtpxM_DKE-_Xk_-l7H0nORvmvAS" loading="lazy" alt="Eastern_Cattle-egret_7049MF.jpg">
+                            <div class="meta-label">Australia - 13 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1oecS1xtpxM_DKE-_Xk_-l7H0nORvmvAS" target="_blank">Eastern_Cattle-egret_7049MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1mADqOfSm1UOlloewW4ZyVCjuVHKVPOzC" loading="lazy" alt="Eastern_Cattle-egret_8482.jpg">
+                            <div class="meta-label">Australia - 13 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1mADqOfSm1UOlloewW4ZyVCjuVHKVPOzC" target="_blank">Eastern_Cattle-egret_8482.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1R2i_8qTYKyt_uBDFWaexlEnl6quHG-yW" loading="lazy" alt="Eastern_Cattle-egret_9586.jpg">
+                            <div class="meta-label">Australia - 13 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1R2i_8qTYKyt_uBDFWaexlEnl6quHG-yW" target="_blank">Eastern_Cattle-egret_9586.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1uTcS2h_IHaSU1DoTzjy12heQmledg_Vd" loading="lazy" alt="Eastern_Cattle-egret_9859.jpg">
+                            <div class="meta-label">Australia - 13 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1uTcS2h_IHaSU1DoTzjy12heQmledg_Vd" target="_blank">Eastern_Cattle-egret_9859.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Pacific Heron</div>
+                        <div class="french-label">Héron à tête blanche</div>
+                        <div class="latin-label">(Ardea pacifica)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/17tkWxvckOyRpKI2ucw91kUg6hsVhjkDh" loading="lazy" alt="Pacific_Heron_1600.jpg">
+                            <div class="meta-label">Australia - 23 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/17tkWxvckOyRpKI2ucw91kUg6hsVhjkDh" target="_blank">Pacific_Heron_1600.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Great Egret</div>
+                        <div class="french-label">Grande Aigrette</div>
+                        <div class="latin-label">(Ardea alba)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="Photos/Great_Egret_%28Australasian%29.jpg" loading="lazy" alt="Great_Egret_(Australasian).jpg">
+                            <div class="meta-label">Colombia - 27 Dec 2009</div>
+                            <div class="filename"><a href="Photos/Great_Egret_%28Australasian%29.jpg" target="_blank">Great_Egret_(Australasian).jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1GT6ZtfrgZDK4kvZbSzvErQSCyInZVOYZ" loading="lazy" alt="Great_Egret_-_Grande_aigrette_8475.jpg">
+                            <div class="meta-label">Colombia - 27 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1GT6ZtfrgZDK4kvZbSzvErQSCyInZVOYZ" target="_blank">Great_Egret_-_Grande_aigrette_8475.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/19dNtJbxo-sn4SgvNCTRspKRZSqokZjQN" loading="lazy" alt="Great_Egret_0971.jpg">
+                            <div class="meta-label">Colombia - 27 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/19dNtJbxo-sn4SgvNCTRspKRZSqokZjQN" target="_blank">Great_Egret_0971.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1oaqgv8Yrh5CFE2tsq2bVhT8iLGVyCta9" loading="lazy" alt="Great_Egret_1301.jpg">
+                            <div class="meta-label">Colombia - 27 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1oaqgv8Yrh5CFE2tsq2bVhT8iLGVyCta9" target="_blank">Great_Egret_1301.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1sCBNSVOvOlW0SlPs734wZnoOJWL6NY6R" loading="lazy" alt="Great_Egret_21154.jpg">
+                            <div class="meta-label">Colombia - 27 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1sCBNSVOvOlW0SlPs734wZnoOJWL6NY6R" target="_blank">Great_Egret_21154.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1SInlB1l6kSqQ2Xe_f2Dd-kVYgcxnlXrJ" loading="lazy" alt="Great_Egret_2345.jpg">
+                            <div class="meta-label">Colombia - 27 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1SInlB1l6kSqQ2Xe_f2Dd-kVYgcxnlXrJ" target="_blank">Great_Egret_2345.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1RozRY_76Vl_PWSga2VbmeX0IDRjEPgF8" loading="lazy" alt="Great_Egret_2371.jpg">
+                            <div class="meta-label">Colombia - 27 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1RozRY_76Vl_PWSga2VbmeX0IDRjEPgF8" target="_blank">Great_Egret_2371.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1yPdYYa6VKQ-Z4dDOFQ9dcohBOKAtzP3O" loading="lazy" alt="Great_Egret_2903.jpg">
+                            <div class="meta-label">Colombia - 27 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1yPdYYa6VKQ-Z4dDOFQ9dcohBOKAtzP3O" target="_blank">Great_Egret_2903.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1dJ3FiWKsjf8yFeMODldcU1wUiHJdunJu" loading="lazy" alt="Great_Egret_3559MF.jpg">
+                            <div class="meta-label">Colombia - 27 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1dJ3FiWKsjf8yFeMODldcU1wUiHJdunJu" target="_blank">Great_Egret_3559MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1QLlse7m-afq6CCdwr7vI3nEF0shJqCXD" loading="lazy" alt="Great_Egret_6042.jpg">
+                            <div class="meta-label">Colombia - 27 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1QLlse7m-afq6CCdwr7vI3nEF0shJqCXD" target="_blank">Great_Egret_6042.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/19lXEORkSQFeL1xrelc3ObgnK1NXvMmHa" loading="lazy" alt="Great_Egret_6349.jpg">
+                            <div class="meta-label">Colombia - 27 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/19lXEORkSQFeL1xrelc3ObgnK1NXvMmHa" target="_blank">Great_Egret_6349.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1O1ginhATbe9YEKDXxgi-76ogLLgboGya" loading="lazy" alt="Great_Egret_6837MF.jpg">
+                            <div class="meta-label">Colombia - 27 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1O1ginhATbe9YEKDXxgi-76ogLLgboGya" target="_blank">Great_Egret_6837MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1ulrlpv3K4MpPEcOKUEMbtQlYBedl0WNX" loading="lazy" alt="Great_Egret_9350.jpg">
+                            <div class="meta-label">Colombia - 27 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1ulrlpv3K4MpPEcOKUEMbtQlYBedl0WNX" target="_blank">Great_Egret_9350.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1W2149WIwFiAqjAHBYyNqmOqdDKi4ZCDg" loading="lazy" alt="Great_Egret_9641.jpg">
+                            <div class="meta-label">Colombia - 27 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1W2149WIwFiAqjAHBYyNqmOqdDKi4ZCDg" target="_blank">Great_Egret_9641.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1AjJIIJlQqo91adThrhuQ36wPgQn0txUH" loading="lazy" alt="Great_Egret_on_Nest_4456.jpg">
+                            <div class="meta-label">Colombia - 27 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1AjJIIJlQqo91adThrhuQ36wPgQn0txUH" target="_blank">Great_Egret_on_Nest_4456.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Gray Heron</div>
+                        <div class="french-label">Héron cendré</div>
+                        <div class="latin-label">(Ardea cinerea)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1j0T1D7G9ApWapTL9Za-gCbnjRrimoi6j" loading="lazy" alt="Gray_Heron_-_Heron_cendre_7112.jpg">
+                            <div class="meta-label">South Africa - 25 Sep 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1j0T1D7G9ApWapTL9Za-gCbnjRrimoi6j" target="_blank">Gray_Heron_-_Heron_cendre_7112.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1-iOaRP1reFlTDJxeN3RCH1EkoPdtIpzj" loading="lazy" alt="Gray_Heron_1993.jpg">
+                            <div class="meta-label">South Africa - 25 Sep 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1-iOaRP1reFlTDJxeN3RCH1EkoPdtIpzj" target="_blank">Gray_Heron_1993.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Great Blue Heron</div>
+                        <div class="french-label">Grand Héron</div>
+                        <div class="latin-label">(Ardea herodias)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="Photos/Great_Blue_Heron_%28white_morph%29_4987.jpg" loading="lazy" alt="Great_Blue_Heron_(white_morph)_4987.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="Photos/Great_Blue_Heron_%28white_morph%29_4987.jpg" target="_blank">Great_Blue_Heron_(white_morph)_4987.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/189bhaDb1n0hpSS1mkRNibMwdhQKjnTm4" loading="lazy" alt="Great_Blue_Heron_0089.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/189bhaDb1n0hpSS1mkRNibMwdhQKjnTm4" target="_blank">Great_Blue_Heron_0089.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1BHVg_m2F835Gi7Xm54pmGZntBTV2JjXK" loading="lazy" alt="Great_Blue_Heron_0397.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1BHVg_m2F835Gi7Xm54pmGZntBTV2JjXK" target="_blank">Great_Blue_Heron_0397.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1xQ-hbm1YhsnGbO7f_2I263LxtIDNhf8r" loading="lazy" alt="Great_Blue_Heron_1693.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1xQ-hbm1YhsnGbO7f_2I263LxtIDNhf8r" target="_blank">Great_Blue_Heron_1693.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1IDfXxPXOXd_mvLTkg6wRtQJsnhf7ZsUG" loading="lazy" alt="Great_Blue_Heron_21514.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1IDfXxPXOXd_mvLTkg6wRtQJsnhf7ZsUG" target="_blank">Great_Blue_Heron_21514.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1XfAgjQUseah2NohAsqTIkBQ9-QJc3TMt" loading="lazy" alt="Great_Blue_Heron_2221.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1XfAgjQUseah2NohAsqTIkBQ9-QJc3TMt" target="_blank">Great_Blue_Heron_2221.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1VGe24ZIND9tlRPXW1vkxUgGHfzRiN4sw" loading="lazy" alt="Great_Blue_Heron_2308.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1VGe24ZIND9tlRPXW1vkxUgGHfzRiN4sw" target="_blank">Great_Blue_Heron_2308.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1rpgdkYnrpommZDBmzFmn1riYr5xoiRBZ" loading="lazy" alt="Great_Blue_Heron_26615.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1rpgdkYnrpommZDBmzFmn1riYr5xoiRBZ" target="_blank">Great_Blue_Heron_26615.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1JKrMURHlHLWHGS1BmTppcIoG6qCjERn_" loading="lazy" alt="Great_Blue_Heron_4033.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1JKrMURHlHLWHGS1BmTppcIoG6qCjERn_" target="_blank">Great_Blue_Heron_4033.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1k_A0f3NIEMSdS_QRGK0lyelv8Mx7NiS_" loading="lazy" alt="Great_Blue_Heron_4724MF.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1k_A0f3NIEMSdS_QRGK0lyelv8Mx7NiS_" target="_blank">Great_Blue_Heron_4724MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1G9gl_12Zi702bwzq2lKy2Yc_iIVqhlqP" loading="lazy" alt="Great_Blue_Heron_5667MF.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1G9gl_12Zi702bwzq2lKy2Yc_iIVqhlqP" target="_blank">Great_Blue_Heron_5667MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1bF5y_k84dwdGASjjnayynO3KbOgwt2IL" loading="lazy" alt="Great_Blue_Heron_6312.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1bF5y_k84dwdGASjjnayynO3KbOgwt2IL" target="_blank">Great_Blue_Heron_6312.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1pzQ5CcPIF-DgxxVnBVoliwujqlwQC397" loading="lazy" alt="Great_Blue_Heron_7267.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1pzQ5CcPIF-DgxxVnBVoliwujqlwQC397" target="_blank">Great_Blue_Heron_7267.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1DOJ-YQBrWx2HvDzM4k7QBdeqgL1YXDnn" loading="lazy" alt="Great_Blue_Heron_7312.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1DOJ-YQBrWx2HvDzM4k7QBdeqgL1YXDnn" target="_blank">Great_Blue_Heron_7312.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1xURbqDqEsKRJvwIwOMkuKEJUx9L1aDmD" loading="lazy" alt="Great_Blue_Heron_9823.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1xURbqDqEsKRJvwIwOMkuKEJUx9L1aDmD" target="_blank">Great_Blue_Heron_9823.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1s3rHg_KdTXBCYiXYmRV0VyEX77Sj9Y6U" loading="lazy" alt="Great_Blue_Heron_9847.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1s3rHg_KdTXBCYiXYmRV0VyEX77Sj9Y6U" target="_blank">Great_Blue_Heron_9847.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/11WbvC2ABgpXSeYthxIeULPsgqf8lZBk_" loading="lazy" alt="Great_Blue_Heron_9942.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/11WbvC2ABgpXSeYthxIeULPsgqf8lZBk_" target="_blank">Great_Blue_Heron_9942.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1zJpFJ0kFgeGiSDPnVO_6C6ueJ7LsyhRR" loading="lazy" alt="Great_Blue_Heron_Courtship_7326.jpg">
+                            <div class="meta-label">Belize - 28 Nov 2011</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1zJpFJ0kFgeGiSDPnVO_6C6ueJ7LsyhRR" target="_blank">Great_Blue_Heron_Courtship_7326.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Cocoi Heron</div>
+                        <div class="french-label">Héron cocoi</div>
+                        <div class="latin-label">(Ardea cocoi)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1KeOzUe1wyQb_vlDS9dOFIw6v0zEnM2vh" loading="lazy" alt="Cocoi_Heron_2014-019.jpg">
+                            <div class="meta-label">Colombia - 29 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1KeOzUe1wyQb_vlDS9dOFIw6v0zEnM2vh" target="_blank">Cocoi_Heron_2014-019.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1LlrnQBzgZ8wC70p8a5uhpK4Wwjsg4aMd" loading="lazy" alt="Cocoi_Heron_22085.jpg">
+                            <div class="meta-label">Colombia - 29 Dec 2009</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1LlrnQBzgZ8wC70p8a5uhpK4Wwjsg4aMd" target="_blank">Cocoi_Heron_22085.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Purple Heron</div>
+                        <div class="french-label">Héron pourpré</div>
+                        <div class="latin-label">(Ardea purpurea)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1bSAI8YewN1YVZ3f_QixMDBafxt9AzRMv" loading="lazy" alt="Purple_Heron_7410.jpg">
+                            <div class="meta-label">South Africa - 02 Oct 2014</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1bSAI8YewN1YVZ3f_QixMDBafxt9AzRMv" target="_blank">Purple_Heron_7410.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Humblot's Heron</div>
+                        <div class="french-label">Héron de Humblot</div>
+                        <div class="latin-label">(Ardea humbloti)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="Photos/Humblot%27s_Heron_-_Heron_de_Humblot_7118.jpg" loading="lazy" alt="Humblot's_Heron_-_Heron_de_Humblot_7118.jpg">
+                            <div class="meta-label">MG - 13 Nov 2024</div>
+                            <div class="filename"><a href="Photos/Humblot%27s_Heron_-_Heron_de_Humblot_7118.jpg" target="_blank">Humblot's_Heron_-_Heron_de_Humblot_7118.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Black-headed Heron</div>
+                        <div class="french-label">Héron mélanocéphale</div>
+                        <div class="latin-label">(Ardea melanocephala)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1qhCtwr-wJIFN5_fIfvUR5R4KsQ93oQha" loading="lazy" alt="Black-headed_Heron_235.jpg">
+                            <div class="meta-label">Tanzania - 15 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1qhCtwr-wJIFN5_fIfvUR5R4KsQ93oQha" target="_blank">Black-headed_Heron_235.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1KudcclvsQLYzncN2sXb9HgokmCTIAF4p" loading="lazy" alt="Black-headed_Heron_6627.jpg">
+                            <div class="meta-label">Tanzania - 15 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1KudcclvsQLYzncN2sXb9HgokmCTIAF4p" target="_blank">Black-headed_Heron_6627.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Goliath Heron</div>
+                        <div class="french-label">Héron goliath</div>
+                        <div class="latin-label">(Ardea goliath)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1GaQhPognbQ6xjmlEu20Kb8JW7P5Zw1ZE" loading="lazy" alt="Goliath_Heron_1984.jpg">
+                            <div class="meta-label">Tanzania - 09 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1GaQhPognbQ6xjmlEu20Kb8JW7P5Zw1ZE" target="_blank">Goliath_Heron_1984.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="family-card">
+            <div class="family-header">
+                <div class="family-name">Hamerkop</div>
+                <div class="family-order-label">Scopidae / Pelecaniformes</div>
+            </div>
+            <div class="species-list">
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Hamerkop</div>
+                        <div class="french-label">Ombrette africaine</div>
+                        <div class="latin-label">(Scopus umbretta)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/14Ve5OBVrIxpJLO9AY72XrKiYrsEkm2kH" loading="lazy" alt="Hamerkop_-_Ombrette_africaine_8820MF.jpg">
+                            <div class="meta-label">Tanzania - 09 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/14Ve5OBVrIxpJLO9AY72XrKiYrsEkm2kH" target="_blank">Hamerkop_-_Ombrette_africaine_8820MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1QkvJNXruVcXO92Iw9dOeOInhvs7vfkGZ" loading="lazy" alt="Hamerkop_-_Ombrette_africaine_9228MF.jpg">
+                            <div class="meta-label">Tanzania - 09 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1QkvJNXruVcXO92Iw9dOeOInhvs7vfkGZ" target="_blank">Hamerkop_-_Ombrette_africaine_9228MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1U9w4qrnuzqctAxFk0KKetxhhKCTrtwsh" loading="lazy" alt="Hamerkop_-_Ombrette_africaine_9232MF.jpg">
+                            <div class="meta-label">Tanzania - 09 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1U9w4qrnuzqctAxFk0KKetxhhKCTrtwsh" target="_blank">Hamerkop_-_Ombrette_africaine_9232MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Xr4QISCKiffXWNAwYZUwnydb-U1fH1O8" loading="lazy" alt="Hamerkop_366.jpg">
+                            <div class="meta-label">Tanzania - 09 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Xr4QISCKiffXWNAwYZUwnydb-U1fH1O8" target="_blank">Hamerkop_366.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/14ikZOa42TbDZduBHQjsqcHShLNNB9gHC" loading="lazy" alt="Hamerkop_8515.jpg">
+                            <div class="meta-label">Tanzania - 09 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/14ikZOa42TbDZduBHQjsqcHShLNNB9gHC" target="_blank">Hamerkop_8515.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="family-card">
+            <div class="family-header">
+                <div class="family-name">Pelicans</div>
+                <div class="family-order-label">Pelecanidae / Pelecaniformes</div>
+            </div>
+            <div class="species-list">
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">American White Pelican</div>
+                        <div class="french-label">Pélican d'Amérique</div>
+                        <div class="latin-label">(Pelecanus erythrorhynchos)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1CWFKFxUcPnkb1kLH3Jp34ciXItsWTZq5" loading="lazy" alt="American_White_Pelican_1366.jpg">
+                            <div class="meta-label">USA - 17 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1CWFKFxUcPnkb1kLH3Jp34ciXItsWTZq5" target="_blank">American_White_Pelican_1366.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1OWtc0S_E3x-DHelCILbThgx9NSArrl-j" loading="lazy" alt="American_White_Pelican_3471.jpg">
+                            <div class="meta-label">USA - 17 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1OWtc0S_E3x-DHelCILbThgx9NSArrl-j" target="_blank">American_White_Pelican_3471.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1UgaLxw2bNW2zDbihv_YbmoFhgLfDjIK2" loading="lazy" alt="American_White_Pelican_4303.jpg">
+                            <div class="meta-label">USA - 17 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1UgaLxw2bNW2zDbihv_YbmoFhgLfDjIK2" target="_blank">American_White_Pelican_4303.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Qc5xVQ27Zfr1YocPaQFUTLOslpv88Xxk" loading="lazy" alt="American_White_Pelican_7130MF.jpg">
+                            <div class="meta-label">USA - 17 Dec 2012</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Qc5xVQ27Zfr1YocPaQFUTLOslpv88Xxk" target="_blank">American_White_Pelican_7130MF.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Brown Pelican</div>
+                        <div class="french-label">Pélican brun</div>
+                        <div class="latin-label">(Pelecanus occidentalis)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1PQQ2p8Oh6Xkp97yCkH8JSkigt_-tm1V4" loading="lazy" alt="Brown_Pelican_5089MF.jpg">
+                            <div class="meta-label">Ecuador - 07 Jul 2004</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1PQQ2p8Oh6Xkp97yCkH8JSkigt_-tm1V4" target="_blank">Brown_Pelican_5089MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1w69y9b3Jj88M49iwh3z8cDzmCBU4fb4y" loading="lazy" alt="Brown_Pelican_5258.jpg">
+                            <div class="meta-label">Ecuador - 07 Jul 2004</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1w69y9b3Jj88M49iwh3z8cDzmCBU4fb4y" target="_blank">Brown_Pelican_5258.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1uMTSZ1qWx--xsleYpS5SgGieRMN8Pupp" loading="lazy" alt="Brown_Pelican_6536.jpg">
+                            <div class="meta-label">Ecuador - 07 Jul 2004</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1uMTSZ1qWx--xsleYpS5SgGieRMN8Pupp" target="_blank">Brown_Pelican_6536.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Az0m3GePIKu3nwWycCGn2214CylzbvTZ" loading="lazy" alt="Brown_Pelican_6919.jpg">
+                            <div class="meta-label">Ecuador - 07 Jul 2004</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Az0m3GePIKu3nwWycCGn2214CylzbvTZ" target="_blank">Brown_Pelican_6919.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1oUNJLrgQvJONBmJI5KYWxP6IJsLFdAQS" loading="lazy" alt="Brown_Pelican_9603.jpg">
+                            <div class="meta-label">Ecuador - 07 Jul 2004</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1oUNJLrgQvJONBmJI5KYWxP6IJsLFdAQS" target="_blank">Brown_Pelican_9603.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Great White Pelican</div>
+                        <div class="french-label">Pélican blanc</div>
+                        <div class="latin-label">(Pelecanus onocrotalus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1kOA7Nhu6PybdTqK2HHCHD07dQOnAyBpR" loading="lazy" alt="Great_White_Pelican_43.jpg">
+                            <div class="meta-label">Tanzania - 09 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1kOA7Nhu6PybdTqK2HHCHD07dQOnAyBpR" target="_blank">Great_White_Pelican_43.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1Tokifcyi9l2ZOpo_Lgw_Ic-VzOlD9jjP" loading="lazy" alt="Great_White_Pelican_8967.jpg">
+                            <div class="meta-label">Tanzania - 09 Aug 2005</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1Tokifcyi9l2ZOpo_Lgw_Ic-VzOlD9jjP" target="_blank">Great_White_Pelican_8967.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="species-card">
+                    <div class="species-header">
+                        <div class="label">Australian Pelican</div>
+                        <div class="french-label">Pélican à lunettes</div>
+                        <div class="latin-label">(Pelecanus conspicillatus)</div>
+                    </div>
+                    <div class="photo-grid">
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/14YW6qkkuJavFQ4iJDyP7V3EcjMX2TDOY" loading="lazy" alt="Australian_Pelican_3562MF.jpg">
+                            <div class="meta-label">Australia - 11 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/14YW6qkkuJavFQ4iJDyP7V3EcjMX2TDOY" target="_blank">Australian_Pelican_3562MF.jpg</a></div>
+                        </div>
+                        <div class="photo-card">
+                            <img src="https://lh3.googleusercontent.com/d/1a1p4cpchDsjYxRAjp_fGwfHrXEDL2NPS" loading="lazy" alt="Australian_Pelican_8249.jpg">
+                            <div class="meta-label">Australia - 11 Oct 2017</div>
+                            <div class="filename"><a href="https://lh3.googleusercontent.com/d/1a1p4cpchDsjYxRAjp_fGwfHrXEDL2NPS" target="_blank">Australian_Pelican_8249.jpg</a></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div></div></body></html>
