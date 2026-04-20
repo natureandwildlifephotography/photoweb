@@ -52,7 +52,7 @@ def generate_html():
         .gallery {{ display: flex; flex-direction: column; gap: 20px; }}
         .card {{ background: #fff; border-radius: 12px; padding: 15px; border: 1px solid #ddd; display: flex; gap: 20px; }}
         .photo-grid {{ display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; width: 70%; }}
-        .card img {{ width: 100%; height: auto; border-radius: 8px; }}
+        .card img {{ width: 100%; height: auto; border-radius: 8px; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }}
         .info {{ width: 30%; }}
         .name {{ font-weight: bold; font-size: 1.5em; color: #0056b3; margin-bottom: 10px; }}
         .meta {{ font-size: 1em; color: #555; margin-bottom: 5px; }}
@@ -66,7 +66,7 @@ def generate_html():
 <body>
     <div id="lightbox" onclick="closeLightbox()">
         <span class="close">&times;</span>
-        <img id="lightbox-img" src="">
+        <img id="lightbox-img" src="" oncontextmenu="return false;" ondragstart="return false;">
     </div>
     <div class="banner">
         <div style="background: rgba(255, 255, 255, 0.3); backdrop-filter: blur(5px); padding: 10px 40px; border-radius: 15px; border: 2px solid rgba(255, 255, 255, 0.4); align-self: flex-start; margin-bottom: auto; margin-top: auto; margin-left: 20px;">
@@ -158,7 +158,7 @@ def generate_html():
         order = data.get('Order', 'Unknown')
         num_photos = len(item['photos'])
         
-        img_tags = "".join([f'<img src="{p}" alt="{species}" loading="lazy">' for p in item['photos']])
+        img_tags = "".join([f'<img src="{p}" alt="{species}" loading="lazy" oncontextmenu="return false;" ondragstart="return false;">' for p in item['photos']])
         
         html += f"""        <div class="card" data-species="{species}" data-family="{family}" data-order="{order}" data-photos="{num_photos}">
             <div class="info">
