@@ -57,21 +57,6 @@ def generate_html():
         .name {{ font-weight: bold; font-size: 1.5em; color: #0056b3; margin-bottom: 10px; }}
         .meta {{ font-size: 1em; color: #555; margin-bottom: 5px; }}
         .hidden {{ display: none; }}
-        /* Watermark styles */
-        .watermark-container {{ position: relative; display: flex; }}
-        .watermark {{ 
-            position: absolute; 
-            top: 50%; 
-            left: 50%; 
-            transform: translate(-50%, -50%) rotate(-30deg); 
-            color: rgba(255, 255, 255, 0.3); 
-            font-size: 0.8em; 
-            font-weight: bold; 
-            pointer-events: none; 
-            white-space: nowrap; 
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
-            z-index: 10;
-        }}
         /* Lightbox styles */
         #lightbox {{ display: none; position: fixed; z-index: 999; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); justify-content: center; align-items: center; }}
         #lightbox img {{ max-width: 95%; max-height: 95%; border-radius: 5px; box-shadow: 0 0 20px rgba(0,0,0,0.5); }}
@@ -173,13 +158,7 @@ def generate_html():
         order = data.get('Order', 'Unknown')
         num_photos = len(item['photos'])
         
-        img_tags = ""
-        for i, p in enumerate(item['photos']):
-            img_html = f'<img src="{p}" alt="{species}" loading="lazy" oncontextmenu="return false;" ondragstart="return false;">'
-            if i == 0:
-                img_tags += f'<div class="watermark-container">{img_html}<div class="watermark">© natureandwildlifephotography.ca</div></div>'
-            else:
-                img_tags += img_html
+        img_tags = "".join([f'<img src="{p}" alt="{species}" loading="lazy" oncontextmenu="return false;" ondragstart="return false;">' for p in item['photos']])
         
         html += f"""        <div class="card" data-species="{species}" data-family="{family}" data-order="{order}" data-photos="{num_photos}">
             <div class="info">
