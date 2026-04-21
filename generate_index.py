@@ -38,7 +38,7 @@ def generate_html():
     html = f"""<!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="utf-8">
+    <meta charset="UTF-8">
     <title>Bird Photo Collection</title>
     <style>
         body {{ font-family: sans-serif; background: #f4f4f4; color: #333; margin: 0; padding: 0 20px 20px 20px; }}
