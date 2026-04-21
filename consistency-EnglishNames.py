@@ -3,7 +3,7 @@ def compare_columns():
     audited_names = set()
     english_names = set()
 
-    with open('Master-FotoList.txt', 'r', encoding='latin-1') as f:
+    with open('Master-PhotoList - BirdPhotos.tsv', 'r', encoding='latin-1') as f:
         header = f.readline().split('\t')
         audited_idx = header.index('AuditedName')
         english_idx = header.index('English Name')

@@ -3,7 +3,7 @@ import csv
 
 # Configuration
 PHOTOS_DIR = 'Photos'
-MASTER_LIST = 'Master-FotoList.txt'
+MASTER_LIST = 'Master-PhotoList - BirdPhotos.tsv'
 OUTPUT_FILE = 'index-BirdCards.html'
 
 def load_master_data():
