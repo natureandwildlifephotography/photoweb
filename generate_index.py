@@ -8,8 +8,8 @@ OUTPUT_FILE = 'index-BirdCards.html'
 
 def load_master_data():
     data = {}
-    # Use mac_roman encoding as identified for French special characters
-    with open(MASTER_LIST, 'r', encoding='mac_roman') as f:
+    # Use utf-8 encoding for master data
+    with open(MASTER_LIST, 'r', encoding='utf-8') as f:
         reader = csv.DictReader(f, delimiter='\t')
         for row in reader:
             filename = row['Filename'].strip()
