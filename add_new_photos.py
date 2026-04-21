@@ -91,6 +91,9 @@ def generate_file_list():
 
     except Exception as e:
         print(f"Error: {e}")
+    
+    print("\nOpen Master-PhotoList (Google Sheet) copy the missing formulas in the added rows, and to verify that the English Names in columns C and D are matching.  Non matching names reveal inconsistencies in the naming of the species.  Correct before proceeding. Also, sort the entire sheet on Column A by alphabetical order.")
+    print("Check the results")
 
 if __name__ == "__main__":
     generate_file_list()
