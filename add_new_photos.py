@@ -77,8 +77,10 @@ def generate_file_list():
             name_no_ext = os.path.splitext(filename)[0]
             name_no_ext = re.sub(r'[-\s]*\d+$', '', name_no_ext)
             if " - " in name_no_ext:
-                return name_no_ext.split(" - ")[0].strip()
-            return name_no_ext.strip()
+                species = name_no_ext.split(" - ")[0].strip()
+            else:
+                species = name_no_ext.strip()
+            return species.replace('_', ' ')
             
         values = [[f, extract_species(f)] for f in files]
         body = {
