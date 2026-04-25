@@ -1,0 +1,40 @@
+79499331 Couch's Kingbird
+79545541 Yucatan Woodpecker
+79546941 Western Spindalis (Cozumel I.)
+79570781 Mangrove Yellow Warbler (Cozumel)
+79642081 Cozumel Vireo
+79643501 Gray-crowned Yellowthroat
+79645371 Crested Caracara (Northern)
+124360531 Black Phoebe
+124365731 Bushtit
+124560931 Wrentit
+124714131 Hudsonian Whimbrel
+125949611 Red-breasted Sapsucker
+128409561 Bewick's Wren
+128411361 Common Raven
+128411771 Hutton's Vireo
+128412451 California Thrasher
+128412861 Heermann's Gull
+151779881 Tawny Antpitta
+153265931 Rufous-breasted Chat-Tyrant
+172849401 Zeledon's Antbird (Choco)
+192044691 Collared Trogon (Orange-bellied)
+194035951 Fawn-breasted Tanager
+194170131 Brown-billed Scythebill
+194193141 Golden-bellied Starfrontlet
+194221301 Buff-banded Mountain Tanager
+404534591 Barrow's Goldeneye
+410866401 Redpoll (Common)
+417305621 Redpoll (Common)
+417560771 Rppell's Starling
+418213531 Augur Buzzard (Augur)
+419277831 Redpoll (Common)
+421418501 Golden-faced Tyrannulet (Golden-faced)
+421733671 Band-tailed Pigeon (White-necked)
+422045891 Crested Caracara (Northern)
+461965411 Black-and-yellow Tanager
+467489401 Mangrove Yellow Warbler (Mexican)
+473592171 Pale-mandibled Aracari (Pale-billed)
+473943911 Flame-rumped Tanager (Lemon-rumped)
+474599351 Crowned Woodnymph (Green-crowned/Emerald-bellied)
+477460281 Silvery Grebe (Andean)

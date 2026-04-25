@@ -1,0 +1,162 @@
+477460361 Silvery Grebe (Andean)
+477461451 Andean Duck (ferruginea)
+502697631 Hudsonian Whimbrel
+503658691 Silver Gull (Silver)
+503704011 Silver Gull (Silver)
+514725941 Collared/Pale-mandibled Aracari
+529819831 Little Heron
+530272901 White-crowned Lapwing
+531171721 Brown-crowned Tchagra
+531175931 Pearl-spotted Owlet
+531182341 Scarlet-chested Sunbird
+531184941 Scarlet-chested Sunbird
+531440091 Red-winged Starling
+531459491 Marico Sunbird
+531460881 African Hawk-Eagle
+531515631 Saddle-billed Stork
+531520061 Brown-headed Parrot
+531590881 Red-headed Weaver
+531930891 White-crested Helmetshrike
+531939091 Black-crowned Tchagra
+531942181 Golden-breasted Bunting
+531957791 Chinspot Batis
+546177511 Double-banded Graytail
+550406411 Retz's Helmetshrike
+550414331 Marico Sunbird
+550415961 Brown-headed Parrot
+550417651 Spectacled Weaver
+551147491 Saddle-billed Stork
+563202371 Southern Gray-headed Sparrow
+563204381 Lesser Striped Swallow
+563215831 Red-headed Weaver
+563221231 Common Greenshank
+563495341 Red-billed Oxpecker
+568011691 Winter Wren
+570930111 Common Nighthawk
+612426856 Hudsonian Whimbrel
+626566609 Crested Drongo (Madagascar)
+626566614 Crested Drongo (Madagascar)
+626570058 Little Heron
+626725961 Malagasy Paradise-Flycatcher (Malagasy)
+638158784 Southern Emerald-Toucanet (Santa Marta)
+638159290 Southern Emerald-Toucanet (Santa Marta)
+638318100 Gray-breasted Wood-Wren (bangsi)
+638498314 White-winged Becard
+640588336 Hudsonian Whimbrel
+646193948 Eurasian Coot
+646204666 Australasian Darter
+646207319 Gray Teal
+646207641 Gray Teal
+646262207 Slender-billed Thornbill
+646295781 Apostlebird
+646295957 Apostlebird
+646300690 Australian Ringneck
+646303926 Australian Ringneck
+646328326 Striated Pardalote
+646360823 Southern Scrub-Robin
+646361591 White-browed Babbler
+646366262 Redthroat
+646366563 Redthroat
+646367060 White-browed Babbler
+646369508 Australian Hobby
+646398533 Elegant Parrot
+646398807 Elegant Parrot
+646401411 Red-capped Robin
+646401663 Red-capped Robin
+646402033 Southern Whiteface
+646402556 Southern Whiteface
+646405363 Splendid Fairywren
+646406656 Splendid Fairywren
+646407459 Crimson Rosella (Yellow)
+646408010 White-fronted Honeyeater
+646413092 Yellow-plumed Honeyeater
+646413381 Yellow-plumed Honeyeater
+646413702 Rainbow Bee-eater
+646413902 Rainbow Bee-eater
+646414514 Mulga Parrot
+646416708 Red-backed Kingfisher
+646418080 Masked Woodswallow
+646418698 White-browed Woodswallow
+646428575 Crested Bellbird
+646429005 Regent Parrot
+646430491 Rufous Whistler
+646452470 Chestnut-rumped Thornbill
+646452970 Spiny-cheeked Honeyeater
+646453669 Malleefowl
+646454787 White-winged Triller
+646455696 Striped Honeyeater
+646457530 Striated Pardalote
+646458066 Striated Grasswren
+646460603 Superb Parrot
+646460954 Superb Parrot
+646471803 Little Friarbird
+646474248 Rock Pigeon (Feral Pigeon)
+646475807 Superb Parrot
+646476464 Crimson Rosella (Yellow)
+646485790 Dusky Woodswallow
+646486656 White-throated Treecreeper
+646487961 Red-capped Robin
+646488384 Little Eagle
+646488797 Painted Honeyeater
+646489019 Painted Honeyeater
+646490602 Purple-backed Fairywren
+646515789 Western Gerygone
+646516207 Gray-crowned Babbler
+646516546 Gray-crowned Babbler
+646517152 Crimson Rosella (Yellow)
+646517477 Square-tailed Kite
+646517569 Square-tailed Kite
+646517876 Eastern Shrike-tit
+646518816 Australian Owlet-nightjar
+646519253 Horsfield's Bronze-Cuckoo
+646519619 White-backed Swallow
+646533979 Banded Lapwing
+646534612 Banded Lapwing
+646538505 Australian Pratincole
+646539602 Australian Pratincole
+646542209 Plains-wanderer
+646543125 Peaceful Dove
+646543712 Rufous Whistler
+646554012 Mistletoebird
+646554368 White-throated Gerygone
+646554606 Dusky Woodswallow
+646555026 Hooded Robin
+646557082 Turquoise Parrot
+646557506 Diamond Firetail
+646593864 Hooded Robin
+646595192 Latham's Snipe
+646596172 Black-chinned Honeyeater
+646610403 Olive-backed Oriole
+646611070 Nankeen Night Heron
+646671674 Superb Lyrebird
+646696822 Cape Barren Goose
+646697374 Magpie Goose
+646698471 Eurasian Tree Sparrow
+646701343 White-winged Chough
+646705832 Freckled Duck
+646750926 Musk Duck
+646907825 Gray Currawong
+646913558 Satin Flycatcher
+646914699 Swift Parrot
+646922978 Black-faced Cormorant
+646928942 Strong-billed Honeyeater
+646929470 Satin Flycatcher
+646930691 Tasmanian Scrubwren
+646932986 Yellow-throated Honeyeater
+646946656 Slender-billed Thornbill
+646946657 Slender-billed Thornbill
+646970889 Gray Teal
+646971715 Australasian Shoveler
+646972026 Freckled Duck
+646975174 Gray Goshawk
+646976210 Black Currawong
+646979043 Lewin's Rail
+646979953 Australasian Figbird
+646980685 Powerful Owl
+646981468 Australasian Figbird
+646982981 Australian Raven
+646988175 Pied Cormorant
+647027845 White-breasted Woodswallow
+647033150 Cinnamon Quail-thrush
+647205362 Yellow-tufted Honeyeater
+649664113 White-winged Snowfinch
