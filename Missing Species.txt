@@ -48,152 +48,152 @@ Black-and-white Hawk-Eagle	No jpg
 Black-bellied Wren	Yes	Yes	Yes	
 Black-billed Cuckoo	No jpg			
 Black-billed Magpie	Yes	Yes	Yes	
-Black-billed Peppershrike				
-Black-breasted Kite				
-Black-capped Flycatcher				
-Black-capped Hemispingus				
-Black-capped Pygmy-Tyrant				
-Black-chested Snake-Eagle				
-Black-chinned Mountain Tanager				
-Black-crowned Antpitta				
-Black-eared Cuckoo				
-Black-eared Hemispingus				
-Black-faced Antthrush				
-Black-faced Woodswallow				
-Black-headed Gull				
-Black-headed Siskin				
-Black-headed Tanager				
-Black-headed Trogon				
-Black-hooded Antshrike				
-Black-tailed Flycatcher				
-Black-tailed Nativehen				
+Black-billed Peppershrike	No jpg			
+Black-breasted Kite	Yes	Yes	Yes	
+Black-capped Flycatcher	No jpg			
+Black-capped Hemispingus	No jpg			
+Black-capped Pygmy-Tyrant	No jpg			
+Black-chested Snake-Eagle	No jpg			
+Black-chinned Mountain Tanager	No jpg			
+Black-crowned Antpitta	Yes	Yes	Yes	
+Black-eared Cuckoo	Yes	Yes	Yes	
+Black-eared Hemispingus	No jpg			
+Black-faced Antthrush	No jpg			
+Black-faced Woodswallow	Yes	Yes	Yes	
+Black-headed Gull	No jpg			
+Black-headed Siskin	No jpg			
+Black-headed Tanager	No jpg			
+Black-headed Trogon	Yes	Yes	Yes	
+Black-hooded Antshrike	No jpg			
+Black-tailed Flycatcher	No jpg			
+Black-tailed Nativehen	Yes	Yes	Yes	
 Black-tailed Waxbill	Yes	Yes	Yes	
-Black-thighed Puffleg				
-Black-throated Bobwhite				
-Black-throated Shrike-Tanager				
-Black-vented Shearwater				
-Black-winged Ground Dove				
-Blackish Rail				
-Blue Coua				
-Blue Crane				
-Blue Ground Dove				
-Blue-and-white Swallow				
-Blue-and-yellow Tanager				
-Blue-backed Manakin				
-Blue-billed Duck				
-Blue-black Grosbeak				
-Blue-capped Tanager				
-Blue-chinned Sapphire				
-Blue-faced Honeyeater				
-Blue-tailed Trogon				
-Blue-throated Goldentail				
-Blue-throated Starfrontlet				
-Bluish Flowerpiercer				
-Bogota Rail				
-Bohemian Waxwing				
-Bran-colored Flycatcher				
-Brandt's Cormorant				
-Brewer's Blackbird				
-Brolga				
-Bronzy Inca				
-Brown Goshawk				
-Brown Inca				
-Brown Snake-Eagle				
-Brown Songlark				
-Brown-bellied Swallow				
-Brown-breasted Parakeet				
-Brown-headed Nuthatch				
-Brubru				
-Buff-rumped Thornbill				
-Buffy Tuftedcheek				
+Black-thighed Puffleg	Yes	Yes	Yes	
+Black-throated Bobwhite	No jpg			
+Black-throated Shrike-Tanager	No jpg			
+Black-vented Shearwater	Yes	Yes	Yes	
+Black-winged Ground Dove	No jpg			
+Blackish Rail	No jpg			
+Blue Coua	Yes	Yes	Yes	
+Blue Crane	Yes	Yes	Yes	
+Blue Ground Dove	No jpg			
+Blue-and-white Swallow	No jpg			
+Blue-and-yellow Tanager	No jpg			
+Blue-backed Manakin	No jpg			
+Blue-billed Duck	No jpg			
+Blue-black Grosbeak	No jpg			
+Blue-capped Tanager	Yes	Yes	Yes	
+Blue-chinned Sapphire	No jpg			
+Blue-faced Honeyeater	No jpg			
+Blue-tailed Trogon	No jpg			
+Blue-throated Goldentail	No jpg			
+Blue-throated Starfrontlet	No jpg			
+Bluish Flowerpiercer	No jpg			
+Bogota Rail	No jpg			
+Bohemian Waxwing	Yes	Yes	Yes	
+Bran-colored Flycatcher	No jpg			
+Brandt's Cormorant	Yes	Yes	Yes	
+Brewer's Blackbird	No jpg			
+Brolga	Yes	Yes	Yes	
+Bronzy Inca	No jpg			
+Brown Goshawk	No jpg			
+Brown Inca	No jpg			
+Brown Snake-Eagle	Yes	Yes	Yes	
+Brown Songlark	No jpg			
+Brown-bellied Swallow	No jpg			
+Brown-breasted Parakeet	No jpg			
+Brown-headed Nuthatch	Yes	Yes	Yes	
+Brubru	No jpg			
+Buff-rumped Thornbill	Yes	Yes	Yes	
+Buffy Tuftedcheek	No jpg			
 Burchell's Coucal	Yes	Yes	Yes	
-Burchell's Sandgrouse				
-Cabanis's Ground-Sparrow				
-Cabanis's Wren				
-California Condor				
-California Gull				
-California Quail				
-California Towhee				
-Canada Jay				
-Canvasback				
-Cape Cormorant				
-Cape Griffon				
-Cape Teal				
-Capped Heron				
-Caribbean Martin				
-Carmiol's Tanager				
-Carolina Chickadee				
-Carrion Crow				
-Cassin's Kingbird				
-Channel-billed Toucan				
-Checker-throated Stipplethroat				
-Chestnut Quail-thrush				
-Chestnut-bellied Hummingbird				
-Chestnut-crowned Babbler				
-Chestnut-headed Oropendola				
-Chestnut-naped Antpitta				
-Chirruping Wedgebill				
-Chivi Vireo				
-Choco Tyrannulet				
-Cinereous Conebill				
-Cinnamon-chested Bee-eater				
-Clark's Nutcracker				
-Cocoa Thrush				
-Cocos Booby				
-Collared Pratincole				
+Burchell's Sandgrouse	Yes	Yes	Yes	
+Cabanis's Ground-Sparrow	No jpg			
+Cabanis's Wren	No jpg			
+California Condor	Yes	Yes	Yes	
+California Gull	No jpg			
+California Quail	No jpg			
+California Towhee	Yes	Yes	Yes	
+Canada Jay	No jpg			
+Canvasback	No jpg			
+Cape Cormorant	No jpg			
+Cape Griffon	No jpg			
+Cape Teal	No jpg			
+Capped Heron	No jpg			
+Caribbean Martin	No jpg			
+Carmiol's Tanager	No jpg			
+Carolina Chickadee	No jpg			
+Carrion Crow	No jpg			
+Cassin's Kingbird	No jpg			
+Channel-billed Toucan	No jpg			
+Checker-throated Stipplethroat	No jpg			
+Chestnut Quail-thrush	Yes			
+Chestnut-bellied Hummingbird	No jpg			
+Chestnut-crowned Babbler	No jpg			
+Chestnut-headed Oropendola	Yes	Yes	Yes	
+Chestnut-naped Antpitta	No jpg			
+Chirruping Wedgebill	Yes	Yes	Yes	
+Chivi Vireo	No jpg			
+Choco Tyrannulet	No jpg			
+Cinereous Conebill	No jpg			
+Cinnamon-chested Bee-eater	Yes	Yes	No	
+Clark's Nutcracker	Yes	Yes	Yes	
+Cocoa Thrush	No jpg			
+Cocos Booby	No jpg			
+Collared Pratincole	No jpg			
 Collared Sunbird	Yes	Yes	Yes	
-Colombian Chachalaca				
-Common Buzzard				
-Common Chaffinch				
-Common Chlorospingus				
-Common Murre				
-Common Pauraque				
-Common Ringed Plover				
-Common Wood-Pigeon				
-Coppery Emerald				
-Crab-Plover				
-Crane Hawk				
-Crested Coua				
-Crossley's Vanga				
-Crowned Chat-Tyrant				
-Cryptic Warbler				
-Dark Newtonia				
+Colombian Chachalaca	Yes	Yes	Yes	
+Common Buzzard	No jpg			
+Common Chaffinch	No jpg			
+Common Chlorospingus	No jpg			
+Common Murre	No jpg			
+Common Pauraque	No jpg			
+Common Ringed Plover	No jpg			
+Common Wood-Pigeon	No jpg			
+Coppery Emerald	No jpg			
+Crab-Plover	Yes	Yes	Yes	
+Crane Hawk	No jpg			
+Crested Coua	No jpg			
+Crossley's Vanga	No jpg			
+Crowned Chat-Tyrant	No jpg			
+Cryptic Warbler	No jpg			
+Dark Newtonia	No jpg			
 Dark-backed Weaver	Yes	Yes	Yes	
-Dusky Chlorospingus				
-Dusky Lark				
-Dusky Piha				
-Eared Grebe				
-Eastern Cattle-Egret				
-Elegant Euphonia				
-Empress Brilliant				
-Euler's Flycatcher				
-Eurasian Blue Tit				
-Eurasian Jackdaw				
-Eurasian Kestrel				
-Eurasian Magpie				
-Eurasian Whimbrel				
-European Bee-eater				
-European Greenfinch				
-Fairy Martin				
-Far Eastern Curlew				
-Fawn-throated Foliage-gleaner				
-Fiery-billed Aracari				
-Fish Crow				
-Flavescent Flycatcher				
-Florida Scrub-Jay				
-Forest Elaenia				
-Forest Fody				
-Forest Raven				
-Fork-tailed Palm Swift				
-Forty-spotted Pardalote				
-Franklin's Gull				
-Fuscous Flycatcher				
-Fuscous Honeyeater				
+Dusky Chlorospingus	No jpg			
+Dusky Lark	No jpg			
+Dusky Piha	No jpg			
+Eared Grebe	Yes	Yes	Yes	
+Eastern Cattle-Egret	Yes	Yes	Yes	
+Elegant Euphonia	No jpg			
+Empress Brilliant	No jpg			
+Euler's Flycatcher	No jpg			
+Eurasian Blue Tit	No jpg			
+Eurasian Jackdaw	No jpg			
+Eurasian Kestrel	No jpg			
+Eurasian Magpie	No jpg			
+Eurasian Whimbrel	No jpg			
+European Bee-eater	Yes	Yes	Yes	
+European Greenfinch	No jpg			
+Fairy Martin	No jpg			
+Far Eastern Curlew	No jpg			
+Fawn-throated Foliage-gleaner	No jpg			
+Fiery-billed Aracari	No jpg			
+Fish Crow	No jpg			
+Flavescent Flycatcher	No jpg			
+Florida Scrub-Jay	No jpg			
+Forest Elaenia	No jpg			
+Forest Fody	No jpg			
+Forest Raven	No jpg			
+Fork-tailed Palm Swift	No jpg			
+Forty-spotted Pardalote	Yes	Yes	Yes	
+Franklin's Gull	No jpg			
+Fuscous Flycatcher	No jpg			
+Fuscous Honeyeater	No jpg			
 Gabar Goshawk				
 Garden Emerald				
 Glossy Black-Cockatoo				
 Glossy-black Thrush				
-Golden-breasted Puffleg				
+Golden-breasted Puffleg	Yes	Yes	Yes	
 Golden-crowned Spadebill				
 Golden-crowned Tanager				
 Golden-crowned Warbler				
@@ -366,7 +366,7 @@ Plain-tailed Wren
 Plate-billed Mountain-Toucan				
 Plumbeous Pigeon				
 Pollen's Vanga				
-Purple-banded Sunbird				
+Purple-banded Sunbird	Yes	Yes	Yes	
 Purple-chested Hummingbird				
 Purple-crested Turaco	Yes	Yes	Yes	
 Rattling Cisticola	Yes	Yes	Yes	
