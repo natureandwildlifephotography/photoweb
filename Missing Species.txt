@@ -1,4 +1,4 @@
-Common Name	In Lightroom	In New-photos_ToDo	In eBird	AKA
+Common Name	In Lightroom	In R2	In eBird	AKA
 Acadian Flycatcher				
 African Cuckoo-Hawk	Yes	Yes	Yes	
 African Firefinch	No	No	No	
@@ -11,43 +11,43 @@ African Palm Swift	No	No	No
 African Sacred Ibis	Yes	Yes	Yes	
 African Swamphen	No	No	No	
 African Woolly-necked Stork	Yes	Yes	Yes	
-Alder Flycatcher				
-Alpine Accentor				
-Altamira Oriole				
-Amethyst Sunbird				
-Andean Duck				
-Andean Guan				
-Andean Siskin				
-Andean Solitaire				
-Andean Teal				
-Aplomado Falcon				
-Ash-browed Spinetail				
-Augur Buzzard				
-Australian Boobook				
-Australian Rufous Fantail				
-Azara's Spinetail				
-Azure Kingfisher				
-Band-winged Nightjar				
-Banded Stilt				
-Banded Wren				
-Bank Swallow				
-Bar-crested Antshrike				
-Barred Becard				
-Barred Hawk				
-Bearded Bellbird				
-Bearded Vulture				
-Bearded Woodpecker				
-Black Antshrike				
-Black Falcon				
-Black Flowerpiercer				
-Black Guan				
-Black Hawk-Eagle				
-Black Inca				
-Black Oystercatcher				
-Black-and-white Hawk-Eagle				
-Black-bellied Wren				
-Black-billed Cuckoo				
-Black-billed Magpie				
+Alder Flycatcher	See			Willow Flycatcher
+Alpine Accentor	No jpg			
+Altamira Oriole	No jpg			
+Amethyst Sunbird	No jpg			
+Andean Duck	Yes	Yes	Yes	
+Andean Guan	No	No	No	
+Andean Siskin	No	No	No	
+Andean Solitaire	No	No	No	
+Andean Teal	No	No	No	
+Aplomado Falcon	Yes	Yes	Yes	
+Ash-browed Spinetail	No jpg			
+Augur Buzzard	Yes	Yes	Yes	
+Australian Boobook	No jpg			
+Australian Rufous Fantail	No jpg			
+Azara's Spinetail	No jpg			
+Azure Kingfisher	No jpg			
+Band-winged Nightjar	No jpg			
+Banded Stilt	No jpg			
+Banded Wren	No jpg			
+Bank Swallow	No jpg			
+Bar-crested Antshrike	Yes	Yes	Yes	
+Barred Becard	No jpg			
+Barred Hawk	No jpg			
+Bearded Bellbird	No jpg			
+Bearded Vulture	No jpg			
+Bearded Woodpecker	No jpg			
+Black Antshrike	No jpg			
+Black Falcon	No jpg			
+Black Flowerpiercer	No jpg			
+Black Guan	No jpg			
+Black Hawk-Eagle	No jpg			
+Black Inca	No jpg			
+Black Oystercatcher	No jpg			
+Black-and-white Hawk-Eagle	No jpg			
+Black-bellied Wren	Yes	Yes	Yes	
+Black-billed Cuckoo	No jpg			
+Black-billed Magpie	Yes	Yes	Yes	
 Black-billed Peppershrike				
 Black-breasted Kite				
 Black-capped Flycatcher				
@@ -106,7 +106,7 @@ Brown-headed Nuthatch
 Brubru				
 Buff-rumped Thornbill				
 Buffy Tuftedcheek				
-Burchell's Coucal				
+Burchell's Coucal	Yes	Yes	Yes	
 Burchell's Sandgrouse				
 Cabanis's Ground-Sparrow				
 Cabanis's Wren				
@@ -141,7 +141,7 @@ Clark's Nutcracker
 Cocoa Thrush				
 Cocos Booby				
 Collared Pratincole				
-Collared Sunbird				
+Collared Sunbird	Yes	Yes	Yes	
 Colombian Chachalaca				
 Common Buzzard				
 Common Chaffinch				
@@ -255,12 +255,12 @@ Lacrimose Mountain Tanager
 Large-billed Tern				
 Lark Sparrow				
 Lark-like Bunting				
-Laughing Dove				
+Laughing Dove	Yes	Yes	Yes	
 Lesser Crested Tern				
 Lesser Goldfinch				
 Lesser Greenlet				
 Lesser Jacana				
-Lesser Masked-Weaver				
+Lesser Masked-Weaver	Yes	Yes	Yes	
 Lesser Swallow-tailed Swift				
 Lesser Vasa Parrot				
 Lewin's Honeyeater				
@@ -268,7 +268,7 @@ Lineated Foliage-gleaner
 Lined Quail-Dove				
 Little Crow				
 Little Grassbird				
-Little Grebe				
+Little Grebe	yes	yes	yes	
 Little Hermit				
 Little Stint				
 Little Tern				
@@ -343,7 +343,7 @@ Orange-throated Longclaw
 Ornate Flycatcher				
 Ornate Hawk-Eagle				
 Painted Buttonquail				
-Pale Flycatcher				
+Pale Flycatcher	Yes	Yes	Yes	
 Pale-bellied Hermit				
 Pale-bellied Tapaculo				
 Pale-edged Flycatcher				
@@ -368,8 +368,8 @@ Plumbeous Pigeon
 Pollen's Vanga				
 Purple-banded Sunbird				
 Purple-chested Hummingbird				
-Purple-crested Turaco				
-Rattling Cisticola				
+Purple-crested Turaco	Yes	Yes	Yes	
+Rattling Cisticola	Yes	Yes	Yes	
 Razorbill				
 Red Knot				
 Red-billed Quelea				
@@ -379,7 +379,7 @@ Red-collared Widowbird
 Red-crested Cardinal				
 Red-crested Cotinga				
 Red-headed Finch				
-Red-knobbed Coot				
+Red-knobbed Coot	yes	yes	yes	
 Red-tailed Tropicbird				
 Red-throated Caracara				
 Restless Flycatcher				
@@ -456,15 +456,15 @@ Sooty Thrush
 South African Shelduck				
 Southern Beardless-Tyrannulet				
 Southern Bentbill				
-Southern Black-Tit				
+Southern Black-Tit	Yes	Yes	Yes	
 Southern Brown-throated Weaver				
 Southern Crag-Martin				
 Southern Crested Guineafowl	Yes	Yes	Yes	
 Southern Emerald-Toucanet				
 Southern Emuwren				
-Southern Masked-Weaver				
-Southern Pochard				
-Southern Red Bishop				
+Southern Masked-Weaver	Yes	Yes	Yes	
+Southern Pochard	Yes	Yes	Yes	
+Southern Red Bishop	Yes	Yes	Yes	
 Speckle-breasted Wren				
 Speckled Hummingbird				
 Speckled Nightingale-Thrush				
@@ -508,8 +508,8 @@ Verreaux's Eagle-Owl
 Village Indigobird				
 Violet-eared Waxbill				
 Violet-headed Hummingbird				
-Wahlberg's Eagle				
-Wattled Lapwing				
+Wahlberg's Eagle	Yes	Yes	Yes	
+Wattled Lapwing	Yes	Yes	Yes	
 Wedge-billed Woodcreeper				
 Wedge-tailed Sabrewing				
 Weebill				
@@ -523,7 +523,7 @@ White-bellied Emerald
 White-bellied Mountain-gem				
 White-bellied Sea-Eagle				
 White-browed Gnatcatcher				
-White-browed Scrub-Robin				
+White-browed Scrub-Robin	Yes	Yes	Yes	
 White-browed Spinetail				
 White-browed Treecreeper				
 White-capped Albatross				
@@ -558,7 +558,7 @@ Yellow Thornbill
 Yellow Tyrannulet				
 Yellow-bellied Greenbul	Yes	Yes	Yes	
 Yellow-billed Chough				
-Yellow-billed Duck				
+Yellow-billed Duck	Yes	Yes	Yes	
 Yellow-billed Oxpecker				
 Yellow-breasted Apalis				
 Yellow-breasted Brushfinch				
