@@ -9,3 +9,5 @@
 *.html.bak
 secrets.txt
 .env
+~$index.html
+
