@@ -189,43 +189,43 @@ Forty-spotted Pardalote	Yes	Yes	Yes
 Franklin's Gull	No jpg			
 Fuscous Flycatcher	No jpg			
 Fuscous Honeyeater	No jpg			
-Gabar Goshawk				
-Garden Emerald				
-Glossy Black-Cockatoo				
-Glossy-black Thrush				
+Gabar Goshawk	Yes	Yes	Yes	
+Garden Emerald	No jpg			
+Glossy Black-Cockatoo	No jpg			
+Glossy-black Thrush	No jpg			
 Golden-breasted Puffleg	Yes	Yes	Yes	
-Golden-crowned Spadebill				
-Golden-crowned Tanager				
-Golden-crowned Warbler				
-Golden-fronted Woodpecker				
-Golden-headed Quetzal				
+Golden-crowned Spadebill	No jpg			
+Golden-crowned Tanager	No jpg			
+Golden-crowned Warbler	No jpg			
+Golden-fronted Woodpecker	No jpg			
+Golden-headed Quetzal	No jpg			
 Golden-tailed Woodpecker	Yes	Yes	Yes	
-Golden-winged Manakin				
-Golden-winged Sparrow				
-Gorgeted Sunangel				
-Grace's Warbler				
-Grass-green Tanager				
-Grassland Yellow-Finch				
-Gray Partridge				
-Gray-breasted Martin				
-Gray-cheeked Thrush				
-Gray-chested Dove				
-Gray-fronted Dove				
-Gray-fronted Honeyeater				
-Gray-headed Bushshrike				
-Gray-headed Kite				
-Gray-hooded Gull				
-Gray-rumped Swift				
-Gray-throated Leaftosser				
-Great Gray Owl				
-Great Jacamar				
-Great Tinamou				
-Great Tit				
-Greater Bluebonnet				
-Greater Flamingo				
-Greater Kestrel				
-Greater Roadrunner				
-Greater Striped Swallow				
+Golden-winged Manakin	No jpg			
+Golden-winged Sparrow	No jpg			
+Gorgeted Sunangel	No jpg			
+Grace's Warbler	No jpg			
+Grass-green Tanager	No jpg			
+Grassland Yellow-Finch	No jpg			
+Gray Partridge	Yes	Yes	Yes	
+Gray-breasted Martin	No jpg			
+Gray-cheeked Thrush	No jpg			
+Gray-chested Dove	No jpg			
+Gray-fronted Dove	No jpg			
+Gray-fronted Honeyeater	Yes	Yes	Yes	
+Gray-headed Bushshrike	Yes	??	??	
+Gray-headed Kite	No jpg			
+Gray-hooded Gull	Yes	Yes	Yes	
+Gray-rumped Swift	No jpg			
+Gray-throated Leaftosser	No jpg			
+Great Gray Owl	Yes	Yes	Yes	
+Great Jacamar	Yes	Yes	Yes	
+Great Tinamou	No jpg			
+Great Tit	No jpg			
+Greater Bluebonnet	No jpg			
+Greater Flamingo	No jpg			
+Greater Kestrel	Yes	Yes	Yes	
+Greater Roadrunner	Yes	Yes	Yes	
+Greater Striped Swallow	No jpg			
 Green Hermit				
 Green Jay				
 Green Jery				
