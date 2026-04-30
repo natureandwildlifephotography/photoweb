@@ -1,577 +1,444 @@
-Common Name	In Lightroom	In R2	In eBird	AKA
-Acadian Flycatcher				
-African Cuckoo-Hawk	Yes	Yes	Yes	
-African Firefinch	No	No	No	
-African Golden-Weaver	Yes	Yes	Yes	Holub's Golden-Weaver
-African Goshawk	No			
-African Harrier-Hawk	No			
-African Jacana	Yes	Yes	Yes	
-African Oystercatcher	No			
-African Palm Swift	No	No	No	
-African Sacred Ibis	Yes	Yes	Yes	
-African Swamphen	No	No	No	
-African Woolly-necked Stork	Yes	Yes	Yes	
-Alder Flycatcher	See			Willow Flycatcher
-Alpine Accentor	No jpg			
-Altamira Oriole	No jpg			
-Amethyst Sunbird	No jpg			
-Andean Duck	Yes	Yes	Yes	
-Andean Guan	No	No	No	
-Andean Siskin	No	No	No	
-Andean Solitaire	No	No	No	
-Andean Teal	No	No	No	
-Aplomado Falcon	Yes	Yes	Yes	
-Ash-browed Spinetail	No jpg			
-Augur Buzzard	Yes	Yes	Yes	
-Australian Boobook	No jpg			
-Australian Rufous Fantail	No jpg			
-Azara's Spinetail	No jpg			
-Azure Kingfisher	No jpg			
-Band-winged Nightjar	No jpg			
-Banded Stilt	No jpg			
-Banded Wren	No jpg			
-Bank Swallow	No jpg			
-Bar-crested Antshrike	Yes	Yes	Yes	
-Barred Becard	No jpg			
-Barred Hawk	No jpg			
-Bearded Bellbird	No jpg			
-Bearded Vulture	No jpg			
-Bearded Woodpecker	No jpg			
-Black Antshrike	No jpg			
-Black Falcon	No jpg			
-Black Flowerpiercer	No jpg			
-Black Guan	No jpg			
-Black Hawk-Eagle	No jpg			
-Black Inca	No jpg			
-Black Oystercatcher	No jpg			
-Black-and-white Hawk-Eagle	No jpg			
-Black-bellied Wren	Yes	Yes	Yes	
-Black-billed Cuckoo	No jpg			
-Black-billed Magpie	Yes	Yes	Yes	
-Black-billed Peppershrike	No jpg			
-Black-breasted Kite	Yes	Yes	Yes	
-Black-capped Flycatcher	No jpg			
-Black-capped Hemispingus	No jpg			
-Black-capped Pygmy-Tyrant	No jpg			
-Black-chested Snake-Eagle	No jpg			
-Black-chinned Mountain Tanager	No jpg			
-Black-crowned Antpitta	Yes	Yes	Yes	
-Black-eared Cuckoo	Yes	Yes	Yes	
-Black-eared Hemispingus	No jpg			
-Black-faced Antthrush	No jpg			
-Black-faced Woodswallow	Yes	Yes	Yes	
-Black-headed Gull	No jpg			
-Black-headed Siskin	No jpg			
-Black-headed Tanager	No jpg			
-Black-headed Trogon	Yes	Yes	Yes	
-Black-hooded Antshrike	No jpg			
-Black-tailed Flycatcher	No jpg			
-Black-tailed Nativehen	Yes	Yes	Yes	
-Black-tailed Waxbill	Yes	Yes	Yes	
-Black-thighed Puffleg	Yes	Yes	Yes	
-Black-throated Bobwhite	No jpg			
-Black-throated Shrike-Tanager	No jpg			
-Black-vented Shearwater	Yes	Yes	Yes	
-Black-winged Ground Dove	No jpg			
-Blackish Rail	No jpg			
-Blue Coua	Yes	Yes	Yes	
-Blue Crane	Yes	Yes	Yes	
-Blue Ground Dove	No jpg			
-Blue-and-white Swallow	No jpg			
-Blue-and-yellow Tanager	No jpg			
-Blue-backed Manakin	No jpg			
-Blue-billed Duck	No jpg			
-Blue-black Grosbeak	No jpg			
-Blue-capped Tanager	Yes	Yes	Yes	
-Blue-chinned Sapphire	No jpg			
-Blue-faced Honeyeater	No jpg			
-Blue-tailed Trogon	No jpg			
-Blue-throated Goldentail	No jpg			
-Blue-throated Starfrontlet	No jpg			
-Bluish Flowerpiercer	No jpg			
-Bogota Rail	No jpg			
-Bohemian Waxwing	Yes	Yes	Yes	
-Bran-colored Flycatcher	No jpg			
-Brandt's Cormorant	Yes	Yes	Yes	
-Brewer's Blackbird	No jpg			
-Brolga	Yes	Yes	Yes	
-Bronzy Inca	No jpg			
-Brown Goshawk	No jpg			
-Brown Inca	No jpg			
-Brown Snake-Eagle	Yes	Yes	Yes	
-Brown Songlark	No jpg			
-Brown-bellied Swallow	No jpg			
-Brown-breasted Parakeet	No jpg			
-Brown-headed Nuthatch	Yes	Yes	Yes	
-Brubru	No jpg			
-Buff-rumped Thornbill	Yes	Yes	Yes	
-Buffy Tuftedcheek	No jpg			
-Burchell's Coucal	Yes	Yes	Yes	
-Burchell's Sandgrouse	Yes	Yes	Yes	
-Cabanis's Ground-Sparrow	No jpg			
-Cabanis's Wren	No jpg			
-California Condor	Yes	Yes	Yes	
-California Gull	No jpg			
-California Quail	No jpg			
-California Towhee	Yes	Yes	Yes	
-Canada Jay	No jpg			
-Canvasback	No jpg			
-Cape Cormorant	No jpg			
-Cape Griffon	No jpg			
-Cape Teal	No jpg			
-Capped Heron	No jpg			
-Caribbean Martin	No jpg			
-Carmiol's Tanager	No jpg			
-Carolina Chickadee	No jpg			
-Carrion Crow	No jpg			
-Cassin's Kingbird	No jpg			
-Channel-billed Toucan	No jpg			
-Checker-throated Stipplethroat	No jpg			
-Chestnut Quail-thrush	Yes			
-Chestnut-bellied Hummingbird	No jpg			
-Chestnut-crowned Babbler	No jpg			
-Chestnut-headed Oropendola	Yes	Yes	Yes	
-Chestnut-naped Antpitta	No jpg			
-Chirruping Wedgebill	Yes	Yes	Yes	
-Chivi Vireo	No jpg			
-Choco Tyrannulet	No jpg			
-Cinereous Conebill	No jpg			
-Cinnamon-chested Bee-eater	Yes	Yes	No	
-Clark's Nutcracker	Yes	Yes	Yes	
-Cocoa Thrush	No jpg			
-Cocos Booby	No jpg			
-Collared Pratincole	No jpg			
-Collared Sunbird	Yes	Yes	Yes	
-Colombian Chachalaca	Yes	Yes	Yes	
-Common Buzzard	No jpg			
-Common Chaffinch	No jpg			
-Common Chlorospingus	No jpg			
-Common Murre	No jpg			
-Common Pauraque	No jpg			
-Common Ringed Plover	No jpg			
-Common Wood-Pigeon	No jpg			
-Coppery Emerald	No jpg			
-Crab-Plover	Yes	Yes	Yes	
-Crane Hawk	No jpg			
-Crested Coua	No jpg			
-Crossley's Vanga	No jpg			
-Crowned Chat-Tyrant	No jpg			
-Cryptic Warbler	No jpg			
-Dark Newtonia	No jpg			
-Dark-backed Weaver	Yes	Yes	Yes	
-Dusky Chlorospingus	No jpg			
-Dusky Lark	No jpg			
-Dusky Piha	No jpg			
-Eared Grebe	Yes	Yes	Yes	
-Eastern Cattle-Egret	Yes	Yes	Yes	
-Elegant Euphonia	No jpg			
-Empress Brilliant	No jpg			
-Euler's Flycatcher	No jpg			
-Eurasian Blue Tit	No jpg			
-Eurasian Jackdaw	No jpg			
-Eurasian Kestrel	No jpg			
-Eurasian Magpie	No jpg			
-Eurasian Whimbrel	No jpg			
-European Bee-eater	Yes	Yes	Yes	
-European Greenfinch	No jpg			
-Fairy Martin	No jpg			
-Far Eastern Curlew	No jpg			
-Fawn-throated Foliage-gleaner	No jpg			
-Fiery-billed Aracari	No jpg			
-Fish Crow	No jpg			
-Flavescent Flycatcher	No jpg			
-Florida Scrub-Jay	No jpg			
-Forest Elaenia	No jpg			
-Forest Fody	No jpg			
-Forest Raven	No jpg			
-Fork-tailed Palm Swift	No jpg			
-Forty-spotted Pardalote	Yes	Yes	Yes	
-Franklin's Gull	No jpg			
-Fuscous Flycatcher	No jpg			
-Fuscous Honeyeater	No jpg			
-Gabar Goshawk	Yes	Yes	Yes	
-Garden Emerald	No jpg			
-Glossy Black-Cockatoo	No jpg			
-Glossy-black Thrush	No jpg			
-Golden-breasted Puffleg	Yes	Yes	Yes	
-Golden-crowned Spadebill	No jpg			
-Golden-crowned Tanager	No jpg			
-Golden-crowned Warbler	No jpg			
-Golden-fronted Woodpecker	No jpg			
-Golden-headed Quetzal	No jpg			
-Golden-tailed Woodpecker	Yes	Yes	Yes	
-Golden-winged Manakin	No jpg			
-Golden-winged Sparrow	No jpg			
-Gorgeted Sunangel	No jpg			
-Grace's Warbler	No jpg			
-Grass-green Tanager	No jpg			
-Grassland Yellow-Finch	No jpg			
-Gray Partridge	Yes	Yes	Yes	
-Gray-breasted Martin	No jpg			
-Gray-cheeked Thrush	No jpg			
-Gray-chested Dove	No jpg			
-Gray-fronted Dove	No jpg			
-Gray-fronted Honeyeater	Yes	Yes	Yes	
-Gray-headed Bushshrike	Yes	??	??	
-Gray-headed Kite	No jpg			
-Gray-hooded Gull	Yes	Yes	Yes	
-Gray-rumped Swift	No jpg			
-Gray-throated Leaftosser	No jpg			
-Great Gray Owl	Yes	Yes	Yes	
-Great Jacamar	Yes	Yes	Yes	
-Great Tinamou	No jpg			
-Great Tit	No jpg			
-Greater Bluebonnet	No jpg			
-Greater Flamingo	No jpg			
-Greater Kestrel	Yes	Yes	Yes	
-Greater Roadrunner	Yes	Yes	Yes	
-Greater Striped Swallow	No jpg			
-Green Hermit				
-Green Jay				
-Green Jery				
-Green-backed Sparrow				
-Green-backed Trogon				
-Green-throated Mango				
-Grosbeak Weaver	Yes	Yes	Yes	
-Guianan Violaceous Trogon				
-Guira Tanager				
-Hadada Ibis				
-Half-collared Kingfisher				
-Hardhead				
-Hawaii Creeper				
-Hawaii Elepaio				
-Hawaiian Hawk				
-Henslow's Sparrow				
-Hooded Crow				
-Hooded Oriole				
-Hooded Siskin				
-Hooded Tanager				
-Inland Thornbill				
-Jacky-winter				
-Jet Antbird				
-King Vulture				
-Kurrichane Thrush				
-Lacrimose Mountain Tanager				
-Large-billed Tern				
-Lark Sparrow				
-Lark-like Bunting				
-Laughing Dove	Yes	Yes	Yes	
-Lesser Crested Tern				
-Lesser Goldfinch				
-Lesser Greenlet				
-Lesser Jacana				
-Lesser Masked-Weaver	Yes	Yes	Yes	
-Lesser Swallow-tailed Swift				
-Lesser Vasa Parrot				
-Lewin's Honeyeater				
-Lineated Foliage-gleaner				
-Lined Quail-Dove				
-Little Crow				
-Little Grassbird				
-Little Grebe	yes	yes	yes	
-Little Hermit				
-Little Stint				
-Little Tern				
-Long-billed Bernieria				
-Long-billed Crombec				
-Long-billed Gnatwren				
-Long-crested Eagle				
-Long-tailed Manakin				
-Longuemare's Sunangel				
-Madagascar Cuckoo-Hawk				
-Madagascar Cuckooshrike				
-Madagascar Forest Rail				
-Madagascar Green-Pigeon				
-Madagascar Martin				
-Madagascar Munia				
-Madagascar Partridge				
-Madagascar Sparrowhawk				
-Madagascar Wagtail				
-Malagasy Brush-Warbler				
-Malagasy Coucal				
-Malagasy Palm Swift				
-Malagasy Paradise-Flycatcher				
-Malagasy Sunbird				
-Malagasy Swift				
-Malagasy Turtle-Dove				
-Malagasy White-eye				
-Mangrove Vireo				
-Mangrove Yellow Warbler				
-Marble-faced Bristle-Tyrant				
-Marico Sunbird	Yes	Yes	Yes	
-Maroon-tailed Parakeet				
-Mascarene Martin				
-Masked Water-Tyrant				
-Meves's Starling				
-Mexican Sheartail				
-Meyer's Parrot				
-Mistletoe Tyrannulet				
-Montane Foliage-gleaner				
-Mountain Chickadee				
-Mountain Grackle				
-Mountain Velvetbreast				
-Mourning Collared-Dove				
-Mouse-colored Tyrannulet				
-Muisca Antpitta				
-Muscovy Duck				
-Namaqua Sandgrouse				
-Natal Spurfowl				
-Nelicourvi Weaver				
-Nicaraguan Seed-Finch				
-Nightingale Wren				
-Northern Bentbill				
-Northern Schiffornis				
-Northern Slaty Brushfinch				
-Northern White-fringed Antwren				
-Nuthatch-Vanga				
-Ocellated Antbird				
-Ocellated Tapaculo				
-Ochre-bellied Flycatcher				
-Ochre-breasted Tanager				
-Ochre-crowned Greenlet				
-Olivaceous Woodcreeper				
-Olive Sparrow				
-Olive Whistler				
-Olive-sided Flycatcher				
-Olive-striped Flycatcher				
-One-colored Becard				
-Orange-bellied Euphonia				
-Orange-billed Nightingale-Thrush				
-Orange-crowned Oriole				
-Orange-fronted Barbet				
-Orange-throated Longclaw				
-Ornate Flycatcher				
-Ornate Hawk-Eagle				
-Painted Buttonquail				
-Pale Flycatcher	Yes	Yes	Yes	
-Pale-bellied Hermit				
-Pale-bellied Tapaculo				
-Pale-edged Flycatcher				
-Pale-eyed Pygmy-Tyrant				
-Pale-mandibled Aracari				
-Pale-naped Brushfinch				
-Pallid Dove				
-Paramo Tapaculo				
-Pied Butcherbird				
-Pied Crow				
-Pigeon Guillemot				
-Pilotbird				
-Pink-footed Shearwater				
-Piping Plover				
-Pitta-like Ground-Roller				
-Plain-breasted Ground Dove				
-Plain-capped Ground-Tyrant				
-Plain-colored Seedeater				
-Plain-tailed Wren				
-Plate-billed Mountain-Toucan				
-Plumbeous Pigeon				
-Pollen's Vanga				
-Purple-banded Sunbird	Yes	Yes	Yes	
-Purple-chested Hummingbird				
-Purple-crested Turaco	Yes	Yes	Yes	
-Rattling Cisticola	Yes	Yes	Yes	
-Razorbill				
-Red Knot				
-Red-billed Quelea				
-Red-billed Scythebill				
-Red-cheeked Cordonbleu				
-Red-collared Widowbird				
-Red-crested Cardinal				
-Red-crested Cotinga				
-Red-headed Finch				
-Red-knobbed Coot	yes	yes	yes	
-Red-tailed Tropicbird				
-Red-throated Caracara				
-Restless Flycatcher				
-Ridgway's Rail				
-Ring-necked Dove				
-Ring-necked Pheasant				
-Riverside Wren				
-Rock Pigeon				
-Ruddy Foliage-gleaner				
-Ruddy Pigeon				
-Ruddy-breasted Seedeater				
-Ruff				
-Rufous Fieldwren				
-Rufous Mourner				
-Rufous Wren				
-Rufous-and-white Wren				
-Rufous-breasted Flycatcher				
-Rufous-breasted Hermit				
-Rufous-breasted Wren				
-Rufous-browed Tyrannulet				
-Rufous-chested Swallow				
-Russet Antshrike				
-Rusty Sparrow				
-Rusty-headed Spinetail				
-RÂŸppell's Griffon				
-Sahul Cicadabird				
-Santa Marta Antbird				
-Santa Marta Blossomcrown				
-Santa Marta Tapaculo				
-Santa Marta Warbler				
-Sapayoa				
-Sapphire-vented Puffleg				
-Say's Phoebe				
-Scale-crested Pygmy-Tyrant				
-Scaled Pigeon				
-Scaly-breasted Wren				
-Scaly-naped Amazon				
-Scaly-naped Pigeon				
-Scaly-throated Leaftosser				
-Scarlet-chested Sunbird	Yes	Yes	Yes	
-Scarlet-rumped Cacique				
-Scarlet-thighed Dacnis				
-Scintillant Hummingbird				
-Scrub Blackbird				
-Scrubtit				
-Sepia-capped Flycatcher				
-Sharp-shinned Hawk				
-Sharpe's Wren				
-Shikra				
-Short-billed Gull				
-Short-tailed Emerald				
-Short-tailed Nighthawk				
-Short-tailed Shearwater				
-Short-tailed Swift				
-Shy Heathwren				
-Sierran Elaenia				
-Silvery Grebe				
-Silvery-throated Spinetail				
-Slate-colored Coot				
-Slate-colored Grosbeak				
-Slate-colored Seedeater				
-Slate-headed Tody-Flycatcher				
-Slaty Antwren				
-Slaty-backed Nightingale-Thrush				
-Slaty-capped Flycatcher				
-Slaty-capped Shrike-Vireo				
-Slender-billed Tyrannulet				
-Smoky Bush-Tyrant				
-Snowy-bellied Hummingbird				
-Sombre Greenbul	Yes	Yes	Yes	
-Sooty Shearwater				
-Sooty Tern				
-Sooty Thrush				
-South African Shelduck				
-Southern Beardless-Tyrannulet				
-Southern Bentbill				
-Southern Black-Tit	Yes	Yes	Yes	
-Southern Brown-throated Weaver				
-Southern Crag-Martin				
-Southern Crested Guineafowl	Yes	Yes	Yes	
-Southern Emerald-Toucanet				
-Southern Emuwren				
-Southern Masked-Weaver	Yes	Yes	Yes	
-Southern Pochard	Yes	Yes	Yes	
-Southern Red Bishop	Yes	Yes	Yes	
-Speckle-breasted Wren				
-Speckled Hummingbird				
-Speckled Nightingale-Thrush				
-Speckled Tanager				
-Spot-breasted Wren				
-Spotted Eagle-Owl				
-Square-tailed Drongo	Yes	Yes	Yes	
-Straw-necked Ibis				
-Streak-backed Canastero				
-Streak-capped Treehunter				
-Streak-chested Antpitta				
-Streak-headed Antbird				
-Streak-necked Flycatcher				
-Streaked Tuftedcheek				
-Streaked Xenops				
-Striated Thornbill				
-Stripe-breasted Spinetail				
-Striped Cuckoo				
-Striped Kingfisher				
-Stub-tailed Spadebill				
-Sulphur-rumped Flycatcher				
-Swainson's Hawk				
-Tawny-faced Gnatwren				
-Temminck's Courser				
-Thick-billed Grasswren				
-Thicket Antpitta				
-Three-striped Warbler				
-Tocuyo Sparrow				
-Topknot Pigeon				
-Tree Martin				
-Trumpeter Hornbill	Yes	Yes	Yes	
-Tufted Duck				
-Tufted Tit-Tyrant				
-Turquoise Dacnis				
-Turquoise Jay				
-Turquoise Tanager				
-Tyrian Metaltail				
-Vaux's Swift				
-Veraguan Mango				
-Verreaux's Eagle-Owl				
-Village Indigobird				
-Violet-eared Waxbill				
-Violet-headed Hummingbird				
-Wahlberg's Eagle	Yes	Yes	Yes	
-Wattled Lapwing	Yes	Yes	Yes	
-Wedge-billed Woodcreeper				
-Wedge-tailed Sabrewing				
-Weebill				
-Western Bluebird				
-Western Grebe				
-Western House-Martin				
-Western Spindalis				
-Whistling Heron				
-White-backed Vulture				
-White-bellied Emerald				
-White-bellied Mountain-gem				
-White-bellied Sea-Eagle				
-White-browed Gnatcatcher				
-White-browed Scrub-Robin	Yes	Yes	Yes	
-White-browed Spinetail				
-White-browed Treecreeper				
-White-capped Albatross				
-White-cheeked Pintail				
-White-crested Elaenia				
-White-eared Barbet	Yes	Yes	Yes	
-White-eared Conebill				
-White-faced Ibis				
-White-flanked Antwren				
-White-fronted Nunbird				
-White-headed Vanga				
-White-quilled Bustard				
-White-ruffed Manakin				
-White-tailed Hawk				
-White-tailed Tyrannulet				
-White-thighed Swallow				
-White-throated Daggerbill				
-White-throated Oxylabes				
-White-throated Screech-Owl				
-White-throated Shrike-Tanager				
-White-throated Spadebill				
-White-tipped Quetzal				
-White-tipped Sicklebill				
-White-tipped Swift				
-White-vented Euphonia				
-White-winged Crossbill				
-White-winged Fairywren				
-Whooping Crane				
-Woodhouse's Scrub-Jay				
-Worm-eating Warbler				
-Yellow Thornbill				
-Yellow Tyrannulet				
-Yellow-bellied Greenbul	Yes	Yes	Yes	
-Yellow-billed Chough				
-Yellow-billed Duck	Yes	Yes	Yes	
-Yellow-billed Oxpecker				
-Yellow-breasted Apalis				
-Yellow-breasted Brushfinch				
-Yellow-green Tyrannulet				
-Yellow-headed Amazon				
-Yellow-olive Flatbill				
-Yellow-rumped Tinkerbird	Yes	Yes	Yes	
-Yellow-tailed Oriole				
-Yellow-throated Miner				
-Yellow-vented Woodpecker				
-Yellow-winged Flatbill				
-Yellow-winged Tanager				
-Yellow-winged Vireo				
-Zebra Finch				
-Zeledon's Antbird				
-Zone-tailed Hawk				
+Missing Species
+Acadian Flycatcher
+African Firefinch
+African Goshawk
+African Harrier-Hawk
+African Oystercatcher
+African Palm Swift
+African Swamphen
+Alder Flycatcher
+Alpine Accentor
+Altamira Oriole
+Amethyst Sunbird
+Andean Guan
+Andean Siskin
+Andean Solitaire
+Andean Teal
+Ash-browed Spinetail
+Australian Boobook
+Australian Rufous Fantail
+Azara's Spinetail
+Azure Kingfisher
+Band-winged Nightjar
+Banded Stilt
+Banded Wren
+Bank Swallow
+Barred Becard
+Barred Hawk
+Bearded Bellbird
+Bearded Vulture
+Bearded Woodpecker
+Black Antshrike
+Black Falcon
+Black Flowerpiercer
+Black Guan
+Black Hawk-Eagle
+Black Inca
+Black Oystercatcher
+Black-and-white Hawk-Eagle
+Black-billed Cuckoo
+Black-billed Peppershrike
+Black-capped Flycatcher
+Black-capped Hemispingus
+Black-capped Pygmy-Tyrant
+Black-chested Snake-Eagle
+Black-chinned Mountain Tanager
+Black-eared Hemispingus
+Black-faced Antthrush
+Black-headed Gull
+Black-headed Siskin
+Black-headed Tanager
+Black-hooded Antshrike
+Black-tailed Flycatcher
+Black-throated Bobwhite
+Black-throated Shrike-Tanager
+Black-winged Ground Dove
+Blackish Rail
+Blue Ground Dove
+Blue-and-white Swallow
+Blue-and-yellow Tanager
+Blue-backed Manakin
+Blue-billed Duck
+Blue-black Grosbeak
+Blue-chinned Sapphire
+Blue-faced Honeyeater
+Blue-tailed Trogon
+Blue-throated Goldentail
+Blue-throated Starfrontlet
+Bluish Flowerpiercer
+Bogota Rail
+Bran-colored Flycatcher
+Brewer's Blackbird
+Bronzy Inca
+Brown Goshawk
+Brown Inca
+Brown Songlark
+Brown-bellied Swallow
+Brown-breasted Parakeet
+Brubru
+Buffy Tuftedcheek
+Cabanis's Ground-Sparrow
+Cabanis's Wren
+California Gull
+California Quail
+Canada Jay
+Canvasback
+Cape Cormorant
+Cape Griffon
+Cape Teal
+Capped Heron
+Caribbean Martin
+Carmiol's Tanager
+Carolina Chickadee
+Carrion Crow
+Cassin's Kingbird
+Channel-billed Toucan
+Checker-throated Stipplethroat
+Chestnut-bellied Hummingbird
+Chestnut-crowned Babbler
+Chestnut-naped Antpitta
+Chivi Vireo
+Choco Tyrannulet
+Cinereous Conebill
+Cocoa Thrush
+Cocos Booby
+Collared Pratincole
+Common Buzzard
+Common Chaffinch
+Common Chlorospingus
+Common Murre
+Common Pauraque
+Common Ringed Plover
+Common Wood-Pigeon
+Coppery Emerald
+Crane Hawk
+Crested Coua
+Crossley's Vanga
+Crowned Chat-Tyrant
+Cryptic Warbler
+Dark Newtonia
+Dusky Chlorospingus
+Dusky Lark
+Dusky Piha
+Elegant Euphonia
+Empress Brilliant
+Euler's Flycatcher
+Eurasian Blue Tit
+Eurasian Jackdaw
+Eurasian Kestrel
+Eurasian Magpie
+Eurasian Whimbrel
+European Greenfinch
+Fairy Martin
+Far Eastern Curlew
+Fawn-throated Foliage-gleaner
+Fiery-billed Aracari
+Fish Crow
+Flavescent Flycatcher
+Florida Scrub-Jay
+Forest Elaenia
+Forest Fody
+Forest Raven
+Fork-tailed Palm Swift
+Franklin's Gull
+Fuscous Flycatcher
+Fuscous Honeyeater
+Garden Emerald
+Glossy Black-Cockatoo
+Glossy-black Thrush
+Golden-crowned Spadebill
+Golden-crowned Tanager
+Golden-crowned Warbler
+Golden-fronted Woodpecker
+Golden-headed Quetzal
+Golden-winged Manakin
+Golden-winged Sparrow
+Gorgeted Sunangel
+Grace's Warbler
+Grass-green Tanager
+Grassland Yellow-Finch
+Gray-breasted Martin
+Gray-cheeked Thrush
+Gray-chested Dove
+Gray-fronted Dove
+Gray-headed Kite
+Gray-rumped Swift
+Gray-throated Leaftosser
+Great Tinamou
+Great Tit
+Greater Bluebonnet
+Greater Flamingo
+Greater Striped Swallow
+Green Hermit
+Green Jay
+Green Jery
+Green-backed Sparrow
+Green-backed Trogon
+Green-throated Mango
+Guianan Violaceous Trogon
+Guira Tanager
+Half-collared Kingfisher
+Hardhead
+Hawaii Creeper
+Hawaii Elepaio
+Hawaiian Hawk
+Hooded Crow
+Hooded Oriole
+Hooded Siskin
+Hooded Tanager
+Inland Thornbill
+Jet Antbird
+King Vulture
+Lacrimose Mountain Tanager
+Large-billed Tern
+Lark Sparrow
+Lesser Greenlet
+Lesser Jacana
+Lesser Swallow-tailed Swift
+Lesser Vasa Parrot
+Lewin's Honeyeater
+Lineated Foliage-gleaner
+Lined Quail-Dove
+Little Crow
+Little Grassbird
+Little Grebe
+Little Hermit
+Little Stint
+Little Tern
+Long-billed Bernieria
+Long-billed Crombec
+Long-billed Gnatwren
+Long-crested Eagle
+Long-tailed Manakin
+Longuemare's Sunangel
+Madagascar Cuckoo-Hawk
+Madagascar Cuckooshrike
+Madagascar Forest Rail
+Madagascar Green-Pigeon
+Madagascar Martin
+Madagascar Munia
+Madagascar Partridge
+Madagascar Sparrowhawk
+Madagascar Wagtail
+Malagasy Brush-Warbler
+Malagasy Coucal
+Malagasy Palm Swift
+Malagasy Paradise-Flycatcher
+Malagasy Sunbird
+Malagasy Swift
+Malagasy Turtle-Dove
+Malagasy White-eye
+Mangrove Vireo
+Mangrove Yellow Warbler
+Marble-faced Bristle-Tyrant
+Maroon-tailed Parakeet
+Mascarene Martin
+Masked Water-Tyrant
+Mexican Sheartail
+Meyer's Parrot
+Mistletoe Tyrannulet
+Montane Foliage-gleaner
+Mountain Chickadee
+Mouse-colored Tyrannulet
+Muisca Antpitta
+Muscovy Duck
+Namaqua Sandgrouse
+Nelicourvi Weaver
+Nicaraguan Seed-Finch
+Nightingale Wren
+Northern Bentbill
+Northern Schiffornis
+Northern Slaty Brushfinch
+Northern White-fringed Antwren
+Nuthatch-Vanga
+Ocellated Antbird
+Ocellated Tapaculo
+Ochre-bellied Flycatcher
+Ochre-breasted Tanager
+Ochre-crowned Greenlet
+Olivaceous Woodcreeper
+Olive Sparrow
+Olive-sided Flycatcher
+Olive-striped Flycatcher
+One-colored Becard
+Orange-billed Nightingale-Thrush
+Orange-crowned Oriole
+Orange-throated Longclaw
+Ornate Flycatcher
+Ornate Hawk-Eagle
+Painted Buttonquail
+Pale-bellied Hermit
+Pale-bellied Tapaculo
+Pale-edged Flycatcher
+Pale-eyed Pygmy-Tyrant
+Pale-naped Brushfinch
+Pallid Dove
+Paramo Tapaculo
+Pied Butcherbird
+Pigeon Guillemot
+Piping Plover
+Pitta-like Ground-Roller
+Plain-breasted Ground Dove
+Plain-capped Ground-Tyrant
+Plain-colored Seedeater
+Plain-tailed Wren
+Plate-billed Mountain-Toucan
+Plumbeous Pigeon
+Pollen's Vanga
+Purple-chested Hummingbird
+Razorbill
+Red Knot
+Red-billed Scythebill
+Red-collared Widowbird
+Red-crested Cardinal
+Red-crested Cotinga
+Red-headed Finch
+Red-knobbed Coot
+Red-tailed Tropicbird
+Red-throated Caracara
+Restless Flycatcher
+Ridgway's Rail
+Ring-necked Dove
+Ring-necked Pheasant
+Riverside Wren
+Ruddy Foliage-gleaner
+Ruddy Pigeon
+Ruddy-breasted Seedeater
+Rufous Fieldwren
+Rufous Mourner
+Rufous Wren
+Rufous-and-white Wren
+Rufous-breasted Flycatcher
+Rufous-breasted Hermit
+Rufous-breasted Wren
+Rufous-browed Tyrannulet
+Rufous-chested Swallow
+Russet Antshrike
+Rusty Sparrow
+Rusty-headed Spinetail
+RŸppell's Griffon
+Sahul Cicadabird
+Santa Marta Antbird
+Santa Marta Blossomcrown
+Santa Marta Tapaculo
+Santa Marta Warbler
+Sapayoa
+Sapphire-vented Puffleg
+Scale-crested Pygmy-Tyrant
+Scaled Pigeon
+Scaly-breasted Wren
+Scaly-naped Amazon
+Scaly-naped Pigeon
+Scaly-throated Leaftosser
+Scarlet-rumped Cacique
+Scarlet-thighed Dacnis
+Scintillant Hummingbird
+Scrub Blackbird
+Scrubtit
+Sepia-capped Flycatcher
+Sharpe's Wren
+Short-billed Gull
+Short-tailed Emerald
+Short-tailed Nighthawk
+Short-tailed Shearwater
+Short-tailed Swift
+Shy Heathwren
+Sierran Elaenia
+Silvery-throated Spinetail
+Slate-colored Coot
+Slate-colored Grosbeak
+Slate-headed Tody-Flycatcher
+Slaty Antwren
+Slaty-backed Nightingale-Thrush
+Slaty-capped Flycatcher
+Slaty-capped Shrike-Vireo
+Slender-billed Tyrannulet
+Smoky Bush-Tyrant
+Sooty Shearwater
+Sooty Thrush
+South African Shelduck
+Southern Beardless-Tyrannulet
+Southern Bentbill
+Southern Crag-Martin
+Southern Emuwren
+Speckle-breasted Wren
+Speckled Nightingale-Thrush
+Speckled Tanager
+Straw-necked Ibis
+Streak-backed Canastero
+Streak-capped Treehunter
+Streak-chested Antpitta
+Streak-headed Antbird
+Streak-necked Flycatcher
+Streaked Tuftedcheek
+Streaked Xenops
+Stripe-breasted Spinetail
+Striped Cuckoo
+Striped Kingfisher
+Stub-tailed Spadebill
+Sulphur-rumped Flycatcher
+Swainson's Hawk
+Tawny-faced Gnatwren
+Temminck's Courser
+Thick-billed Grasswren
+Thicket Antpitta
+Three-striped Warbler
+Tocuyo Sparrow
+Topknot Pigeon
+Tree Martin
+Tufted Duck
+Tufted Tit-Tyrant
+Turquoise Dacnis
+Turquoise Jay
+Turquoise Tanager
+Tyrian Metaltail
+Vaux's Swift
+Village Indigobird
+Violet-headed Hummingbird
+Wedge-billed Woodcreeper
+Wedge-tailed Sabrewing
+Western House-Martin
+Whistling Heron
+White-bellied Emerald
+White-bellied Mountain-gem
+White-bellied Sea-Eagle
+White-browed Gnatcatcher
+White-browed Spinetail
+White-capped Albatross
+White-cheeked Pintail
+White-crested Elaenia
+White-eared Conebill
+White-flanked Antwren
+White-fronted Nunbird
+White-headed Vanga
+White-ruffed Manakin
+White-tailed Hawk
+White-tailed Tyrannulet
+White-thighed Swallow
+White-throated Daggerbill
+White-throated Oxylabes
+White-throated Screech-Owl
+White-throated Shrike-Tanager
+White-throated Spadebill
+White-tipped Quetzal
+White-tipped Sicklebill
+White-tipped Swift
+White-vented Euphonia
+White-winged Crossbill
+Woodhouse's Scrub-Jay
+Worm-eating Warbler
+Yellow Thornbill
+Yellow Tyrannulet
+Yellow-billed Chough
+Yellow-billed Oxpecker
+Yellow-breasted Apalis
+Yellow-breasted Brushfinch
+Yellow-green Tyrannulet
+Yellow-headed Amazon
+Yellow-olive Flatbill
+Yellow-vented Woodpecker
+Yellow-winged Flatbill
+Yellow-winged Tanager
+Yellow-winged Vireo
+Zebra Finch
+Zone-tailed Hawk
